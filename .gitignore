@@ -1,0 +1,7 @@
+node_modules/
+vendor/
+.wp-env.override.json
+*.log
+.DS_Store
+/backups/
+/exports/
