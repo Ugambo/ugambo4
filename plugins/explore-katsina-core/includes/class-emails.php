@@ -49,7 +49,7 @@ final class Emails {
 
 	public static function render( $heading, array $lines, array $cta = array() ) {
 		$body = '';
-		foreach ( $lines as $line ) {
+		foreach ( array_filter( $lines, 'strlen' ) as $line ) {
 			$body .= '<p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:#1C1A22">' . nl2br( esc_html( $line ) ) . '</p>';
 		}
 		if ( ! empty( $cta['url'] ) ) {
@@ -182,6 +182,159 @@ final class Emails {
 			array( sprintf( __( '%1$s requested a payout of %2$s.', 'explore-katsina' ), $p['name'], Money::format( $amount_kobo ) ) ),
 			array( 'label' => __( 'Review payouts', 'explore-katsina' ), 'url' => admin_url( 'admin.php?page=ek-approvals' ) ),
 			array( 'event' => 'admin_payout_requested' )
+		);
+	}
+
+	/* ---- Bookings ---- */
+
+	private static function business_recipients( $business_id ) {
+		$to    = array();
+		$p     = Business::profile( $business_id );
+		$owner = get_userdata( Business::owner_id( $business_id ) );
+		if ( ! empty( $p['email'] ) ) {
+			$to[] = $p['email'];
+		}
+		if ( $owner ) {
+			$to[] = $owner->user_email;
+		}
+		return array_values( array_unique( array_map( 'strtolower', $to ) ) );
+	}
+
+	/** Summary lines used by every booking email. */
+	public static function booking_lines( $b ) {
+		$d     = $b->details;
+		$lines = array(
+			/* translators: %s: booking code */
+			sprintf( __( 'Booking code: %s', 'explore-katsina' ), $b->code ),
+			/* translators: 1: hotel, 2: room */
+			sprintf( __( '%1$s · %2$s × %3$d', 'explore-katsina' ), $d['hotel'] ?? '', $d['room'] ?? '', (int) $b->quantity ),
+			/* translators: 1: check-in date, 2: time, 3: check-out date, 4: time */
+			sprintf( __( 'Check-in %1$s (from %2$s) · Check-out %3$s (by %4$s)', 'explore-katsina' ), wp_date( 'D j M Y', strtotime( $b->start_date ) ), $d['checkin_at'] ?? '', wp_date( 'D j M Y', strtotime( $b->end_date ) ), $d['checkout_at'] ?? '' ),
+			/* translators: 1: nights, 2: guests */
+			sprintf( __( '%1$d night(s) · %2$d guest(s)', 'explore-katsina' ), count( $d['nights'] ?? array() ), (int) $b->guests ),
+			/* translators: %s: total */
+			sprintf( __( 'Total: %s', 'explore-katsina' ), Money::format( $b->total_kobo ) ),
+		);
+		if ( (int) $b->paid_kobo > 0 ) {
+			/* translators: %s: amount */
+			$lines[] = sprintf( __( 'Paid online: %s', 'explore-katsina' ), Money::format( $b->paid_kobo ) );
+		}
+		$due = (int) $b->total_kobo - (int) $b->paid_kobo;
+		if ( $due > 0 ) {
+			/* translators: %s: amount */
+			$lines[] = sprintf( __( 'To pay at the hotel: %s', 'explore-katsina' ), Money::format( $due ) );
+		}
+		return $lines;
+	}
+
+	/** A booking is placed (pay at hotel) or paid online. */
+	public static function booking_created( $b ) {
+		$ctx = array( 'event' => 'booking_created', 'booking' => $b->code );
+		self::send(
+			$b->customer_email,
+			/* translators: %s: booking code */
+			sprintf( __( 'Booking received: %s', 'explore-katsina' ), $b->code ),
+			__( 'Thank you, your booking request is in', 'explore-katsina' ),
+			array_merge(
+				array( __( 'The hotel will confirm your booking shortly. We will email you as soon as they do.', 'explore-katsina' ) ),
+				self::booking_lines( $b ),
+				array( __( 'Cancellation policy:', 'explore-katsina' ) . ' ' . ( $b->policy['text'] ?? '' ) )
+			),
+			array( 'label' => __( 'View my booking', 'explore-katsina' ), 'url' => Booking::link( $b ) ),
+			$ctx + array( 'phone' => $b->customer_phone )
+		);
+		foreach ( self::business_recipients( $b->business_id ) as $to ) {
+			self::send(
+				$to,
+				/* translators: %s: booking code */
+				sprintf( __( 'New booking %s: please confirm', 'explore-katsina' ), $b->code ),
+				__( 'You have a new booking', 'explore-katsina' ),
+				array_merge(
+					self::booking_lines( $b ),
+					array(
+						/* translators: 1: name, 2: phone */
+						sprintf( __( 'Guest: %1$s · %2$s', 'explore-katsina' ), $b->customer_name, Business::display_phone( $b->customer_phone ) ),
+						$b->notes ? __( 'Special requests:', 'explore-katsina' ) . ' ' . $b->notes : '',
+						__( 'Please confirm or decline it from your dashboard as soon as possible. Quick responses improve your ranking.', 'explore-katsina' ),
+					)
+				),
+				array( 'label' => __( 'Open bookings', 'explore-katsina' ), 'url' => Dashboard::url( 'bookings', $b->business_id ) ),
+				$ctx + array( 'audience' => 'business' )
+			);
+		}
+		self::send(
+			self::admin_email(),
+			/* translators: 1: code, 2: hotel */
+			sprintf( __( '[Explore Katsina] New booking %1$s at %2$s', 'explore-katsina' ), $b->code, $b->details['hotel'] ?? '' ),
+			__( 'New booking', 'explore-katsina' ),
+			array_merge( self::booking_lines( $b ), array( __( 'Payment option:', 'explore-katsina' ) . ' ' . $b->payment_mode ) ),
+			array(),
+			$ctx + array( 'audience' => 'admin' )
+		);
+	}
+
+	public static function booking_status( $b ) {
+		$heads = array(
+			'confirmed' => __( 'Your booking is confirmed', 'explore-katsina' ),
+			'declined'  => __( 'The hotel could not accept your booking', 'explore-katsina' ),
+			'cancelled' => __( 'Your booking has been cancelled', 'explore-katsina' ),
+		);
+		$extra = array();
+		if ( in_array( $b->status, array( 'declined', 'cancelled' ), true ) && (int) $b->paid_kobo > 0 ) {
+			$extra[] = __( 'You paid online for this booking. Our team will review your refund and contact you.', 'explore-katsina' );
+		}
+		self::send(
+			$b->customer_email,
+			/* translators: 1: heading, 2: code */
+			sprintf( '%1$s (%2$s)', $heads[ $b->status ] ?? $b->status, $b->code ),
+			$heads[ $b->status ] ?? $b->status,
+			array_merge( self::booking_lines( $b ), $extra ),
+			array( 'label' => __( 'View my booking', 'explore-katsina' ), 'url' => Booking::link( $b ) ),
+			array( 'event' => 'booking_' . $b->status, 'booking' => $b->code, 'phone' => $b->customer_phone )
+		);
+		if ( 'confirmed' !== $b->status ) {
+			self::send(
+				self::admin_email(),
+				/* translators: 1: code, 2: status */
+				sprintf( __( '[Explore Katsina] Booking %1$s is now %2$s', 'explore-katsina' ), $b->code, $b->status ),
+				__( 'Booking status changed', 'explore-katsina' ),
+				self::booking_lines( $b ),
+				array(),
+				array( 'event' => 'admin_booking_' . $b->status )
+			);
+		}
+	}
+
+	public static function payment_conflict( $b ) {
+		self::send(
+			self::admin_email(),
+			/* translators: %s: code */
+			sprintf( __( 'ACTION NEEDED: payment for %s arrived after the room was taken', 'explore-katsina' ), $b->code ),
+			__( 'Payment needs a refund or a new room', 'explore-katsina' ),
+			array_merge( array( __( 'The guest paid after their 15-minute hold ran out, and the room was booked by someone else in the meantime. Contact the guest and the hotel, then refund or rebook.', 'explore-katsina' ) ), self::booking_lines( $b ) ),
+			array(),
+			array( 'event' => 'admin_payment_conflict' )
+		);
+		self::send(
+			$b->customer_email,
+			/* translators: %s: code */
+			sprintf( __( 'About your payment for %s', 'explore-katsina' ), $b->code ),
+			__( 'We received your payment, but the room is no longer free', 'explore-katsina' ),
+			array( __( 'Your payment arrived after the room was taken. Our team will contact you within 1 working day to arrange another room or a full refund.', 'explore-katsina' ) ),
+			array(),
+			array( 'event' => 'payment_conflict', 'phone' => $b->customer_phone )
+		);
+	}
+
+	public static function refund_review( $b, $why ) {
+		self::send(
+			self::admin_email(),
+			/* translators: 1: code, 2: reason */
+			sprintf( __( 'Refund review needed: %1$s (%2$s)', 'explore-katsina' ), $b->code, $why ),
+			__( 'A paid booking needs a refund decision', 'explore-katsina' ),
+			self::booking_lines( $b ),
+			array(),
+			array( 'event' => 'admin_refund_review' )
 		);
 	}
 }

@@ -19,7 +19,7 @@ $colours = Assets::map_config()['pinColours'];
 $colour  = $colours[ $b['type'] ] ?? $colours['directory'];
 $wa      = $b['whatsapp'] ? 'https://wa.me/' . ltrim( $b['whatsapp'], '+' ) . '?text=' . rawurlencode( sprintf( /* translators: %s: business */ __( 'Hello %s, I found you on Explore Katsina.', 'explore-katsina' ), $b['name'] ) ) : '';
 $dir     = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode( $b['lat'] . ',' . $b['lng'] );
-$t       = function ( $metric ) use ( $b, $track ) {
+$track_attr = function ( $metric ) use ( $b, $track ) {
 	return $track ? ' data-ek-track="' . (int) $b['id'] . ':' . esc_attr( $metric ) . '"' : '';
 };
 ?>
@@ -44,21 +44,27 @@ $t       = function ( $metric ) use ( $b, $track ) {
 				</div>
 			</div>
 			<div class="ek-description"><?php echo wpautop( wp_kses_post( $b['description'] ) ); // phpcs:ignore ?></div>
+			<?php
+			if ( 'hotel' === $b['type'] ) {
+				include EK_DIR . 'templates/public/hotel.php';
+			}
+			?>
 
 			<section aria-labelledby="pub-loc">
 				<h2 id="pub-loc"><?php esc_html_e( 'Location', 'explore-katsina' ); ?></h2>
 				<p><?php echo esc_html( $b['address'] ); ?></p>
 				<div class="ek-mini-map" data-ek-mini-map data-lat="<?php echo esc_attr( $b['lat'] ); ?>" data-lng="<?php echo esc_attr( $b['lng'] ); ?>" data-colour="<?php echo esc_attr( $colour ); ?>" role="img" aria-label="<?php esc_attr_e( 'Map showing the location', 'explore-katsina' ); ?>"></div>
 			</section>
+			<?php include EK_DIR . 'templates/public/nearby.php'; ?>
 		</div>
 
 		<aside class="ek-card ek-contact-card ek-stack" aria-labelledby="pub-contact">
 			<h2 id="pub-contact" style="margin:0"><?php esc_html_e( 'Contact', 'explore-katsina' ); ?></h2>
 			<div class="ek-actions">
-				<?php if ( $wa ) : ?><a class="ek-btn ek-btn--wa" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener"<?php echo $t( 'whatsapp' ); // phpcs:ignore ?>><?php esc_html_e( 'WhatsApp', 'explore-katsina' ); ?></a><?php endif; ?>
-				<a class="ek-btn" href="<?php echo esc_url( 'tel:' . $b['phone'] ); ?>"<?php echo $t( 'call' ); // phpcs:ignore ?>><?php esc_html_e( 'Call', 'explore-katsina' ); ?></a>
-				<a class="ek-btn ek-btn--night" href="<?php echo esc_url( $dir ); ?>" target="_blank" rel="noopener"<?php echo $t( 'directions' ); // phpcs:ignore ?>><?php esc_html_e( 'Directions', 'explore-katsina' ); ?></a>
-				<?php if ( $b['website'] ) : ?><a class="ek-btn ek-btn--ghost" href="<?php echo esc_url( $b['website'] ); ?>" target="_blank" rel="noopener nofollow"<?php echo $t( 'website' ); // phpcs:ignore ?>><?php esc_html_e( 'Website', 'explore-katsina' ); ?></a><?php endif; ?>
+				<?php if ( $wa ) : ?><a class="ek-btn ek-btn--wa" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener"<?php echo $track_attr( 'whatsapp' ); // phpcs:ignore ?>><?php esc_html_e( 'WhatsApp', 'explore-katsina' ); ?></a><?php endif; ?>
+				<a class="ek-btn" href="<?php echo esc_url( 'tel:' . $b['phone'] ); ?>"<?php echo $track_attr( 'call' ); // phpcs:ignore ?>><?php esc_html_e( 'Call', 'explore-katsina' ); ?></a>
+				<a class="ek-btn ek-btn--night" href="<?php echo esc_url( $dir ); ?>" target="_blank" rel="noopener"<?php echo $track_attr( 'directions' ); // phpcs:ignore ?>><?php esc_html_e( 'Directions', 'explore-katsina' ); ?></a>
+				<?php if ( $b['website'] ) : ?><a class="ek-btn ek-btn--ghost" href="<?php echo esc_url( $b['website'] ); ?>" target="_blank" rel="noopener nofollow"<?php echo $track_attr( 'website' ); // phpcs:ignore ?>><?php esc_html_e( 'Website', 'explore-katsina' ); ?></a><?php endif; ?>
 			</div>
 			<p class="ek-small" style="margin:0"><?php echo esc_html( Business::display_phone( $b['phone'] ) ); ?><?php echo $b['email'] ? '<br>' . esc_html( $b['email'] ) : ''; ?></p>
 			<div>

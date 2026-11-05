@@ -54,7 +54,7 @@ final class Money {
 			if ( 'commission' === $r->entry_type ) {
 				$s['commission'] += -$amt; // Commission lines are negative.
 			}
-			if ( 'on_hold' === $r->status ) {
+			if ( in_array( $r->status, array( 'on_hold', 'frozen' ), true ) ) {
 				$s['on_hold'] += $amt;
 			} elseif ( 'available' === $r->status ) {
 				$s['available'] += $amt;

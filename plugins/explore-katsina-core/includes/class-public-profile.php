@@ -53,6 +53,7 @@ final class Public_Profile {
 		wp_enqueue_style( 'ek' );
 		wp_enqueue_style( 'leaflet' );
 		wp_enqueue_script( 'ek-mini-map' );
+		wp_enqueue_script( 'ek-search' );
 
 		$uid   = get_current_user_id();
 		$track = ! ( $uid && ( (int) get_post_field( 'post_author', $id ) === $uid || user_can( $uid, 'edit_posts' ) ) );

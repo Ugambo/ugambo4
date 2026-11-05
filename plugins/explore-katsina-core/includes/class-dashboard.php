@@ -22,7 +22,7 @@ final class Dashboard {
 
 	public static function sections( $type = '' ) {
 		$noun = Business::types()[ $type ]['noun'] ?? __( 'Bookings', 'explore-katsina' );
-		return array(
+		$base = array(
 			'overview'  => __( 'Overview', 'explore-katsina' ),
 			'profile'   => __( 'Profile', 'explore-katsina' ),
 			'photos'    => __( 'Photos', 'explore-katsina' ),
@@ -34,6 +34,8 @@ final class Dashboard {
 			'ranking'   => __( 'Ranking', 'explore-katsina' ),
 			'analytics' => __( 'Analytics', 'explore-katsina' ),
 		);
+		/** Business types add their own sections (e.g. hotels: Hotel details, Rooms, Calendar). */
+		return apply_filters( 'ek_dashboard_sections', $base, $type );
 	}
 
 	public static function init() {
@@ -90,9 +92,9 @@ final class Dashboard {
 		return $mine ? (int) $mine[0]->ID : 0;
 	}
 
-	public static function current_section() {
+	public static function current_section( $type = '' ) {
 		$s = sanitize_key( $_GET['section'] ?? 'overview' ); // phpcs:ignore WordPress.Security.NonceVerification
-		return isset( self::sections() [ $s ] ) ? $s : 'overview';
+		return isset( self::sections( $type )[ $s ] ) ? $s : 'overview';
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -157,6 +159,9 @@ final class Dashboard {
 				}
 				$redirect = self::url( 'overview', $business_id );
 				break;
+			default:
+				// Type-specific actions (rooms, calendar, bookings…). Ownership is already checked above.
+				$redirect = apply_filters( 'ek_dashboard_action', null, $action, $business_id, $in, $uid );
 		}
 
 		if ( $redirect ) {
@@ -318,11 +323,11 @@ final class Dashboard {
 			return View::render( 'dashboard/no-business' );
 		}
 
-		$section = self::current_section();
+		$profile = Business::profile( $business_id );
+		$section = self::current_section( $profile['type'] );
 		if ( 'profile' === $section ) {
 			Assets::enqueue_form( true );
 		}
-		$profile = Business::profile( $business_id );
 
 		return View::render(
 			'dashboard/layout',
@@ -344,21 +349,48 @@ final class Dashboard {
 			. '<input type="hidden" name="_ek_nonce" value="' . esc_attr( wp_create_nonce( $action . '_' . (int) $business_id ) ) . '">';
 	}
 
-	/** Bookings for the list (generic until Phases 3–5 add type-specific views). */
-	public static function bookings( $business_id, $status = '', $limit = 50 ) {
+	/** Booking list groups shown as tabs. */
+	public static function booking_groups() {
+		return array(
+			'action'    => array( __( 'Needs action', 'explore-katsina' ), array( 'new', 'requested' ) ),
+			'upcoming'  => array( __( 'Upcoming', 'explore-katsina' ), array( 'confirmed', 'deposit_paid' ) ),
+			'inhouse'   => array( __( 'In house', 'explore-katsina' ), array( 'checked_in', 'seated' ) ),
+			'past'      => array( __( 'Past', 'explore-katsina' ), array( 'checked_out', 'completed', 'no_show' ) ),
+			'cancelled' => array( __( 'Cancelled', 'explore-katsina' ), array( 'cancelled', 'declined' ) ),
+		);
+	}
+
+	/** Bookings for the dashboard. Unpaid holds and expired attempts are never shown to the business. */
+	public static function bookings( $business_id, $group = '', $limit = 100 ) {
 		global $wpdb;
-		$sql = "SELECT * FROM {$wpdb->prefix}ek_bookings WHERE business_id = %d";
-		$arg = array( $business_id );
-		if ( $status ) {
-			$sql  .= ' AND status = %s';
-			$arg[] = $status;
+		$groups = self::booking_groups();
+		$list   = isset( $groups[ $group ] ) ? $groups[ $group ][1] : array_merge( ...array_column( $groups, 1 ) );
+		$ph     = implode( ',', array_fill( 0, count( $list ), '%s' ) );
+		$order  = in_array( $group, array( 'past', 'cancelled' ), true ) ? 'DESC' : 'ASC';
+		return $wpdb->get_results( // phpcs:ignore
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}ek_bookings WHERE business_id = %d AND status IN ($ph) ORDER BY start_date $order, id $order LIMIT %d", // phpcs:ignore
+				array_merge( array( $business_id ), $list, array( $limit ) )
+			)
+		);
+	}
+
+	public static function booking_counts( $business_id ) {
+		global $wpdb;
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT status, COUNT(*) n FROM {$wpdb->prefix}ek_bookings WHERE business_id = %d GROUP BY status", $business_id ) );
+		$by   = wp_list_pluck( $rows, 'n', 'status' );
+		$out  = array();
+		foreach ( self::booking_groups() as $k => $g ) {
+			$out[ $k ] = array_sum( array_intersect_key( $by, array_flip( $g[1] ) ) );
 		}
-		$sql  .= ' ORDER BY COALESCE(start_date, created_at) DESC, id DESC LIMIT %d';
-		$arg[] = $limit;
-		return $wpdb->get_results( $wpdb->prepare( $sql, $arg ) ); // phpcs:ignore
+		return $out;
 	}
 
 	public static function booking_status_label( $status ) {
+		$all = Booking::statuses();
+		if ( isset( $all[ $status ] ) ) {
+			return $all[ $status ];
+		}
 		$l = array(
 			'new'          => __( 'New', 'explore-katsina' ),
 			'requested'    => __( 'Requested', 'explore-katsina' ),

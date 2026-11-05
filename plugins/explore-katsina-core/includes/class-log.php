@@ -59,6 +59,9 @@ final class Log {
 			'resubmitted'        => __( 'Resubmitted for approval', 'explore-katsina' ),
 			'id_viewed'          => __( 'ID document viewed by admin', 'explore-katsina' ),
 			'payout_requested'   => __( 'Payout requested', 'explore-katsina' ),
+			'stars_verified'     => __( 'Star rating verified', 'explore-katsina' ),
+			'stars_unverified'   => __( 'Star rating verification removed', 'explore-katsina' ),
+			'refund_review'      => __( 'Paid booking needs a refund decision', 'explore-katsina' ),
 			'review_replied'     => __( 'Owner replied to a review', 'explore-katsina' ),
 		);
 		return $labels[ $action ] ?? $action;

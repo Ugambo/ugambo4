@@ -16,6 +16,12 @@ final class Plugin {
 
 		Install::maybe_upgrade();
 		Post_Types::init();
+		Rooms::init();
+		Booking::init();
+		Payments::init();
+		Hotel_Dashboard::init();
+		Hotel_Search::init();
+		Booking_Page::init();
 		Access::init();
 		Assets::init();
 		Signup::init();

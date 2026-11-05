@@ -10,5 +10,7 @@ else
 fi
 echo "▶ Server-side security & logic checks"
 wp eval-file ek-tests/phase2-security.php
-echo "▶ Browser journey (sign-up → approval → dashboard), screenshots in tests/e2e/screenshots/"
+wp eval-file ek-tests/phase3-hotels.php
+echo "▶ Browser journeys (screenshots in tests/e2e/screenshots/)"
 node tests/e2e/phase2.js
+node tests/e2e/phase3.js

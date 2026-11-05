@@ -100,7 +100,7 @@ final class Analytics {
 		$b = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT COUNT(*) AS n, COALESCE(SUM(paid_kobo),0) AS revenue FROM {$wpdb->prefix}ek_bookings
-				 WHERE business_id = %d AND created_at >= %s AND status NOT IN ('cancelled','declined')",
+				 WHERE business_id = %d AND created_at >= %s AND status NOT IN ('cancelled','declined','pending_payment','expired','payment_conflict')",
 				$business_id,
 				$since . ' 00:00:00'
 			)

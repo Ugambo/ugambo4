@@ -21,6 +21,7 @@ $types = array(
 );
 $status = array(
 	'on_hold'   => __( 'On hold', 'explore-katsina' ),
+	'frozen'    => __( 'On hold (refund review)', 'explore-katsina' ),
 	'available' => __( 'Available', 'explore-katsina' ),
 	'paid_out'  => __( 'Paid out', 'explore-katsina' ),
 	'cancelled' => __( 'Cancelled', 'explore-katsina' ),

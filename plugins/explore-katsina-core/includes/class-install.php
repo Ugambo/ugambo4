@@ -31,6 +31,7 @@ final class Install {
 		self::add_roles();
 		Settings::ensure_defaults();
 		Post_Types::register();
+		Rooms::register();
 		self::add_terms();
 		self::add_pages();
 		Private_Files::protect_directory();
@@ -113,12 +114,17 @@ final class Install {
 			payment_mode varchar(20) NOT NULL DEFAULT '',
 			status varchar(20) NOT NULL,
 			order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			access_key varchar(40) NOT NULL DEFAULT '',
+			hold_expires datetime NULL,
+			details longtext NULL,
 			policy_snapshot text NULL,
 			notes text NULL,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY code (code),
+			KEY item_dates (item_id,start_date),
+			KEY hold (status,hold_expires),
 			KEY business_status (business_id,status),
 			KEY customer (customer_id),
 			KEY dates (start_date,end_date)
@@ -215,6 +221,34 @@ final class Install {
 			KEY type_day (business_type,day)
 		) $c;";
 
+		/*
+		 * Availability calendar: one row per room category (or hall) per night.
+		 * "booked" includes unpaid 15-minute holds. Rows are locked during booking
+		 * (SELECT … FOR UPDATE) so two guests can never take the last room.
+		 */
+		$sql[] = "CREATE TABLE {$p}nights (
+			item_id bigint(20) unsigned NOT NULL,
+			night date NOT NULL,
+			closed tinyint(1) NOT NULL DEFAULT 0,
+			blocked smallint(5) unsigned NOT NULL DEFAULT 0,
+			booked smallint(5) unsigned NOT NULL DEFAULT 0,
+			price_kobo bigint(20) NULL,
+			PRIMARY KEY  (item_id,night)
+		) $c;";
+
+		/* Seasonal / peak price rules (e.g. Sallah, Durbar). */
+		$sql[] = "CREATE TABLE {$p}rate_rules (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			item_id bigint(20) unsigned NOT NULL,
+			label varchar(100) NOT NULL DEFAULT '',
+			start_date date NOT NULL,
+			end_date date NOT NULL,
+			price_kobo bigint(20) NOT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY item_dates (item_id,start_date,end_date)
+		) $c;";
+
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}
@@ -269,6 +303,16 @@ final class Install {
 				'title'   => __( 'Business Dashboard', 'explore-katsina' ),
 				'slug'    => 'business-dashboard',
 				'content' => '<!-- wp:shortcode -->[ek_business_dashboard]<!-- /wp:shortcode -->',
+			),
+			'hotels'        => array(
+				'title'   => __( 'Hotels', 'explore-katsina' ),
+				'slug'    => 'hotels',
+				'content' => '<!-- wp:shortcode -->[ek_hotel_search]<!-- /wp:shortcode -->',
+			),
+			'book'          => array(
+				'title'   => __( 'Book', 'explore-katsina' ),
+				'slug'    => 'book',
+				'content' => '<!-- wp:shortcode -->[ek_booking]<!-- /wp:shortcode -->',
 			),
 			'agreement'     => array(
 				'title'   => __( 'Listing & Partner Agreement', 'explore-katsina' ),

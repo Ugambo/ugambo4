@@ -44,6 +44,14 @@ $msg     = sanitize_key( $_GET['ek_msg'] ?? '' ); // phpcs:ignore
 	echo $b['verified'] // phpcs:ignore
 		? Admin::action_form( 'unverify', $id, __( 'Remove Verified badge', 'explore-katsina' ) )
 		: Admin::action_form( 'verify', $id, __( 'Give Verified badge', 'explore-katsina' ) );
+	if ( 'hotel' === $b['type'] && (int) get_post_meta( $id, '_ek_stars', true ) ) {
+		$stars = (int) get_post_meta( $id, '_ek_stars', true );
+		echo get_post_meta( $id, '_ek_stars_verified', true ) // phpcs:ignore
+			/* translators: %d: stars */
+			? Admin::action_form( 'unverify_stars', $id, sprintf( __( 'Remove verification of %d★ rating', 'explore-katsina' ), $stars ) )
+			/* translators: %d: stars */
+			: Admin::action_form( 'verify_stars', $id, sprintf( __( 'Verify self-declared %d★ rating', 'explore-katsina' ), $stars ) );
+	}
 	?>
 	<p class="description"><?php esc_html_e( 'Verified means you have checked the ID, CAC (if given) and that the business really exists at the pinned location.', 'explore-katsina' ); ?></p>
 </div>

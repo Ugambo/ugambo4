@@ -128,11 +128,31 @@ say "6/7 Plugins"
 wp plugin activate explore-katsina-core --quiet
 wp ek install
 wp plugin delete hello --quiet 2>/dev/null || true
-# Free plugins are added phase by phase (WooCommerce + Paystack + Flutterwave from Phase 3,
-# the rest in Phase 12). They need wordpress.org, so they are skipped in offline mode.
-EXTRA_PLUGINS=()
-if [ ${#EXTRA_PLUGINS[@]} -gt 0 ]; then
-  if [ "$MODE" = "wp-env" ]; then wp plugin install "${EXTRA_PLUGINS[@]}" --activate; else warn "Skipping ${EXTRA_PLUGINS[*]} (wordpress.org not reachable)"; fi
+# Free plugins, added phase by phase. They come from wordpress.org, so they are
+# skipped (with a warning) when wordpress.org can't be reached.
+#   Phase 3: WooCommerce + Paystack + Flutterwave (payments only)
+EXTRA_PLUGINS=(woocommerce woo-paystack rave-woocommerce-payment-gateway)
+if [ "$MODE" = "wp-env" ] || curl -s -o /dev/null --max-time 8 https://downloads.wordpress.org/; then
+  for slug in "${EXTRA_PLUGINS[@]}"; do
+    wp plugin is-installed "$slug" 2>/dev/null || wp plugin install "$slug" --quiet || warn "Could not install $slug"
+    wp plugin activate "$slug" --quiet 2>/dev/null || true
+  done
+  if wp plugin is-active woocommerce 2>/dev/null; then
+    # Naira, Nigeria/Katsina, guest checkout, no setup wizard. Paystack/Flutterwave keys are
+    # added later by the owner (TEST keys first) under WooCommerce → Settings → Payments.
+    wp option update woocommerce_currency NGN --quiet
+    wp option update woocommerce_currency_pos left --quiet
+    wp option update woocommerce_price_num_decimals 0 --quiet
+    wp option update woocommerce_default_country "NG:KT" --quiet
+    wp option update woocommerce_enable_guest_checkout yes --quiet
+    wp option update woocommerce_calc_taxes no --quiet
+    wp option update woocommerce_coming_soon no --quiet 2>/dev/null || true
+    wp option update woocommerce_onboarding_profile '{"skipped":true}' --format=json --quiet 2>/dev/null || true
+    ok "WooCommerce set to Naira (₦), Katsina, guest checkout"
+  fi
+else
+  warn "Skipping ${EXTRA_PLUGINS[*]}: wordpress.org can't be reached from here."
+  warn "Bookings use the local TEST payment screen until WooCommerce is installed."
 fi
 ok "explore-katsina-core active"
 

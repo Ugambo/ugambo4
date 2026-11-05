@@ -111,6 +111,15 @@ final class Admin {
 				update_post_meta( $id, '_ek_verified', 1 );
 				Log::add( 'business_verified', 'business', $id, $reason );
 				break;
+			case 'verify_stars':
+				update_post_meta( $id, '_ek_stars_verified', 1 );
+				update_post_meta( $id, '_ek_stars_verified_value', (int) get_post_meta( $id, '_ek_stars', true ) );
+				Log::add( 'stars_verified', 'business', $id, $reason );
+				break;
+			case 'unverify_stars':
+				delete_post_meta( $id, '_ek_stars_verified' );
+				Log::add( 'stars_unverified', 'business', $id, $reason );
+				break;
 			case 'unverify':
 				delete_post_meta( $id, '_ek_verified' );
 				Log::add( 'business_unverified', 'business', $id, $reason );

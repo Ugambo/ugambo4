@@ -51,6 +51,22 @@ final class Assets {
 		wp_register_script( 'ek-track', EK_URL . 'assets/js/track.js', array(), self::ver( 'assets/js/track.js' ), true );
 		wp_localize_script( 'ek-track', 'ekTrack', array( 'url' => esc_url_raw( rest_url( 'ek/v1/track' ) ) ) );
 
+		wp_register_script( 'ek-search', EK_URL . 'assets/js/search.js', array( 'leaflet' ), self::ver( 'assets/js/search.js' ), true );
+		wp_localize_script( 'ek-search', 'ekMap', self::map_config() );
+		wp_localize_script(
+			'ek-search',
+			'ekSearch',
+			array(
+				'i18n' => array(
+					'locating' => __( 'Finding you…', 'explore-katsina' ),
+					'denied'   => __( 'We could not get your location. Please allow location access, or choose an LGA.', 'explore-katsina' ),
+					'noGeo'    => __( 'Your browser cannot share its location.', 'explore-katsina' ),
+					'view'     => __( 'View hotel', 'explore-katsina' ),
+					'you'      => __( 'You are here', 'explore-katsina' ),
+				),
+			)
+		);
+
 		wp_register_script( 'ek-mini-map', EK_URL . 'assets/js/mini-map.js', array( 'leaflet' ), self::ver( 'assets/js/mini-map.js' ), true );
 		wp_localize_script( 'ek-mini-map', 'ekMap', self::map_config() );
 	}
@@ -87,7 +103,7 @@ final class Assets {
 
 	public static function auto_enqueue() {
 		$post = get_queried_object();
-		if ( $post instanceof \WP_Post && ( has_shortcode( $post->post_content, 'ek_list_business' ) || has_shortcode( $post->post_content, 'ek_business_dashboard' ) ) ) {
+		if ( $post instanceof \WP_Post && preg_match( '/\[ek_(list_business|business_dashboard|hotel_search|booking)/', $post->post_content ) ) {
 			wp_enqueue_style( 'ek' );
 		}
 		if ( is_singular( Post_Types::BUSINESS ) ) {
