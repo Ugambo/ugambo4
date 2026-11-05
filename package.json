@@ -1,0 +1,13 @@
+{
+  "name": "explore-katsina",
+  "private": true,
+  "description": "Explore Katsina: local development environment",
+  "scripts": {
+    "wp-env": "wp-env",
+    "start": "wp-env start",
+    "stop": "wp-env stop"
+  },
+  "devDependencies": {
+    "@wordpress/env": "12.1.0"
+  }
+}

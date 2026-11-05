@@ -1,7 +1,11 @@
-node_modules/
-vendor/
-.wp-env.override.json
 *.log
 .DS_Store
+.env
+.env.*
+.wp-core/
+.wp-env.override.json
 /backups/
 /exports/
+node_modules/
+vendor/
+tests/e2e/screenshots/

@@ -1,0 +1,245 @@
+<title>Katsina Brand Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@500;700&family=Fira+Sans:wght@400;500;600&family=Unbounded:wght@500;700&family=Overpass:wght@400;600;700&display=swap">
+<style>
+/* Layout: page chrome is quiet and neutral; each option is a self-contained "brand board" that carries its own colours. Stacked on phones, side by side on wide screens. */
+:root{
+  --bg:#F3F2EF; --fg:#1F1E24; --muted:#5B5965; --line:#DAD7D0; --card:#FFFFFF;
+  --chrome-font: "Fira Sans", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15151A;--fg:#ECEAE6;--muted:#A9A6B0;--line:#2E2D35;--card:#1E1D24;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15151A;--fg:#ECEAE6;--muted:#A9A6B0;--line:#2E2D35;--card:#1E1D24;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--chrome-font);font-size:16px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+header h1{font-family:"Noto Serif Display",Georgia,serif;font-weight:700;font-size:clamp(1.9rem,4vw,2.6rem);line-height:1.1;margin:0 0 10px;text-wrap:balance}
+header p{margin:0;max-width:68ch;color:var(--muted)}
+.checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.checks span{font-size:.82rem;border:1px solid var(--line);border-radius:999px;padding:3px 11px;color:var(--fg);background:var(--card)}
+.boards{display:grid;grid-template-columns:1fr;gap:28px}
+@media (min-width:1000px){.boards{grid-template-columns:1fr 1fr}}
+.board{min-width:0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line)}
+.board .body{padding:22px;display:flex;flex-direction:column;gap:22px;background:var(--b-bg);color:var(--b-ink)}
+.tag{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.hero{position:relative;padding:26px 22px 22px;color:#fff;background:var(--b-dark)}
+.hero::before{content:"";position:absolute;inset:0;background-image:var(--b-pattern);background-size:44px 44px;opacity:.18;pointer-events:none}
+.hero>*{position:relative}
+.hero h2{margin:8px 0 4px;font-family:var(--b-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.3rem);line-height:1.08;text-wrap:balance}
+.hero .ha{margin:0 0 16px;font-family:var(--b-body);opacity:.92}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tabs span{font-family:var(--b-body);font-size:.85rem;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}
+.tabs span.on{background:var(--b-hi);color:var(--b-hi-ink);font-weight:600}
+.search{display:flex;flex-wrap:wrap;gap:8px;background:#fff;border-radius:10px;padding:8px;color:#333;font-family:var(--b-body);font-size:.9rem}
+.search span{flex:1 1 120px;padding:8px 10px;border-radius:6px;background:#F2F1EE}
+.search b{flex:0 0 auto;padding:8px 18px;border-radius:6px;background:var(--b-cta);color:#fff;font-weight:600}
+.story{margin:0;font-family:var(--b-body);max-width:62ch}
+h3{margin:0 0 10px;font-family:var(--b-body);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--b-sub)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.sw{border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.08);background:#fff;color:#222;font-family:var(--b-body)}
+.sw i{display:block;height:58px}
+.sw div{padding:8px 10px;font-size:.82rem;line-height:1.35}
+.sw strong{display:block;font-size:.9rem}
+.sw code{font-family:ui-monospace,Menlo,monospace;font-size:.78rem;color:#555}
+.type .d{font-family:var(--b-display);font-weight:700;font-size:1.8rem;line-height:1.15;margin:0}
+.type .b{font-family:var(--b-body);margin:6px 0 0}
+.type .meta{font-family:var(--b-body);font-size:.82rem;color:var(--b-sub);margin:6px 0 0}
+.pins{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;font-family:var(--b-body);font-size:.85rem}
+.pin{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pin svg{width:40px;height:52px}
+.pin.feat svg{filter:drop-shadow(0 0 0 var(--b-hi)) drop-shadow(0 0 5px var(--b-hi))}
+.badges{display:flex;flex-wrap:wrap;gap:8px;font-family:var(--b-body)}
+.bd{font-size:.8rem;font-weight:600;padding:4px 10px;border-radius:6px}
+.dash{background:#fff;color:#222;border-radius:12px;padding:16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;font-family:var(--b-body);border:1px solid rgba(0,0,0,.08)}
+.dash .t{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.dash .t strong{font-family:var(--b-display);font-size:1.15rem}
+.dash .k{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dash .k small{font-size:.75rem;color:#666}
+.dash .k b{font-size:1.15rem;font-variant-numeric:tabular-nums;color:var(--b-dark)}
+.dash .btn{grid-column:1/-1;justify-self:start;background:var(--b-cta);color:#fff;font-weight:600;padding:9px 16px;border-radius:8px;font-size:.9rem}
+@media (max-width:420px){.dash{grid-template-columns:1fr 1fr}}
+.contrast{margin:0;padding:0;list-style:none;font-family:var(--b-body);font-size:.85rem;display:grid;gap:4px}
+.contrast li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed rgba(0,0,0,.12);padding-bottom:4px}
+.contrast span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+.choose{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+.choose h2{font-family:"Noto Serif Display",Georgia,serif;margin:0 0 8px;font-size:1.5rem}
+.choose p,.choose li{max-width:70ch}
+.choose ul{margin:8px 0 0;padding-left:20px;display:grid;gap:4px}
+.note{font-size:.85rem;color:var(--muted)}
+
+/* Option A — Indigo & Laterite */
+.A{--b-bg:#F1F0EC;--b-ink:#1A1A24;--b-sub:#4A4E68;--b-dark:#1E2650;--b-cta:#A3442A;--b-hi:#E0A63A;--b-hi-ink:#1A1A24;
+   --b-display:"Noto Serif Display",Georgia,serif;--b-body:"Fira Sans",system-ui,sans-serif;
+   --b-pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M22 2 42 22 22 42 2 22Z'/%3E%3Cpath d='M22 12 32 22 22 32 12 22Z'/%3E%3Ccircle cx='22' cy='22' r='2.5' fill='%23ffffff'/%3E%3C/g%3E%3C/svg%3E")}
+/* Option B — Durbar Regalia */
+.B{--b-bg:#FBF7EF;--b-ink:#1C1A22;--b-sub:#6A2633;--b-dark:#141B3A;--b-cta:#8E1B2C;--b-hi:#D2A03A;--b-hi-ink:#141B3A;
+   --b-display:"Unbounded","Arial Black",sans-serif;--b-body:"Overpass",system-ui,sans-serif;
+   --b-pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M0 22h44M22 0v44'/%3E%3Cpath d='M22 8 36 22 22 36 8 22Z'/%3E%3Cpath d='M0 0 8 8M44 0 36 8M0 44l8-8M44 44l-8-8'/%3E%3C/g%3E%3C/svg%3E")}
+.B .hero h2{font-size:clamp(1.45rem,3vw,1.95rem);letter-spacing:-.01em}
+.B .type .d{font-size:1.5rem}
+@media (prefers-reduced-motion:no-preference){.pin svg{transition:transform .2s}.pin:hover svg{transform:translateY(-3px)}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Two brand directions for Explore Katsina</h1>
+    <p>Both directions come from Katsina's own visual world rather than the usual travel-site blue and white. Each board shows the colours, the fonts, the map pins, the badges and a piece of the business dashboard, so you can see how the whole site would feel. Pick one, or mix them (for example A's colours with B's fonts).</p>
+    <div class="checks">
+      <span>Both font pairs display the Hausa letters ɓ ɗ ƙ ƴ (checked)</span>
+      <span>All text colours pass WCAG AA contrast</span>
+      <span>Free Google Fonts</span>
+    </div>
+  </header>
+
+  <div class="boards">
+    <!-- OPTION A -->
+    <section class="board A" aria-labelledby="a-name">
+      <div class="hero">
+        <span class="tag" style="color:#E0A63A">Option A</span>
+        <h2 id="a-name">Indigo &amp; Laterite</h2>
+        <p class="ha">Barka da zuwa Katsina · Ɗakuna · Gidan abinci · Ƙofar birni</p>
+        <div class="tabs"><span class="on">Hotels</span><span>Restaurants</span><span>Event Centres</span><span>Things to do</span></div>
+        <div class="search"><span>Check-in · Check-out</span><span>2 guests</span><span>Near me</span><b>Search</b></div>
+      </div>
+      <div class="body">
+        <p class="story"><strong>Calm, crafted, heritage.</strong> Deep indigo from the dye pits, laterite red from the earth of the old city walls, ochre from harmattan light and savanna green. Headings use an elegant serif that feels like a museum label; body text is a clear, friendly sans-serif that reads well on small phones.</p>
+        <div>
+          <h3>Colours</h3>
+          <div class="swatches">
+            <div class="sw"><i style="background:#1E2650"></i><div><strong>Dye-pit Indigo</strong><code>#1E2650</code><br>Main colour, headers, hotels</div></div>
+            <div class="sw"><i style="background:#A3442A"></i><div><strong>Laterite</strong><code>#A3442A</code><br>Buttons, restaurants</div></div>
+            <div class="sw"><i style="background:#E0A63A"></i><div><strong>Harmattan Ochre</strong><code>#E0A63A</code><br>Highlights, stars, Featured</div></div>
+            <div class="sw"><i style="background:#4A6630"></i><div><strong>Savanna</strong><code>#4A6630</code><br>Attractions, success</div></div>
+            <div class="sw"><i style="background:#F1F0EC"></i><div><strong>Haze</strong><code>#F1F0EC</code><br>Page background</div></div>
+            <div class="sw"><i style="background:#1A1A24"></i><div><strong>Ink</strong><code>#1A1A24</code><br>Text</div></div>
+          </div>
+        </div>
+        <div class="type">
+          <h3>Fonts</h3>
+          <p class="d">Gobarau Minaret &amp; the old city</p>
+          <p class="b">Body text: Find a hotel near the palace, compare prices per night and book in minutes. Hausa: Ɗakin otal mai kyau kusa da ƙofar birni.</p>
+          <p class="meta">Headings: Noto Serif Display · Body: Fira Sans</p>
+        </div>
+        <div>
+          <h3>Map pins</h3>
+          <div class="pins">
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#1E2650" stroke="#fff" stroke-width="2"/><path d="M11 24v-8M11 21h18v3M13 19a2 2 0 1 0 0-.1M17 19h10a2 2 0 0 1 2 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Hotel</div>
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#A3442A" stroke="#fff" stroke-width="2"/><path d="M15 11v16M12.5 11v5a2.5 2.5 0 0 0 5 0v-5M25 27V11c-2.5 1.5-3 5-3 8h3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Restaurant</div>
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#7A5310" stroke="#fff" stroke-width="2"/><path d="M11 15l9-5 9 5M12 15v11M17 15v11M23 15v11M28 15v11M10 27h20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Event centre</div>
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#4A6630" stroke="#fff" stroke-width="2"/><path d="M17 27l1-13h4l1 13M16 14h8M18 14l2-4 2 4M14 27h12" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Attraction</div>
+            <div class="pin feat"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#1E2650" stroke="#E0A63A" stroke-width="3"/><path d="M11 24v-8M11 21h18v3M13 19a2 2 0 1 0 0-.1M17 19h10a2 2 0 0 1 2 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Featured hotel</div>
+          </div>
+        </div>
+        <div>
+          <h3>Badges</h3>
+          <div class="badges">
+            <span class="bd" style="background:#1E2650;color:#fff">★ Top Rated</span>
+            <span class="bd" style="background:#4A6630;color:#fff">↗ Rising</span>
+            <span class="bd" style="background:#fff;color:#1E2650;border:1.5px solid #1E2650">✓ Verified</span>
+            <span class="bd" style="background:#E0A63A;color:#1A1A24">Featured</span>
+            <span class="bd" style="background:#fff;color:#A3442A;border:1.5px solid #A3442A">#3 of 42 hotels in Katsina</span>
+          </div>
+        </div>
+        <div>
+          <h3>Business dashboard (example figures)</h3>
+          <div class="dash">
+            <div class="t"><strong>Earnings</strong><small>Example hotel · March</small></div>
+            <div class="k"><small>Earned</small><b>₦486,000</b></div>
+            <div class="k"><small>Commission</small><b>₦48,600</b></div>
+            <div class="k"><small>On hold</small><b>₦96,000</b></div>
+            <span class="btn">Request payout</span>
+          </div>
+        </div>
+        <div>
+          <h3>Contrast (4.5 needed)</h3>
+          <ul class="contrast">
+            <li><span>Indigo text on Haze</span><span>12.7 : 1</span></li>
+            <li><span>White on Laterite button</span><span>6.1 : 1</span></li>
+            <li><span>Ochre on Indigo</span><span>6.7 : 1</span></li>
+            <li><span>White on Savanna</span><span>6.5 : 1</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTION B -->
+    <section class="board B" aria-labelledby="b-name">
+      <div class="hero">
+        <span class="tag" style="color:#D2A03A">Option B</span>
+        <h2 id="b-name">Durbar Regalia</h2>
+        <p class="ha">Barka da zuwa Katsina · Ɗakuna · Gidan abinci · Ƙofar birni</p>
+        <div class="tabs"><span class="on">Hotels</span><span>Restaurants</span><span>Event Centres</span><span>Things to do</span></div>
+        <div class="search"><span>Check-in · Check-out</span><span>2 guests</span><span>Near me</span><b>Search</b></div>
+      </div>
+      <div class="body">
+        <p class="story"><strong>Bold, festive, modern.</strong> Royal crimson and brass from Durbar regalia and horse trappings, night indigo and an emerald accent. Headings use a wide, confident display font that feels like a festival poster; body text is a sturdy sans-serif. More energy and more "event", a little less heritage calm.</p>
+        <div>
+          <h3>Colours</h3>
+          <div class="swatches">
+            <div class="sw"><i style="background:#8E1B2C"></i><div><strong>Royal Crimson</strong><code>#8E1B2C</code><br>Main colour, buttons, hotels</div></div>
+            <div class="sw"><i style="background:#D2A03A"></i><div><strong>Brass</strong><code>#D2A03A</code><br>Highlights, stars, Featured</div></div>
+            <div class="sw"><i style="background:#141B3A"></i><div><strong>Night Indigo</strong><code>#141B3A</code><br>Headers, event centres</div></div>
+            <div class="sw"><i style="background:#1F6B52"></i><div><strong>Emerald</strong><code>#1F6B52</code><br>Attractions, success</div></div>
+            <div class="sw"><i style="background:#FBF7EF"></i><div><strong>Ivory</strong><code>#FBF7EF</code><br>Page background</div></div>
+            <div class="sw"><i style="background:#1C1A22"></i><div><strong>Ink</strong><code>#1C1A22</code><br>Text</div></div>
+          </div>
+        </div>
+        <div class="type">
+          <h3>Fonts</h3>
+          <p class="d">Sallah Durbar in Katsina</p>
+          <p class="b">Body text: Find a hotel near the palace, compare prices per night and book in minutes. Hausa: Ɗakin otal mai kyau kusa da ƙofar birni.</p>
+          <p class="meta">Headings: Unbounded · Body: Overpass</p>
+        </div>
+        <div>
+          <h3>Map pins</h3>
+          <div class="pins">
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#8E1B2C" stroke="#fff" stroke-width="2"/><path d="M11 24v-8M11 21h18v3M13 19a2 2 0 1 0 0-.1M17 19h10a2 2 0 0 1 2 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Hotel</div>
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#B07F1C" stroke="#fff" stroke-width="2"/><path d="M15 11v16M12.5 11v5a2.5 2.5 0 0 0 5 0v-5M25 27V11c-2.5 1.5-3 5-3 8h3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Restaurant</div>
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#141B3A" stroke="#fff" stroke-width="2"/><path d="M11 15l9-5 9 5M12 15v11M17 15v11M23 15v11M28 15v11M10 27h20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Event centre</div>
+            <div class="pin"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#1F6B52" stroke="#fff" stroke-width="2"/><path d="M17 27l1-13h4l1 13M16 14h8M18 14l2-4 2 4M14 27h12" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Attraction</div>
+            <div class="pin feat"><svg viewBox="0 0 40 52" aria-hidden="true"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="#8E1B2C" stroke="#D2A03A" stroke-width="3"/><path d="M11 24v-8M11 21h18v3M13 19a2 2 0 1 0 0-.1M17 19h10a2 2 0 0 1 2 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Featured hotel</div>
+          </div>
+        </div>
+        <div>
+          <h3>Badges</h3>
+          <div class="badges">
+            <span class="bd" style="background:#8E1B2C;color:#fff">★ Top Rated</span>
+            <span class="bd" style="background:#1F6B52;color:#fff">↗ Rising</span>
+            <span class="bd" style="background:#fff;color:#141B3A;border:1.5px solid #141B3A">✓ Verified</span>
+            <span class="bd" style="background:#D2A03A;color:#141B3A">Featured</span>
+            <span class="bd" style="background:#fff;color:#8E1B2C;border:1.5px solid #8E1B2C">#3 of 42 hotels in Katsina</span>
+          </div>
+        </div>
+        <div>
+          <h3>Business dashboard (example figures)</h3>
+          <div class="dash">
+            <div class="t"><strong>Earnings</strong><small>Example hotel · March</small></div>
+            <div class="k"><small>Earned</small><b>₦486,000</b></div>
+            <div class="k"><small>Commission</small><b>₦48,600</b></div>
+            <div class="k"><small>On hold</small><b>₦96,000</b></div>
+            <span class="btn">Request payout</span>
+          </div>
+        </div>
+        <div>
+          <h3>Contrast (4.5 needed)</h3>
+          <ul class="contrast">
+            <li><span>Crimson text on Ivory</span><span>8.4 : 1</span></li>
+            <li><span>White on Crimson button</span><span>9.0 : 1</span></li>
+            <li><span>Brass on Night Indigo</span><span>7.1 : 1</span></li>
+            <li><span>White on Emerald</span><span>6.4 : 1</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="choose" aria-labelledby="choose">
+    <h2 id="choose">How to choose</h2>
+    <ul>
+      <li><strong>A, Indigo &amp; Laterite</strong> suits a heritage and tourism-first feel: trustworthy, calm, close to the city walls and dye pits.</li>
+      <li><strong>B, Durbar Regalia</strong> suits a lively, events-and-booking feel: festive, eye-catching, more like a festival poster.</li>
+      <li>Mixing is fine, for example "A's colours with B's fonts".</li>
+    </ul>
+    <p class="note">The background patterns are simple geometric shapes inspired by Hausa decorative work, not copies of any specific traditional design. The Hausa words are sample wording for checking the letters and should be reviewed by a Hausa speaker before use. Dashboard numbers are examples.</p>
+  </section>
+</div>

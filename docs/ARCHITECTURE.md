@@ -1,6 +1,7 @@
 # Explore Katsina — Architecture Plan (Phase 1)
 
-Status: **Draft, waiting for owner approval.** Nothing has been built yet.
+Status: **Approved by the owner on 5 November 2026** (all five recommendations accepted).
+Brand chosen: **Option B, Durbar Regalia** (see `docs/brand-options.html`).
 Date: 4 November 2026
 
 This plan is written for a non-developer. Technical names appear in `code font`
@@ -271,8 +272,8 @@ smaller parts for real activity:
 - Only **verified** reviews count. **Paid plans are never part of the score.**
 - All the numbers above (10 pretend reviews, 12 months, 70/15/15) are settings
   you can adjust.
-- I suggest a business needs **at least 3 verified reviews** before it shows a
-  rank number. Until then it shows "New, not yet ranked". *(Your decision.)*
+- A business needs **at least 3 verified reviews** before it shows a rank
+  number (approved). Until then it shows "New, not yet ranked".
 - Separate rankings per type (hotels vs restaurants vs event centres…),
   statewide and per LGA.
 - Badges: **Top Rated** (top 10% of its type), **Rising** (big improvement over

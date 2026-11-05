@@ -1,0 +1,70 @@
+# Explore Katsina: "offline" local environment.
+# Used automatically by setup.sh when wp-env can't run (for example on a network
+# that blocks wordpress.org or Linux package mirrors). It uses only ready-made
+# official Docker images, so it needs nothing except Docker Hub.
+# Normal use on your own computer: wp-env (see .wp-env.json).
+name: explore-katsina
+services:
+  db:
+    image: mariadb:lts
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: password
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  wordpress:
+    image: wordpress:php8.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8888:80"
+    environment: &wpenv
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+      EK_ENCRYPTION_KEY: ${EK_ENCRYPTION_KEY:-}
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_DEBUG_LOG', true );
+        define( 'WP_DEBUG_DISPLAY', false );
+        define( 'EK_ENV', 'development' );
+        define( 'WP_ENVIRONMENT_TYPE', 'local' );
+        define( 'EK_LOCAL_SMTP_HOST', 'mailpit' );
+        if ( getenv( 'EK_ENCRYPTION_KEY' ) ) { define( 'EK_ENCRYPTION_KEY', getenv( 'EK_ENCRYPTION_KEY' ) ); }
+        define( 'WP_HOME', 'http://localhost:8888' );
+        define( 'WP_SITEURL', 'http://localhost:8888' );
+    volumes: &wpvolumes
+      - wp:/var/www/html
+      - ./plugins/explore-katsina-core:/var/www/html/wp-content/plugins/explore-katsina-core
+      - ./mu-plugins/ek-local-mail.php:/var/www/html/wp-content/mu-plugins/ek-local-mail.php:ro
+      - ./tests:/var/www/html/ek-tests:ro
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "8025:8025"
+
+  cli:
+    image: wordpress:cli-php8.2
+    profiles: ["cli"]
+    user: "33:33"
+    depends_on:
+      - wordpress
+    environment:
+      <<: *wpenv
+      HOME: /tmp
+    volumes: *wpvolumes
+
+volumes:
+  db:
+  wp:
