@@ -147,7 +147,7 @@ Complaints::resolve( $c2id, 'release', 0, 'Hotel showed photos; no refund.', 1 )
 ek7( 1800000 === ek7_net( $c2->id, 'available' ), 'Complaint rejected: the hotel’s ₦18,000 is released' );
 $ns = ek7_book( $r1, $d( 9 ), $d( 10 ) );
 Booking::set_status( $ns, 'no_show', 0 );
-ek7( true === Complaints::can_report( Booking::get( $ns->id ), Refunds::starts_at( $ns ) + 5 * $H ), 'A guest marked "no-show" can dispute it' );
+ek7( true === Complaints::can_report( Booking::get( $ns->id ), time() + 5 * $H ), 'A guest marked "no-show" can dispute it' );
 
 /* ---------- Payouts ---------- */
 WP_CLI::line( 'Payouts' );
