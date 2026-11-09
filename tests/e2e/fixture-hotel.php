@@ -32,9 +32,9 @@ $photos = array();
 $media   = ABSPATH . 'ek-sample-data/media/';
 $credits = file_exists( $media . 'credits.json' ) ? json_decode( file_get_contents( $media . 'credits.json' ), true ) : array();
 $keys    = array(
-	'hotel'        => array( 'hotel-room-1', 'hotel-lobby-1', 'hotel-pool-1' ),
-	'restaurant'   => array( 'food-jollof-1', 'food-suya-1', 'restaurant-interior-1' ),
-	'event-centre' => array( 'event-hall-1', 'event-hall-2', 'event-hall-3' ),
+	'hotel'        => array( 'hotel-room-3', 'hotel-room-2', 'hotel-room-4', 'hotel-pool-1' ),
+	'restaurant'   => array( 'food-jollof-2', 'food-suya-1', 'food-masa-1', 'food-tuwo-1', 'food-jollof-1' ),
+	'event-centre' => array( 'event-hall-3', 'event-hall-2', 'event-hall-4' ),
 );
 $files = array();
 foreach ( $keys[ $type ] ?? array() as $k ) {

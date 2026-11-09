@@ -145,11 +145,16 @@ from exactly where the last one stopped.
 - Tools: `scripts/commons_search.py "search words"` lists candidates with licences;
   `scripts/fetch_commons.py sample-data/media/manifest.json sample-data/media` downloads the chosen ones
   (standard 1280-pixel copies) and writes `sample-data/media/credits.json`.
+- **Current library (10 photos, all reviewed by eye):** 3 hotel rooms + 1 hotel pool, jollof/fried-rice
+  plate, suya skewers, masa (waina), tuwo, 2 event halls. Rejected after review: a blurry room with
+  luggage, a dated black-and-white restaurant, and photos where identifiable people are the subject.
 - Rules followed: generic photos only for SAMPLE businesses (no real hotel names or logos, no close-ups of
   identifiable people); real attractions (Phase 10) will only use photos of that actual place.
 - The cloud environment "ugambo4" allows `commons.wikimedia.org` and `upload.wikimedia.org`. Wikimedia
   rate-limits cloud servers: the tools identify themselves with this project's GitHub page and pause between
   requests, but after a burst of searches Wikimedia may refuse requests for a while ("robot policy" 429).
+  The download tool reads licences from each photo's page and only fetches standard 1280px copies,
+  one photo about every minute, retrying refused ones later. Expect ~1 photo per minute at best.
 
 ## Payments: now installed
 - The cloud session now runs in a personal environment called **"ugambo4"** that allows wordpress.org, so
