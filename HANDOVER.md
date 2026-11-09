@@ -6,9 +6,9 @@ from exactly where the last one stopped.
 ## Current status
 - **Phase 1 (Architecture plan): done and approved.** See `docs/ARCHITECTURE.md`.
 - **Phase 2 (Business accounts & approval): done and approved.**
-- **Phase 3 (Hotels): done, waiting for the owner's go-ahead.** One part is written but not yet
-  run-tested: the real WooCommerce + Paystack/Flutterwave payment bridge (see "Not yet tested" below).
-- Next: **Phase 4 (Restaurants)**.
+- **Phase 3 (Hotels): done and approved.**
+- **Phase 4 (Restaurants): done, waiting for the owner's go-ahead.**
+- Next: **Phase 5 (Event centres)**.
 
 ## Decisions made (owner approved, 5 Nov 2026)
 1. All business types live in our own plugin `explore-katsina-core`. No Directorist or GeoDirectory.
@@ -91,14 +91,43 @@ from exactly where the last one stopped.
 - **Delete sample data:** `wp ek delete-sample --yes` removes every business whose name starts with
   "SAMPLE", plus their rooms, bookings, calendar, money records, photos and owner accounts.
 
-## Not yet tested (needs wordpress.org access)
-- **WooCommerce → Paystack/Flutterwave bridge** (`includes/class-payments-woo.php`). It is written
-  against WooCommerce's order API and switches on automatically when WooCommerce is active. Until then,
-  the local site uses a clearly-labelled **TEST payment screen** that only works on local/development
-  sites (`wp_get_environment_type()` = local/development) and never on a live site.
-- `setup.sh` now installs and configures WooCommerce (Naira, Katsina, guest checkout), Paystack
-  (`woo-paystack`) and Flutterwave (`rave-woocommerce-payment-gateway`) when wordpress.org is reachable.
-  The plugin slugs must be confirmed on the first online run.
+## What Phase 4 built (plain language)
+- **Restaurant dashboard, new sections:**
+  - *Restaurant details*: types of food (Hausa/Northern, Nigerian, continental, fast food,
+    grills/suya, café, …), price range (₦ to ₦₦₦₦ per person), halal, dine-in / takeaway / delivers.
+  - *Menu*: categories (e.g. Rice dishes, Soups & Swallow, Grills, Drinks) and dishes with name, price,
+    photo, description; a one-tap **Sold out / Available again** button; move up/down; edit; delete.
+  - *Table settings*: count by seats or by tables, how many per time slot, slot length, largest group
+    online, minimum notice, how far ahead, optional own reservation hours, closed dates, and an
+    optional **deposit for large groups** (e.g. groups of 8+ pay ₦2,000 per guest online). A preview
+    shows the times guests will see tomorrow.
+  - *Reservations*: same tabs as hotels; Confirm / Decline → Seated → Completed, or No-show / Cancel.
+  - *Online orders*: **built but switched OFF site-wide.** It only appears when you tick
+    wp-admin → Explore Katsina → Settings → "Online food ordering". Then each restaurant can choose pickup
+    and/or delivery, delivery fee, minimum order, preparation time and payment (online / on pickup).
+    Order flow: New → Accepted → Preparing → Ready (or Out for delivery) → Completed. Commission 10%.
+- **Find a restaurant** (`/restaurants/`): Near me, LGA, food type, price range, minimum rating, Open now,
+  Halal; sort by distance, rank, rating or price; list or map.
+- **Restaurant page**: food types, price range, halal and service labels, **Reserve a table** (date + people
+  → bookable times), the full menu with prices and sold-out labels, opening hours, map, WhatsApp and Call.
+- **No over-booking of tables:** the same lock-and-check method as hotel rooms, per time slot. Tested: 6 groups
+  racing for 5 seats → exactly 1 got in.
+- **Deposits** are held like hotel money (commission 0% on table reservations) and start their 3-day release
+  clock when the reservation is marked completed.
+
+## Payments: now installed
+- The cloud session now runs in a personal environment called **"ugambo4"** that allows wordpress.org, so
+  `setup.sh` installs **WooCommerce 11.2.2**, **Paystack WooCommerce Payment Gateway 5.8.6** (by Paystack)
+  and **Flutterwave WooCommerce 3.3.2** (by Flutterwave), all set to Naira and Katsina. Plugins are downloaded
+  to `.cache/plugins/` and installed from there.
+- The **booking ↔ WooCommerce order bridge is tested** (17 checks) using WooCommerce's built-in offline
+  payment method as a stand-in: order created in Naira for the right amount, payment marks the booking paid
+  once only, failed payment frees the room, the guest returns to our booking page.
+- **Still to do (needs the owner):** add Paystack and Flutterwave **TEST** keys under
+  WooCommerce → Settings → Payments, then run a real test-mode payment. The cloud session also needs
+  `api.paystack.co` / `checkout.paystack.com` (and Flutterwave's hosts) allowed for that.
+- Until a real payment method is switched on, **local** sites keep the clearly-labelled TEST payment screen.
+  Live sites never show it.
 - "Near a chosen attraction" in hotel search works through `?near=<id>` and appears in the form once
   attractions exist (Phase 10).
 
@@ -117,7 +146,7 @@ from exactly where the last one stopped.
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # 90 server-side checks + 60 browser checks (Phases 2–3)
+./tests/run.sh      # 161 server-side checks + 80 browser checks (Phases 2–4)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -130,6 +159,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/brand-options.html` | The two brand options (B chosen) |
 | `docs/screenshots/phase2/` | Screenshots of the sign-up, dashboard, admin and public page |
 | `docs/screenshots/phase3/` | Screenshots of hotel search, hotel page, booking, confirmation, calendar, rooms |
+| `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `setup.sh` | Re-runnable setup |
 | `docker-compose.offline.yml` | "Offline" local site (used when wordpress.org is blocked) |
 | `.wp-env.json` | wp-env setup (normal local site) |
@@ -139,10 +169,15 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks (`phase2-security.php`, `phase3-hotels.php`, `e2e/phase2.js`, `e2e/phase3.js`) |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase4-woo-bridge.php`, `e2e/phase2–4.js` |
 
 ## Environment notes (for the next session)
-- **Cloud sessions block** `wordpress.org` (WordPress and plugin downloads), Alpine/Debian package
+- **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
+  Start new cloud sessions for this project in that environment.
+- **Docker containers can't reach the internet directly** in the cloud (only this machine's proxy can), so
+  `setup.sh` downloads plugin files on the machine and installs them from `.cache/plugins/`. The "could not
+  establish a secure connection to WordPress.org" warnings from inside WordPress are harmless here.
+- **Earlier note: cloud sessions blocked** `wordpress.org` (WordPress and plugin downloads), Alpine/Debian package
   mirrors and pushes to GitHub. Because of that:
   - `setup.sh` detects it and uses **offline mode** (`docker-compose.offline.yml`), which only needs
     Docker Hub. WordPress itself is taken from the official `wordpress:php8.2-apache` image.
@@ -176,3 +211,6 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Sample/test businesses created by the tests are named "SAMPLE …": delete with `wp ek delete-sample --yes`
 - Hotel cancellation policy wording (4 presets in `includes/class-hotel.php`): check with your lawyer
 - Deposit default 30% and 15-minute payment hold (business decisions, easy to change)
+- Restaurant price-range bands (₦ under ₦3,000 … ₦₦₦₦ over ₦15,000 per person) in `includes/class-restaurant.php`
+- Default large-group deposit ₦2,000 per guest for groups of 8+ (each restaurant can change it)
+- Paystack / Flutterwave TEST keys, then LIVE keys at launch

@@ -132,9 +132,16 @@ wp plugin delete hello --quiet 2>/dev/null || true
 # skipped (with a warning) when wordpress.org can't be reached.
 #   Phase 3: WooCommerce + Paystack + Flutterwave (payments only)
 EXTRA_PLUGINS=(woocommerce woo-paystack rave-woocommerce-payment-gateway)
-if [ "$MODE" = "wp-env" ] || curl -s -o /dev/null --max-time 8 https://downloads.wordpress.org/; then
+if curl -s -o /dev/null --max-time 8 https://downloads.wordpress.org/; then
+  # Download on this computer, then install from the file. (WordPress inside Docker may not
+  # be able to reach wordpress.org itself, e.g. behind a proxy.)
+  mkdir -p .cache/plugins
   for slug in "${EXTRA_PLUGINS[@]}"; do
-    wp plugin is-installed "$slug" 2>/dev/null || wp plugin install "$slug" --quiet || warn "Could not install $slug"
+    if ! wp plugin is-installed "$slug" 2>/dev/null; then
+      curl -fsSL -o ".cache/plugins/$slug.zip" "https://downloads.wordpress.org/plugin/$slug.latest-stable.zip" \
+        && wp plugin install "ek-plugin-cache/$slug.zip" --quiet \
+        || warn "Could not install $slug"
+    fi
     wp plugin activate "$slug" --quiet 2>/dev/null || true
   done
   if wp plugin is-active woocommerce 2>/dev/null; then

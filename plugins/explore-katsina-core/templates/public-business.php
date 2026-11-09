@@ -47,6 +47,8 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 			<?php
 			if ( 'hotel' === $b['type'] ) {
 				include EK_DIR . 'templates/public/hotel.php';
+			} elseif ( 'restaurant' === $b['type'] ) {
+				include EK_DIR . 'templates/public/restaurant.php';
 			}
 			?>
 
@@ -64,6 +66,7 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 				<?php if ( $wa ) : ?><a class="ek-btn ek-btn--wa" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener"<?php echo $track_attr( 'whatsapp' ); // phpcs:ignore ?>><?php esc_html_e( 'WhatsApp', 'explore-katsina' ); ?></a><?php endif; ?>
 				<a class="ek-btn" href="<?php echo esc_url( 'tel:' . $b['phone'] ); ?>"<?php echo $track_attr( 'call' ); // phpcs:ignore ?>><?php esc_html_e( 'Call', 'explore-katsina' ); ?></a>
 				<a class="ek-btn ek-btn--night" href="<?php echo esc_url( $dir ); ?>" target="_blank" rel="noopener"<?php echo $track_attr( 'directions' ); // phpcs:ignore ?>><?php esc_html_e( 'Directions', 'explore-katsina' ); ?></a>
+				<?php if ( 'restaurant' === $b['type'] && \EK\Restaurant::settings( $b['id'] )['res_enabled'] ) : ?><a class="ek-btn ek-btn--ghost" href="#reserve"><?php esc_html_e( 'Reserve a table', 'explore-katsina' ); ?></a><?php endif; ?>
 				<?php if ( $b['website'] ) : ?><a class="ek-btn ek-btn--ghost" href="<?php echo esc_url( $b['website'] ); ?>" target="_blank" rel="noopener nofollow"<?php echo $track_attr( 'website' ); // phpcs:ignore ?>><?php esc_html_e( 'Website', 'explore-katsina' ); ?></a><?php endif; ?>
 			</div>
 			<p class="ek-small" style="margin:0"><?php echo esc_html( Business::display_phone( $b['phone'] ) ); ?><?php echo $b['email'] ? '<br>' . esc_html( $b['email'] ) : ''; ?></p>

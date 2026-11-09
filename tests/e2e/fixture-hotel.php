@@ -1,7 +1,7 @@
 <?php
 /**
- * Creates an approved SAMPLE hotel + owner for the browser test, and prints JSON.
- * Run: wp eval-file ek-tests/e2e/fixture-hotel.php <stamp> [lat] [lng]
+ * Creates an approved SAMPLE business (hotel by default) + owner for the browser tests, and prints JSON.
+ * Run: wp eval-file ek-tests/e2e/fixture-hotel.php <stamp> [lat] [lng] [type]
  */
 use EK\Business;
 use EK\Install;
@@ -9,15 +9,17 @@ use EK\Install;
 $stamp = $args[0] ?? (string) time();
 $lat   = (float) ( $args[1] ?? 12.9930 );
 $lng   = (float) ( $args[2] ?? 7.6050 );
+$type  = sanitize_key( $args[3] ?? 'hotel' );
+$names = array( 'hotel' => 'SAMPLE Durbar View Hotel', 'restaurant' => 'SAMPLE Test Kitchen', 'event-centre' => 'SAMPLE Test Event Hall' );
 $pass  = 'Owner-pass-' . $stamp;
 $uid   = wp_insert_user( array( 'user_login' => "hotelowner_{$stamp}", 'user_email' => "hotelowner_{$stamp}@example.test", 'user_pass' => $pass, 'role' => Install::ROLE_OWNER, 'display_name' => 'SAMPLE Hotel Owner' ) );
 $lga   = get_term_by( 'name', 'Katsina', 'ek_lga' );
 $id    = Business::create(
 	array(
-		'name' => "SAMPLE Durbar View Hotel {$stamp}", 'type' => 'hotel', 'lga_id' => $lga->term_id,
+		'name' => ( $names[ $type ] ?? 'SAMPLE Business' ) . " {$stamp}", 'type' => $type, 'lga_id' => $lga->term_id,
 		'address' => 'SAMPLE address, Katsina', 'lat' => $lat, 'lng' => $lng, 'phone' => '+2348030000011', 'whatsapp' => '+2348030000011',
-		'email' => "hotel_{$stamp}@example.test", 'website' => '', 'socials' => array(), 'hours' => array( 'always' => 1 ),
-		'description' => 'SAMPLE hotel created for automated testing. Clean rooms, 24-hour power, secure parking and a restaurant serving local and continental dishes.',
+		'email' => "biz_{$stamp}@example.test", 'website' => '', 'socials' => array(), 'hours' => array( 'always' => 1 ),
+		'description' => 'SAMPLE business created for automated testing. Placeholder description only, not a real business.',
 	),
 	$uid
 );

@@ -62,6 +62,7 @@ final class Assets {
 					'denied'   => __( 'We could not get your location. Please allow location access, or choose an LGA.', 'explore-katsina' ),
 					'noGeo'    => __( 'Your browser cannot share its location.', 'explore-katsina' ),
 					'view'     => __( 'View hotel', 'explore-katsina' ),
+					'viewPlace'=> __( 'View', 'explore-katsina' ),
 					'you'      => __( 'You are here', 'explore-katsina' ),
 				),
 			)

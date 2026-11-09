@@ -29,6 +29,10 @@ defined( 'ABSPATH' ) || exit;
 	<table class="form-table" role="presentation">
 		<tr><th><label for="min_reviews_for_rank"><?php esc_html_e( 'Verified reviews needed for a rank number', 'explore-katsina' ); ?></label></th><td><input type="number" min="1" max="50" id="min_reviews_for_rank" name="min_reviews_for_rank" value="<?php echo (int) $s['min_reviews_for_rank']; ?>"><p class="description"><?php esc_html_e( 'The full ranking weights are added in Phase 8.', 'explore-katsina' ); ?></p></td></tr>
 	</table>
+	<h2><?php esc_html_e( 'Restaurants', 'explore-katsina' ); ?></h2>
+	<table class="form-table" role="presentation">
+		<tr><th><?php esc_html_e( 'Online food ordering', 'explore-katsina' ); ?></th><td><label><input type="checkbox" name="food_ordering_enabled" value="1" <?php checked( ! empty( $s['food_ordering_enabled'] ) ); ?>> <?php esc_html_e( 'Switch on online food ordering (pickup and delivery) for the whole site', 'explore-katsina' ); ?></label><p class="description"><?php esc_html_e( 'OFF by default. When on, each restaurant can then turn ordering on in its own dashboard. When off, all ordering screens and buttons are hidden.', 'explore-katsina' ); ?></p></td></tr>
+	</table>
 	<h2><?php esc_html_e( 'Security', 'explore-katsina' ); ?></h2>
 	<p><?php echo Crypto::has_dedicated_key() ? '✅ ' . esc_html__( 'Bank details are encrypted with your own key (EK_ENCRYPTION_KEY). Keep a safe offline copy of wp-config.php.', 'explore-katsina' ) : '⚠️ ' . esc_html__( 'No EK_ENCRYPTION_KEY found in wp-config.php.', 'explore-katsina' ); ?></p>
 	<?php submit_button(); ?>

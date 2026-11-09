@@ -42,7 +42,7 @@ $modes  = array(
 			$d       = $bk->details;
 			$nights  = count( $d['nights'] ?? array() );
 			$due     = (int) $bk->total_kobo - (int) $bk->paid_kobo;
-			$actions = Booking::hotel_actions( $bk->status );
+			$actions = Booking::actions( $bk );
 			?>
 			<article class="ek-card ek-booking" aria-labelledby="bk-<?php echo (int) $bk->id; ?>">
 				<div class="ek-row ek-row--between">
@@ -50,10 +50,16 @@ $modes  = array(
 					<span class="ek-pill ek-status-<?php echo esc_attr( $bk->status ); ?>"><?php echo esc_html( Dashboard::booking_status_label( $bk->status ) ); ?></span>
 				</div>
 				<dl class="ek-dl">
+					<?php if ( 'restaurant' === $bk->kind ) : ?>
+						<dt><?php esc_html_e( 'When', 'explore-katsina' ); ?></dt><dd><strong><?php echo esc_html( wp_date( 'D j M Y', strtotime( $bk->start_date ) ) . ' · ' . substr( (string) $bk->start_time, 0, 5 ) ); ?></strong></dd>
+						<dt><?php esc_html_e( 'Party', 'explore-katsina' ); ?></dt><dd><?php /* translators: %d: people */ printf( esc_html( _n( '%d person', '%d people', (int) $bk->guests, 'explore-katsina' ) ), (int) $bk->guests ); ?></dd>
+						<?php if ( (int) $bk->deposit_kobo ) : ?><dt><?php esc_html_e( 'Deposit', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $bk->deposit_kobo ) ); ?> <?php echo (int) $bk->paid_kobo ? esc_html__( '(paid online, deduct from the bill)', 'explore-katsina' ) : ''; ?></dd><?php endif; ?>
+					<?php else : ?>
 					<dt><?php esc_html_e( 'Room', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( ( $d['room'] ?? '' ) . ' × ' . (int) $bk->quantity ); ?></dd>
 					<dt><?php esc_html_e( 'Dates', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( wp_date( 'D j M', strtotime( $bk->start_date ) ) . ' → ' . wp_date( 'D j M Y', strtotime( $bk->end_date ) ) ); ?> · <?php /* translators: %d: nights */ printf( esc_html( _n( '%d night', '%d nights', $nights, 'explore-katsina' ) ), (int) $nights ); ?></dd>
 					<dt><?php esc_html_e( 'Guests', 'explore-katsina' ); ?></dt><dd><?php echo (int) $bk->guests; ?></dd>
 					<dt><?php esc_html_e( 'Payment', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $bk->total_kobo ) ); ?> · <?php echo esc_html( $modes[ $bk->payment_mode ] ?? $bk->payment_mode ); ?><?php echo (int) $bk->paid_kobo ? ' · ' . esc_html__( 'paid', 'explore-katsina' ) . ' ' . esc_html( Money::format( $bk->paid_kobo ) ) : ''; ?><?php echo $due > 0 ? ' · <strong>' . esc_html__( 'collect at hotel', 'explore-katsina' ) . ' ' . esc_html( Money::format( $due ) ) . '</strong>' : ''; ?></dd>
+					<?php endif; ?>
 					<?php if ( ! in_array( $bk->status, array( 'cancelled', 'declined' ), true ) ) : ?>
 						<dt><?php esc_html_e( 'Contact', 'explore-katsina' ); ?></dt><dd><a href="<?php echo esc_url( 'tel:' . $bk->customer_phone ); ?>"><?php echo esc_html( Business::display_phone( $bk->customer_phone ) ); ?></a> · <a href="<?php echo esc_url( 'mailto:' . $bk->customer_email ); ?>"><?php echo esc_html( $bk->customer_email ); ?></a></dd>
 					<?php endif; ?>

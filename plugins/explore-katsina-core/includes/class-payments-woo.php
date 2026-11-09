@@ -43,8 +43,8 @@ final class Payments_Woo {
 				return $order;
 			}
 			$item = new \WC_Order_Item_Product();
-			/* translators: 1: booking code, 2: hotel, 3: room */
-			$item->set_name( sprintf( __( 'Booking %1$s: %2$s, %3$s', 'explore-katsina' ), $b->code, $b->details['hotel'] ?? '', $b->details['room'] ?? '' ) );
+			/* translators: 1: booking code, 2: business, 3: what (room / table / order) */
+			$item->set_name( sprintf( __( 'Booking %1$s: %2$s, %3$s', 'explore-katsina' ), $b->code, $b->details['hotel'] ?? ( $b->details['business'] ?? '' ), $b->details['room'] ?? ( $b->details['title'] ?? '' ) ) );
 			$item->set_quantity( 1 );
 			$item->set_subtotal( $amount_kobo / 100 );
 			$item->set_total( $amount_kobo / 100 );

@@ -11,6 +11,9 @@ fi
 echo "▶ Server-side security & logic checks"
 wp eval-file ek-tests/phase2-security.php
 wp eval-file ek-tests/phase3-hotels.php
+wp eval-file ek-tests/phase4-restaurants.php
+if wp plugin is-active woocommerce 2>/dev/null; then wp eval-file ek-tests/phase4-woo-bridge.php; fi
 echo "▶ Browser journeys (screenshots in tests/e2e/screenshots/)"
 node tests/e2e/phase2.js
 node tests/e2e/phase3.js
+node tests/e2e/phase4.js

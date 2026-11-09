@@ -26,23 +26,31 @@ final class Payments {
 		return class_exists( 'WooCommerce' ) && function_exists( 'wc_create_order' );
 	}
 
-	/** The test gateway exists only on local/development sites. */
+	/**
+	 * The test screen exists only on local/development sites, and only while no real
+	 * WooCommerce payment method (Paystack/Flutterwave) is switched on.
+	 */
 	public static function test_mode_allowed() {
-		return in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) && ! self::woo_active();
+		return in_array( wp_get_environment_type(), array( 'local', 'development' ), true )
+			&& ! ( self::woo_active() && Payments_Woo::has_gateway() );
 	}
 
 	public static function provider() {
-		if ( self::woo_active() ) {
+		if ( self::woo_active() && Payments_Woo::has_gateway() ) {
 			return 'woocommerce';
 		}
-		return self::test_mode_allowed() ? 'test' : 'none';
+		if ( self::test_mode_allowed() ) {
+			return 'test';
+		}
+		return self::woo_active() ? 'woocommerce' : 'none';
 	}
 
 	public static function online_available() {
-		if ( 'woocommerce' === self::provider() ) {
+		$p = self::provider();
+		if ( 'woocommerce' === $p ) {
 			return Payments_Woo::has_gateway();
 		}
-		return 'test' === self::provider();
+		return 'test' === $p;
 	}
 
 	/**

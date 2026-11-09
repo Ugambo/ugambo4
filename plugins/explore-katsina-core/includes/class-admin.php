@@ -150,6 +150,7 @@ final class Admin {
 				'min_reviews_for_rank' => max( 1, min( 50, absint( $in['min_reviews_for_rank'] ?? 3 ) ) ),
 				'max_photos_basic'     => max( 1, min( 50, absint( $in['max_photos_basic'] ?? 8 ) ) ),
 				'max_photo_mb'         => max( 1, min( 20, absint( $in['max_photo_mb'] ?? 5 ) ) ),
+				'food_ordering_enabled'=> ! empty( $in['food_ordering_enabled'] ) ? 1 : 0,
 			)
 		);
 	}

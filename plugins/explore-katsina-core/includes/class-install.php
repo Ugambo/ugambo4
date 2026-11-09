@@ -249,6 +249,41 @@ final class Install {
 			KEY item_dates (item_id,start_date,end_date)
 		) $c;";
 
+		/* Restaurant menus. */
+		$sql[] = "CREATE TABLE {$p}menu_categories (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			business_id bigint(20) unsigned NOT NULL,
+			name varchar(100) NOT NULL,
+			position int(10) NOT NULL DEFAULT 0,
+			PRIMARY KEY  (id),
+			KEY business (business_id,position)
+		) $c;";
+		$sql[] = "CREATE TABLE {$p}menu_items (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			business_id bigint(20) unsigned NOT NULL,
+			category_id bigint(20) unsigned NOT NULL,
+			name varchar(120) NOT NULL,
+			description varchar(500) NOT NULL DEFAULT '',
+			price_kobo bigint(20) NOT NULL,
+			photo_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			available tinyint(1) NOT NULL DEFAULT 1,
+			position int(10) NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY business_cat (business_id,category_id,position)
+		) $c;";
+
+		/*
+		 * Restaurant table reservations: one row per restaurant per time slot (local time).
+		 * "booked" = seats (or tables) taken. Locked during booking like hotel nights.
+		 */
+		$sql[] = "CREATE TABLE {$p}slots (
+			business_id bigint(20) unsigned NOT NULL,
+			slot_at datetime NOT NULL,
+			booked smallint(5) unsigned NOT NULL DEFAULT 0,
+			PRIMARY KEY  (business_id,slot_at)
+		) $c;";
+
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}
@@ -308,6 +343,11 @@ final class Install {
 				'title'   => __( 'Hotels', 'explore-katsina' ),
 				'slug'    => 'hotels',
 				'content' => '<!-- wp:shortcode -->[ek_hotel_search]<!-- /wp:shortcode -->',
+			),
+			'restaurants'   => array(
+				'title'   => __( 'Restaurants', 'explore-katsina' ),
+				'slug'    => 'restaurants',
+				'content' => '<!-- wp:shortcode -->[ek_restaurant_search]<!-- /wp:shortcode -->',
 			),
 			'book'          => array(
 				'title'   => __( 'Book', 'explore-katsina' ),

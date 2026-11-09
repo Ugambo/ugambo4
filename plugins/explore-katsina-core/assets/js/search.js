@@ -46,16 +46,21 @@
 		var pins = JSON.parse( el.getAttribute( 'data-pins' ) || '[]' );
 		var colour = el.getAttribute( 'data-colour' ) || '#8E1B2C';
 		var me = el.getAttribute( 'data-me' ) ? JSON.parse( el.getAttribute( 'data-me' ) ) : null;
+		var unit = el.hasAttribute( 'data-unit' ) ? el.getAttribute( 'data-unit' ) : ' / night';
+		var isHotel = ! el.hasAttribute( 'data-unit' );
 		var map = L.map( el, { scrollWheelZoom: false } );
 		L.tileLayer( cfg.tiles, { maxZoom: 19, attribution: cfg.attribution } ).addTo( map );
-		var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="30" height="39"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="' + colour + '" stroke="#fff" stroke-width="2"/><path d="M11 24v-8M11 21h18v3M13 19a2 2 0 1 0 0-.1M17 19h10a2 2 0 0 1 2 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+		var glyph = isHotel
+			? '<path d="M11 24v-8M11 21h18v3M13 19a2 2 0 1 0 0-.1M17 19h10a2 2 0 0 1 2 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'
+			: '<path d="M15 11v16M12.5 11v5a2.5 2.5 0 0 0 5 0v-5M25 27V11c-2.5 1.5-3 5-3 8h3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+		var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="30" height="39"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="' + colour + '" stroke="#fff" stroke-width="2"/>' + glyph + '</svg>';
 		var icon = L.divIcon( { html: svg, className: 'ek-pin', iconSize: [ 30, 39 ], iconAnchor: [ 15, 38 ], popupAnchor: [ 0, -34 ] } );
 		var bounds = [];
 		pins.forEach( function ( p ) {
 			var esc = function ( s ) { var d = document.createElement( 'div' ); d.textContent = s; return d.innerHTML; };
 			var html = '<div class="ek-pop">' + ( p.img ? '<img src="' + esc( p.img ) + '" alt="" loading="lazy">' : '' ) +
-				'<strong>' + esc( p.name ) + '</strong><span>' + esc( p.price ) + ' / night' + ( p.dist ? ' · ' + esc( p.dist ) : '' ) + '</span>' +
-				'<a href="' + esc( p.url ) + '">' + ( t.view || 'View' ) + '</a></div>';
+				'<strong>' + esc( p.name ) + '</strong><span>' + esc( p.price ) + unit + ( p.dist ? ' · ' + esc( p.dist ) : '' ) + '</span>' +
+				'<a href="' + esc( p.url ) + '">' + ( isHotel ? ( t.view || 'View' ) : ( t.viewPlace || 'View' ) ) + '</a></div>';
 			L.marker( [ p.lat, p.lng ], { icon: icon, title: p.name, alt: p.name } ).addTo( map ).bindPopup( html );
 			bounds.push( [ p.lat, p.lng ] );
 		} );
@@ -72,5 +77,15 @@
 			s.addEventListener( 'change', function () { window.location.href = s.value; } );
 		} );
 		document.querySelectorAll( '[data-ek-results-map]' ).forEach( initMap );
+		document.querySelectorAll( '[data-ek-order-form]' ).forEach( function ( f ) {
+			var out = f.querySelector( '[data-ek-order-total]' );
+			var upd = function () {
+				var total = 0, n = 0;
+				f.querySelectorAll( 'input[data-price]' ).forEach( function ( i ) { var q = parseInt( i.value, 10 ) || 0; total += q * parseInt( i.getAttribute( 'data-price' ), 10 ); n += q; } );
+				out.textContent = n ? n + ' · ₦' + ( total / 100 ).toLocaleString( 'en-NG' ) : out.getAttribute( 'data-empty' ) || out.textContent;
+			};
+			out.setAttribute( 'data-empty', out.textContent );
+			f.addEventListener( 'input', upd );
+		} );
 	} );
 }() );

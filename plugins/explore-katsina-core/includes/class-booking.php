@@ -20,8 +20,8 @@ final class Booking {
 	const HOLD_MINUTES = 15;
 	const CRON_HOOK    = 'ek_expire_holds';
 
-	/** Statuses that occupy rooms in the calendar. */
-	const OCCUPYING = array( 'pending_payment', 'new', 'confirmed', 'checked_in' );
+	/** Statuses that occupy rooms / table slots. */
+	const OCCUPYING = array( 'pending_payment', 'new', 'confirmed', 'checked_in', 'seated' );
 
 	public static function init() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedule' ) );
@@ -55,6 +55,12 @@ final class Booking {
 			'no_show'          => __( 'No-show', 'explore-katsina' ),
 			'expired'          => __( 'Expired (not paid)', 'explore-katsina' ),
 			'payment_conflict' => __( 'Payment issue', 'explore-katsina' ),
+			'seated'           => __( 'Seated', 'explore-katsina' ),
+			'completed'        => __( 'Completed', 'explore-katsina' ),
+			'accepted'         => __( 'Accepted', 'explore-katsina' ),
+			'preparing'        => __( 'Preparing', 'explore-katsina' ),
+			'ready'            => __( 'Ready for pickup', 'explore-katsina' ),
+			'out_for_delivery' => __( 'Out for delivery', 'explore-katsina' ),
 		);
 	}
 
@@ -66,6 +72,30 @@ final class Booking {
 			'checked_in' => array( 'checked_out' => __( 'Mark checked out', 'explore-katsina' ) ),
 		);
 		return $map[ $status ] ?? array();
+	}
+
+	/** What the business may do with this booking / reservation / order now. */
+	public static function actions( $b ) {
+		if ( 'restaurant' === $b->kind ) {
+			$map = array(
+				'new'       => array( 'confirmed' => __( 'Confirm', 'explore-katsina' ), 'declined' => __( 'Decline', 'explore-katsina' ) ),
+				'confirmed' => array( 'seated' => __( 'Mark seated', 'explore-katsina' ), 'no_show' => __( 'Mark no-show', 'explore-katsina' ), 'cancelled' => __( 'Cancel reservation', 'explore-katsina' ) ),
+				'seated'    => array( 'completed' => __( 'Mark completed', 'explore-katsina' ) ),
+			);
+			return $map[ $b->status ] ?? array();
+		}
+		if ( 'order' === $b->kind ) {
+			$delivery = 'delivery' === ( $b->details['fulfilment'] ?? '' );
+			$map      = array(
+				'new'              => array( 'accepted' => __( 'Accept order', 'explore-katsina' ), 'declined' => __( 'Decline', 'explore-katsina' ) ),
+				'accepted'         => array( 'preparing' => __( 'Start preparing', 'explore-katsina' ), 'cancelled' => __( 'Cancel order', 'explore-katsina' ) ),
+				'preparing'        => $delivery ? array( 'out_for_delivery' => __( 'Out for delivery', 'explore-katsina' ) ) : array( 'ready' => __( 'Ready for pickup', 'explore-katsina' ) ),
+				'ready'            => array( 'completed' => __( 'Picked up', 'explore-katsina' ) ),
+				'out_for_delivery' => array( 'completed' => __( 'Delivered', 'explore-katsina' ) ),
+			);
+			return $map[ $b->status ] ?? array();
+		}
+		return self::hotel_actions( $b->status );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -252,6 +282,230 @@ final class Booking {
 		return $b;
 	}
 
+	/** Shared guest-detail checks. @return array|\WP_Error */
+	private static function guest( array $a, $what ) {
+		$name  = sanitize_text_field( $a['name'] ?? '' );
+		$email = sanitize_email( $a['email'] ?? '' );
+		$phone = Business::normalize_phone( $a['phone'] ?? '' );
+		if ( mb_strlen( $name ) < 2 ) {
+			return new \WP_Error( 'name', __( 'Enter your name.', 'explore-katsina' ) );
+		}
+		if ( ! is_email( $email ) ) {
+			return new \WP_Error( 'email', __( 'Enter a valid email address. Your confirmation is sent there.', 'explore-katsina' ) );
+		}
+		if ( ! $phone ) {
+			/* translators: %s: hotel/restaurant */
+			return new \WP_Error( 'phone', sprintf( __( 'Enter a Nigerian phone number the %s can reach you on.', 'explore-katsina' ), $what ) );
+		}
+		return array( $name, $email, $phone );
+	}
+
+	private static function insert( array $row ) {
+		global $wpdb;
+		$now               = current_time( 'mysql', true );
+		$row['code']       = self::new_code();
+		$row['access_key'] = bin2hex( random_bytes( 16 ) );
+		$row['created_at'] = $now;
+		$row['updated_at'] = $now;
+		if ( 'pending_payment' === $row['status'] ) {
+			$row['hold_expires'] = gmdate( 'Y-m-d H:i:s', time() + self::HOLD_MINUTES * 60 );
+		}
+		if ( false === $wpdb->insert( $wpdb->prefix . 'ek_bookings', $row ) ) {
+			return 0;
+		}
+		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Restaurant table reservation.
+	 *
+	 * @param array $a business_id, date, time, party, name, email, phone, notes, customer_id
+	 * @return object|\WP_Error
+	 */
+	public static function create_reservation( array $a ) {
+		global $wpdb;
+		self::expire_holds();
+		$bid  = (int) ( $a['business_id'] ?? 0 );
+		$post = Business::get( $bid );
+		if ( ! $post || 'publish' !== $post->post_status || 'restaurant' !== Business::type_of( $bid ) ) {
+			return new \WP_Error( 'closed', __( 'This restaurant is not taking reservations right now.', 'explore-katsina' ) );
+		}
+		$party = (int) ( $a['party'] ?? 0 );
+		$date  = (string) ( $a['date'] ?? '' );
+		$time  = (string) ( $a['time'] ?? '' );
+		$slot  = Slots::check( $bid, $date, $time, $party );
+		if ( is_wp_error( $slot ) ) {
+			return $slot;
+		}
+		$g = self::guest( $a, __( 'restaurant', 'explore-katsina' ) );
+		if ( is_wp_error( $g ) ) {
+			return $g;
+		}
+		$deposit = Restaurant::deposit_for( $bid, $party );
+		if ( $deposit && ! Payments::online_available() ) {
+			return new \WP_Error( 'payment', __( 'This group size needs a deposit, but online payment is not available right now. Please contact the restaurant.', 'explore-katsina' ) );
+		}
+		$units   = Slots::units( $bid, $party );
+		$rate_bp = Commission::rate_bp( $bid, 'restaurant' );
+
+		Slots::ensure_row( $bid, $slot['at'] );
+		for ( $attempt = 1; $attempt <= 3; $attempt++ ) {
+			$wpdb->query( 'START TRANSACTION' );
+			$taken = Slots::take( $bid, $slot['at'], $units );
+			if ( ! is_wp_error( $taken ) ) {
+				break;
+			}
+			$wpdb->query( 'ROLLBACK' );
+			if ( 'lock' !== $taken->get_error_code() || 3 === $attempt ) {
+				return $taken;
+			}
+			usleep( random_int( 50000, 200000 ) );
+		}
+		$id = self::insert(
+			array(
+				'kind'               => 'restaurant',
+				'business_id'        => $bid,
+				'customer_id'        => (int) ( $a['customer_id'] ?? 0 ),
+				'customer_name'      => $g[0],
+				'customer_email'     => $g[1],
+				'customer_phone'     => $g[2],
+				'start_date'         => $date,
+				'end_date'           => $date,
+				'start_time'         => $time . ':00',
+				'guests'             => $party,
+				'quantity'           => $units,
+				'total_kobo'         => $deposit,
+				'deposit_kobo'       => $deposit,
+				'commission_rate_bp' => $rate_bp,
+				'commission_kobo'    => (int) round( $deposit * $rate_bp / 10000 ),
+				'payment_mode'       => $deposit ? 'deposit' : 'venue',
+				'status'             => $deposit ? 'pending_payment' : 'new',
+				'details'            => wp_json_encode(
+					array(
+						'business' => $post->post_title,
+						/* translators: %d: people */
+						'title'    => sprintf( _n( 'Table for %d', 'Table for %d', $party, 'explore-katsina' ), $party ),
+						'pay_now'  => $deposit,
+						'pay_later'=> 0,
+					)
+				),
+				'notes'              => sanitize_textarea_field( $a['notes'] ?? '' ),
+			)
+		);
+		if ( ! $id ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new \WP_Error( 'db', __( 'The reservation could not be saved. Please try again.', 'explore-katsina' ) );
+		}
+		$wpdb->query( 'COMMIT' );
+		$b = self::get( $id );
+		self::history( $id, '', $b->status, 0 );
+		if ( 'new' === $b->status ) {
+			Emails::booking_created( $b );
+		}
+		return $b;
+	}
+
+	/**
+	 * Online food order (only when ordering is switched on site-wide AND by the restaurant).
+	 *
+	 * @param array $a business_id, items [item_id => qty], fulfilment, address, pay (online|cash), name, email, phone, notes
+	 * @return object|\WP_Error
+	 */
+	public static function create_order( array $a ) {
+		$bid = (int) ( $a['business_id'] ?? 0 );
+		if ( ! Restaurant::ordering_open( $bid ) || 'publish' !== get_post_status( $bid ) ) {
+			return new \WP_Error( 'off', __( 'Online ordering is not available for this restaurant.', 'explore-katsina' ) );
+		}
+		if ( ! Business::is_open( $bid ) ) {
+			return new \WP_Error( 'closed', __( 'The restaurant is closed right now. Please order during opening hours.', 'explore-katsina' ) );
+		}
+		$s     = Restaurant::settings( $bid );
+		$lines = array();
+		$sub   = 0;
+		foreach ( (array) ( $a['items'] ?? array() ) as $item_id => $qty ) {
+			$qty = min( 50, absint( $qty ) );
+			if ( ! $qty ) {
+				continue;
+			}
+			$item = Menu::item( absint( $item_id ), $bid );
+			if ( ! $item || ! $item->available ) {
+				return new \WP_Error( 'item', __( 'One of the dishes is sold out. Please review your order.', 'explore-katsina' ) );
+			}
+			$lines[] = array( 'id' => (int) $item->id, 'name' => $item->name, 'price' => (int) $item->price_kobo, 'qty' => $qty );
+			$sub    += (int) $item->price_kobo * $qty;
+		}
+		if ( ! $lines ) {
+			return new \WP_Error( 'empty', __( 'Add at least one dish.', 'explore-katsina' ) );
+		}
+		if ( $s['min_order'] && $sub < $s['min_order'] ) {
+			/* translators: %s: amount */
+			return new \WP_Error( 'min', sprintf( __( 'The minimum order is %s.', 'explore-katsina' ), Money::format( $s['min_order'] ) ) );
+		}
+		$fulfil = 'delivery' === ( $a['fulfilment'] ?? '' ) ? 'delivery' : 'pickup';
+		if ( ( 'delivery' === $fulfil && ! $s['order_delivery'] ) || ( 'pickup' === $fulfil && ! $s['order_pickup'] ) ) {
+			return new \WP_Error( 'fulfil', __( 'Choose pickup or delivery.', 'explore-katsina' ) );
+		}
+		$address = sanitize_textarea_field( $a['address'] ?? '' );
+		if ( 'delivery' === $fulfil && mb_strlen( $address ) < 8 ) {
+			return new \WP_Error( 'address', __( 'Enter the delivery address with a landmark.', 'explore-katsina' ) );
+		}
+		$pay = 'cash' === ( $a['pay'] ?? '' ) ? 'cash' : 'online';
+		if ( ( 'cash' === $pay && ! $s['order_pay_cash'] ) || ( 'online' === $pay && ( ! $s['order_pay_online'] || ! Payments::online_available() ) ) ) {
+			return new \WP_Error( 'pay', __( 'Choose how you would like to pay.', 'explore-katsina' ) );
+		}
+		$g = self::guest( $a, __( 'restaurant', 'explore-katsina' ) );
+		if ( is_wp_error( $g ) ) {
+			return $g;
+		}
+		$fee     = 'delivery' === $fulfil ? (int) $s['delivery_fee'] : 0;
+		$total   = $sub + $fee;
+		$rate_bp = Commission::rate_bp( $bid, 'restaurant_orders' );
+		$id      = self::insert(
+			array(
+				'kind'               => 'order',
+				'business_id'        => $bid,
+				'customer_id'        => (int) ( $a['customer_id'] ?? 0 ),
+				'customer_name'      => $g[0],
+				'customer_email'     => $g[1],
+				'customer_phone'     => $g[2],
+				'start_date'         => Availability::today(),
+				'end_date'           => Availability::today(),
+				'start_time'         => Slots::now()->modify( '+' . (int) $s['prep_minutes'] . ' minutes' )->format( 'H:i:00' ),
+				'guests'             => 1,
+				'quantity'           => array_sum( wp_list_pluck( $lines, 'qty' ) ),
+				'total_kobo'         => $total,
+				'commission_rate_bp' => $rate_bp,
+				'commission_kobo'    => (int) round( $sub * $rate_bp / 10000 ),
+				'payment_mode'       => 'online' === $pay ? 'full' : 'cash',
+				'status'             => 'online' === $pay ? 'pending_payment' : 'new',
+				'details'            => wp_json_encode(
+					array(
+						'business'     => get_the_title( $bid ),
+						/* translators: %s: pickup/delivery */
+						'title'        => 'delivery' === $fulfil ? __( 'Delivery order', 'explore-katsina' ) : __( 'Pickup order', 'explore-katsina' ),
+						'items'        => $lines,
+						'subtotal'     => $sub,
+						'delivery_fee' => $fee,
+						'fulfilment'   => $fulfil,
+						'address'      => $address,
+						'pay_now'      => 'online' === $pay ? $total : 0,
+						'pay_later'    => 'online' === $pay ? 0 : $total,
+					)
+				),
+				'notes'              => sanitize_textarea_field( $a['notes'] ?? '' ),
+			)
+		);
+		if ( ! $id ) {
+			return new \WP_Error( 'db', __( 'The order could not be saved. Please try again.', 'explore-katsina' ) );
+		}
+		$b = self::get( $id );
+		self::history( $id, '', $b->status, 0 );
+		if ( 'new' === $b->status ) {
+			Emails::booking_created( $b );
+		}
+		return $b;
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* Payments                                                             */
 	/* ------------------------------------------------------------------ */
@@ -275,13 +529,23 @@ final class Booking {
 		if ( 'pending_payment' === $b->status ) {
 			$new_status = 'new';
 		} elseif ( in_array( $b->status, array( 'expired', 'cancelled' ), true ) ) {
-			// The hold ran out before the money arrived: try to take the rooms again.
-			$room = Rooms::data( $b->item_id );
-			if ( $room ) {
-				Availability::ensure_rows( $room['id'], self::nights_of( $b ) );
+			// The hold ran out before the money arrived: try to take the rooms / table again.
+			if ( 'restaurant' === $b->kind ) {
+				$slot_at = $b->start_date . ' ' . substr( (string) $b->start_time, 0, 5 ) . ':00';
+				Slots::ensure_row( $b->business_id, $slot_at );
+				$wpdb->query( 'START TRANSACTION' );
+				$taken = Slots::take( $b->business_id, $slot_at, (int) $b->quantity );
+			} elseif ( 'order' === $b->kind ) {
+				$wpdb->query( 'START TRANSACTION' );
+				$taken = true;
+			} else {
+				$room = Rooms::data( $b->item_id );
+				if ( $room ) {
+					Availability::ensure_rows( $room['id'], self::nights_of( $b ) );
+				}
+				$wpdb->query( 'START TRANSACTION' );
+				$taken = $room ? Availability::take( $room, self::nights_of( $b ), (int) $b->quantity ) : new \WP_Error( 'room', 'Room missing' );
 			}
-			$wpdb->query( 'START TRANSACTION' );
-			$taken = $room ? Availability::take( $room, self::nights_of( $b ), (int) $b->quantity ) : new \WP_Error( 'room', 'Room missing' );
 			if ( is_wp_error( $taken ) ) {
 				$wpdb->query( 'ROLLBACK' );
 				$new_status = 'payment_conflict';
@@ -347,12 +611,21 @@ final class Booking {
 	 * @return true|\WP_Error
 	 */
 	public static function hotel_transition( $b, $to, $actor_id, $note = '' ) {
-		$allowed = self::hotel_actions( $b->status );
+		return self::transition( $b, $to, $actor_id, $note );
+	}
+
+	/**
+	 * Status change requested by the business (already ownership-checked by the caller).
+	 *
+	 * @return true|\WP_Error
+	 */
+	public static function transition( $b, $to, $actor_id, $note = '' ) {
+		$allowed = self::actions( $b );
 		if ( ! isset( $allowed[ $to ] ) ) {
 			return new \WP_Error( 'transition', __( 'That change is not possible for this booking now.', 'explore-katsina' ) );
 		}
 		$today = Availability::today();
-		if ( in_array( $to, array( 'checked_in', 'no_show' ), true ) && $today < $b->start_date ) {
+		if ( in_array( $to, array( 'checked_in', 'no_show', 'seated' ), true ) && $today < $b->start_date ) {
 			return new \WP_Error( 'early', __( 'You can only do this on or after the check-in date.', 'explore-katsina' ) );
 		}
 		self::set_status( $b, $to, $actor_id, $note );
@@ -377,10 +650,16 @@ final class Booking {
 		self::history( $b->id, $from, $to, $actor_id, $note );
 
 		$was_occupying = in_array( $from, self::OCCUPYING, true );
-		$now_occupying = in_array( $to, self::OCCUPYING, true ) || 'checked_out' === $to;
+		$now_occupying = in_array( $to, self::OCCUPYING, true ) || in_array( $to, array( 'checked_out', 'completed' ), true );
 		if ( 'hotel' === $b->kind && $was_occupying && ! $now_occupying ) {
 			// Cancelled / declined / expired / no-show: give back all nights that haven't passed.
 			Availability::give_back( $b->item_id, self::nights_of( $b ), (int) $b->quantity, 'no_show' === $to ? Availability::today() : '' );
+		}
+		if ( 'restaurant' === $b->kind && $was_occupying && ! $now_occupying && 'no_show' !== $to ) {
+			Slots::give_back( $b->business_id, $b->start_date . ' ' . substr( (string) $b->start_time, 0, 5 ) . ':00', (int) $b->quantity );
+		}
+		if ( in_array( $b->kind, array( 'restaurant', 'order' ), true ) && 'completed' === $to ) {
+			Ledger::start_release_clock( $b );
 		}
 		if ( 'hotel' === $b->kind && 'checked_out' === $to ) {
 			// Early check-out frees the remaining nights. Earnings start their 3-day wait.
@@ -393,7 +672,7 @@ final class Booking {
 		}
 
 		$b = self::get( $b->id );
-		if ( in_array( $to, array( 'confirmed', 'declined', 'cancelled' ), true ) ) {
+		if ( in_array( $to, array( 'confirmed', 'declined', 'cancelled', 'accepted', 'ready', 'out_for_delivery' ), true ) ) {
 			Emails::booking_status( $b );
 		}
 		do_action( 'ek_booking_status_changed', $b, $from, $to );

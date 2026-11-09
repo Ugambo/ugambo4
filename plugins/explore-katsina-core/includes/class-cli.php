@@ -85,7 +85,10 @@ final class CLI {
 			foreach ( $bookings as $bid ) {
 				$wpdb->delete( $wpdb->prefix . 'ek_log', array( 'object_type' => 'booking', 'object_id' => $bid ) );
 			}
-			foreach ( array( 'ek_bookings', 'ek_ledger', 'ek_payouts', 'ek_invoices', 'ek_reviews', 'ek_rankings', 'ek_analytics_daily' ) as $t ) {
+			foreach ( Menu::items( $id ) as $it ) {
+				Menu::delete_item( $it->id, $id );
+			}
+			foreach ( array( 'ek_menu_categories', 'ek_slots', 'ek_bookings', 'ek_ledger', 'ek_payouts', 'ek_invoices', 'ek_reviews', 'ek_rankings', 'ek_analytics_daily' ) as $t ) {
 				$wpdb->delete( $wpdb->prefix . $t, array( 'business_id' => $id ) );
 			}
 			$priv = Business::private_details( $id );

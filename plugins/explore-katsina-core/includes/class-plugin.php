@@ -20,6 +20,8 @@ final class Plugin {
 		Booking::init();
 		Payments::init();
 		Hotel_Dashboard::init();
+		Restaurant_Dashboard::init();
+		Restaurant_Search::init();
 		Hotel_Search::init();
 		Booking_Page::init();
 		Access::init();

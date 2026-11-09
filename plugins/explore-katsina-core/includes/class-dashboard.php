@@ -354,14 +354,14 @@ final class Dashboard {
 		return array(
 			'action'    => array( __( 'Needs action', 'explore-katsina' ), array( 'new', 'requested' ) ),
 			'upcoming'  => array( __( 'Upcoming', 'explore-katsina' ), array( 'confirmed', 'deposit_paid' ) ),
-			'inhouse'   => array( __( 'In house', 'explore-katsina' ), array( 'checked_in', 'seated' ) ),
+			'inhouse'   => array( __( 'In house / seated', 'explore-katsina' ), array( 'checked_in', 'seated' ) ),
 			'past'      => array( __( 'Past', 'explore-katsina' ), array( 'checked_out', 'completed', 'no_show' ) ),
 			'cancelled' => array( __( 'Cancelled', 'explore-katsina' ), array( 'cancelled', 'declined' ) ),
 		);
 	}
 
-	/** Bookings for the dashboard. Unpaid holds and expired attempts are never shown to the business. */
-	public static function bookings( $business_id, $group = '', $limit = 100 ) {
+	/** Bookings / reservations for the dashboard (not food orders). Unpaid holds and expired attempts are never shown. */
+	public static function bookings( $business_id, $group = '', $limit = 100, $kind_sql = "kind <> 'order'" ) {
 		global $wpdb;
 		$groups = self::booking_groups();
 		$list   = isset( $groups[ $group ] ) ? $groups[ $group ][1] : array_merge( ...array_column( $groups, 1 ) );
@@ -369,7 +369,7 @@ final class Dashboard {
 		$order  = in_array( $group, array( 'past', 'cancelled' ), true ) ? 'DESC' : 'ASC';
 		return $wpdb->get_results( // phpcs:ignore
 			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}ek_bookings WHERE business_id = %d AND status IN ($ph) ORDER BY start_date $order, id $order LIMIT %d", // phpcs:ignore
+				"SELECT * FROM {$wpdb->prefix}ek_bookings WHERE business_id = %d AND {$kind_sql} AND status IN ($ph) ORDER BY start_date $order, start_time $order, id $order LIMIT %d", // phpcs:ignore
 				array_merge( array( $business_id ), $list, array( $limit ) )
 			)
 		);
@@ -377,7 +377,7 @@ final class Dashboard {
 
 	public static function booking_counts( $business_id ) {
 		global $wpdb;
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT status, COUNT(*) n FROM {$wpdb->prefix}ek_bookings WHERE business_id = %d GROUP BY status", $business_id ) );
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT status, COUNT(*) n FROM {$wpdb->prefix}ek_bookings WHERE business_id = %d AND kind <> 'order' GROUP BY status", $business_id ) );
 		$by   = wp_list_pluck( $rows, 'n', 'status' );
 		$out  = array();
 		foreach ( self::booking_groups() as $k => $g ) {

@@ -169,11 +169,11 @@ final class Hotel_Dashboard {
 
 	private static function booking_action( $business_id, array $in, $uid ) {
 		$b    = Booking::get( absint( $in['booking_id'] ?? 0 ) );
-		$back = Dashboard::url( 'bookings', $business_id, array_filter( array( 'tab' => sanitize_key( $in['tab'] ?? '' ) ) ) );
+		$back = Dashboard::url( sanitize_key( $in['back'] ?? '' ) === 'orders' ? 'orders' : 'bookings', $business_id, array_filter( array( 'tab' => sanitize_key( $in['tab'] ?? '' ) ) ) );
 		if ( ! $b || (int) $b->business_id !== (int) $business_id ) {
 			wp_die( esc_html__( 'That booking belongs to another business.', 'explore-katsina' ), '', array( 'response' => 403 ) );
 		}
-		$r = Booking::hotel_transition( $b, sanitize_key( $in['to'] ?? '' ), $uid, sanitize_text_field( $in['note'] ?? '' ) );
+		$r = Booking::transition( $b, sanitize_key( $in['to'] ?? '' ), $uid, sanitize_text_field( $in['note'] ?? '' ) );
 		if ( is_wp_error( $r ) ) {
 			View::flash( 'error', $r->get_error_message(), $uid );
 		} else {

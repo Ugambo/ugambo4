@@ -24,7 +24,12 @@ final class Booking_Page {
 	}
 
 	public static function handle() {
-		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || 'book_hotel' !== ( $_POST['ek_action'] ?? '' ) ) { // phpcs:ignore
+		$action = 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) ? sanitize_key( $_POST['ek_action'] ?? '' ) : ''; // phpcs:ignore
+		if ( in_array( $action, array( 'reserve_table', 'place_order' ), true ) ) {
+			self::handle_restaurant( $action );
+			return;
+		}
+		if ( 'book_hotel' !== $action ) {
 			return;
 		}
 		$in           = wp_unslash( $_POST ); // phpcs:ignore
@@ -70,6 +75,55 @@ final class Booking_Page {
 		exit;
 	}
 
+	/** Table reservation or food order form submitted. */
+	private static function handle_restaurant( $action ) {
+		$in           = wp_unslash( $_POST ); // phpcs:ignore
+		self::$values = $in;
+		if ( ! wp_verify_nonce( $in['_ek_nonce'] ?? '', 'ek_' . $action ) || ! empty( $in['ek_company_hp'] ) ) {
+			self::$error = __( 'Your session expired. Please check the details and try again.', 'explore-katsina' );
+			return;
+		}
+		$guest = array(
+			'name'        => $in['guest_name'] ?? '',
+			'email'       => $in['guest_email'] ?? '',
+			'phone'       => $in['guest_phone'] ?? '',
+			'notes'       => $in['notes'] ?? '',
+			'customer_id' => get_current_user_id(),
+		);
+		if ( 'reserve_table' === $action ) {
+			$b = Booking::create_reservation(
+				$guest + array(
+					'business_id' => absint( $in['reserve'] ?? 0 ),
+					'date'        => sanitize_text_field( $in['date'] ?? '' ),
+					'time'        => sanitize_text_field( $in['time'] ?? '' ),
+					'party'       => absint( $in['party'] ?? 0 ),
+				)
+			);
+		} else {
+			$b = Booking::create_order(
+				$guest + array(
+					'business_id' => absint( $in['order'] ?? 0 ),
+					'items'       => array_map( 'absint', (array) ( $in['items'] ?? array() ) ),
+					'fulfilment'  => sanitize_key( $in['fulfilment'] ?? '' ),
+					'address'     => $in['address'] ?? '',
+					'pay'         => sanitize_key( $in['pay'] ?? '' ),
+				)
+			);
+		}
+		if ( is_wp_error( $b ) ) {
+			self::$error = $b->get_error_message();
+			return;
+		}
+		$url = 'pending_payment' === $b->status ? Payments::start( $b ) : Booking::link( $b );
+		if ( is_wp_error( $url ) ) {
+			Booking::payment_failed( $b->id );
+			self::$error = $url->get_error_message();
+			return;
+		}
+		wp_redirect( $url ); // phpcs:ignore WordPress.Security.SafeRedirect
+		exit;
+	}
+
 	public static function shortcode() {
 		wp_enqueue_style( 'ek' );
 		nocache_headers();
@@ -93,6 +147,24 @@ final class Booking_Page {
 				return '<div class="ek"><div class="ek-empty"><strong>' . esc_html__( 'Payment link not valid', 'explore-katsina' ) . '</strong></div></div>';
 			}
 			return View::render( 'booking/test-pay', array( 'b' => $b ) );
+		}
+
+		if ( ! empty( $g['reserve'] ) || ! empty( self::$values['reserve'] ) ) {
+			$src = self::$values ? self::$values : $g;
+			$bid = absint( $src['reserve'] ?? 0 );
+			if ( 'restaurant' !== Business::type_of( $bid ) || 'publish' !== get_post_status( $bid ) ) {
+				return '<div class="ek"><div class="ek-empty"><strong>' . esc_html__( 'Restaurant not found', 'explore-katsina' ) . '</strong></div></div>';
+			}
+			return View::render( 'booking/reserve', array( 'r' => Business::profile( $bid ), 'src' => $src, 'error' => self::$error, 'v' => self::$values ) );
+		}
+
+		if ( ! empty( $g['order'] ) ) {
+			$bid = absint( $g['order'] );
+			if ( ! Restaurant::ordering_open( $bid ) || 'publish' !== get_post_status( $bid ) ) {
+				return '<div class="ek"><div class="ek-empty"><strong>' . esc_html__( 'Online ordering is not available', 'explore-katsina' ) . '</strong>' . esc_html__( 'Please call or WhatsApp the restaurant to order.', 'explore-katsina' ) . '</div></div>';
+			}
+			$src = wp_unslash( $_POST ); // phpcs:ignore
+			return View::render( 'booking/order', array( 'r' => Business::profile( $bid ), 'src' => $src, 'error' => self::$error ) );
 		}
 
 		$src  = self::$values ? self::$values : $g;

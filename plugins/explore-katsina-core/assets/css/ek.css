@@ -404,3 +404,47 @@ body:has(.ek-search) .wp-block-post-title, body:has(.ek-book) .wp-block-post-tit
 /* Phones: show the stay summary and total first, without the large photo. */
 .ek .ek-book-summary { order: -1; }
 @media (max-width: 899px) { .ek .ek-book-summary .ek-book-img { display: none; } }
+
+/* =====================================================================
+ * Phase 4: restaurants
+ * ===================================================================== */
+.ek .ek-price-level { font-weight: 700; color: var(--ek-emerald); letter-spacing: 1px; }
+.ek .ek-slotgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.ek .ek-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 46px; padding: 6px; border-radius: var(--ek-radius-sm); border: 1.5px solid var(--ek-crimson); color: var(--ek-crimson); font-weight: 700; text-decoration: none; font-variant-numeric: tabular-nums; background: #fff; }
+.ek a.ek-slot:hover { background: var(--ek-crimson); color: #fff; }
+.ek .ek-slot small { font-weight: 500; font-size: .7rem; color: var(--ek-muted); }
+.ek .ek-slot.is-full { border-color: var(--ek-line); color: #A29F9A; background: var(--ek-sand); text-decoration: line-through; }
+.ek .ek-dates--res { grid-template-columns: 1fr 1fr; }
+@media (min-width: 760px) { .ek .ek-dates--res { grid-template-columns: 1.4fr .8fr auto; } }
+.ek .ek-iconbtn { min-width: 38px; min-height: 38px; display: inline-grid; place-items: center; border-radius: 8px; border: 1.5px solid var(--ek-line); background: #fff; color: var(--ek-night); cursor: pointer; font-weight: 700; list-style: none; }
+.ek .ek-iconbtn:disabled { opacity: .35; cursor: default; }
+.ek details > summary.ek-iconbtn::-webkit-details-marker, .ek details > summary.ek-btn::-webkit-details-marker { display: none; }
+.ek details > summary.ek-btn, .ek details > summary.ek-iconbtn { list-style: none; }
+.ek .ek-pop-details[open] { flex-basis: 100%; }
+.ek .ek-menucat { margin: 0 !important; }
+.ek .ek-dishes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ek .ek-dish { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-top: 1px solid var(--ek-line); }
+.ek .ek-dish-main { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.ek .ek-dish-img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; display: block; }
+.ek .ek-dish-img--none { background: var(--ek-sand); }
+.ek .ek-dish-price { font-weight: 700; color: var(--ek-night); }
+.ek .ek-dish.is-soldout .ek-dish-main { opacity: .6; }
+.ek .ek-itemform { margin-top: 10px; padding: 12px; background: var(--ek-sand); border-radius: var(--ek-radius-sm); }
+.ek .ek-add-dish > summary { margin-top: 4px; }
+.ek .ek-menu-nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; position: sticky; top: 0; background: var(--ek-ivory, #fff); padding: 6px 0; z-index: 2; }
+.ek .ek-menu-nav a { white-space: nowrap; padding: 6px 12px; border-radius: 999px; background: var(--ek-sand); color: var(--ek-night); text-decoration: none; font-weight: 600; font-size: .9rem; }
+.ek .ek-menu-cat h3 { border-bottom: 2px solid var(--ek-brass); padding-bottom: 6px; }
+.ek .ek-menu-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ek .ek-menu-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--ek-line); }
+.ek .ek-menu-item:has(.ek-menu-img) { grid-template-columns: 56px minmax(0, 1fr) auto; }
+.ek .ek-menu-item:has(.ek-qty) { grid-template-columns: minmax(0, 1fr) auto 70px; }
+.ek .ek-menu-item:has(.ek-menu-img):has(.ek-qty) { grid-template-columns: 56px minmax(0, 1fr) auto 70px; }
+.ek .ek-menu-img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; }
+.ek .ek-menu-text { display: flex; flex-direction: column; min-width: 0; }
+.ek .ek-menu-name { font-weight: 600; }
+.ek .ek-menu-price { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ek-night); white-space: nowrap; }
+.ek .ek-menu-item.is-soldout .ek-menu-name { color: var(--ek-muted); }
+.ek .ek-qty input { min-height: 40px; text-align: center; padding: 4px; }
+.ek .ek-order-bar { position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--ek-night); color: #fff; border-radius: var(--ek-radius-sm); font-weight: 700; }
+.ek .ek-status-seated, .ek .ek-status-accepted, .ek .ek-status-preparing, .ek .ek-status-ready, .ek .ek-status-out_for_delivery { background: var(--ek-emerald-tint); color: #134636; }
+@media (min-width: 860px) { .ek .ek-search-grid--food { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

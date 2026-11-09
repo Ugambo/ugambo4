@@ -206,25 +206,54 @@ final class Emails {
 		$lines = array(
 			/* translators: %s: booking code */
 			sprintf( __( 'Booking code: %s', 'explore-katsina' ), $b->code ),
-			/* translators: 1: hotel, 2: room */
-			sprintf( __( '%1$s · %2$s × %3$d', 'explore-katsina' ), $d['hotel'] ?? '', $d['room'] ?? '', (int) $b->quantity ),
-			/* translators: 1: check-in date, 2: time, 3: check-out date, 4: time */
-			sprintf( __( 'Check-in %1$s (from %2$s) · Check-out %3$s (by %4$s)', 'explore-katsina' ), wp_date( 'D j M Y', strtotime( $b->start_date ) ), $d['checkin_at'] ?? '', wp_date( 'D j M Y', strtotime( $b->end_date ) ), $d['checkout_at'] ?? '' ),
-			/* translators: 1: nights, 2: guests */
-			sprintf( __( '%1$d night(s) · %2$d guest(s)', 'explore-katsina' ), count( $d['nights'] ?? array() ), (int) $b->guests ),
-			/* translators: %s: total */
-			sprintf( __( 'Total: %s', 'explore-katsina' ), Money::format( $b->total_kobo ) ),
 		);
+		if ( 'restaurant' === $b->kind ) {
+			/* translators: 1: restaurant, 2: e.g. Table for 4 */
+			$lines[] = sprintf( __( '%1$s · %2$s', 'explore-katsina' ), $d['business'] ?? '', $d['title'] ?? '' );
+			/* translators: 1: date, 2: time */
+			$lines[] = sprintf( __( '%1$s at %2$s', 'explore-katsina' ), wp_date( 'l j F Y', strtotime( $b->start_date ) ), substr( (string) $b->start_time, 0, 5 ) );
+			if ( (int) $b->deposit_kobo ) {
+				/* translators: %s: amount */
+				$lines[] = sprintf( __( 'Deposit: %s (deducted from your bill)', 'explore-katsina' ), Money::format( $b->deposit_kobo ) );
+			}
+			return $lines;
+		}
+		if ( 'order' === $b->kind ) {
+			$lines[] = ( $d['business'] ?? '' ) . ' · ' . ( $d['title'] ?? '' );
+			foreach ( (array) ( $d['items'] ?? array() ) as $i ) {
+				$lines[] = sprintf( '%d × %s  %s', (int) $i['qty'], $i['name'], Money::format( $i['price'] * $i['qty'] ) );
+			}
+			if ( ! empty( $d['delivery_fee'] ) ) {
+				/* translators: %s: amount */
+				$lines[] = sprintf( __( 'Delivery: %s', 'explore-katsina' ), Money::format( $d['delivery_fee'] ) );
+			}
+			if ( 'delivery' === ( $d['fulfilment'] ?? '' ) ) {
+				$lines[] = __( 'Deliver to:', 'explore-katsina' ) . ' ' . ( $d['address'] ?? '' );
+			}
+			/* translators: %s: total */
+			$lines[] = sprintf( __( 'Total: %s', 'explore-katsina' ), Money::format( $b->total_kobo ) ) . ( 'cash' === $b->payment_mode ? ' ' . __( '(pay on pickup/delivery)', 'explore-katsina' ) : '' );
+			return $lines;
+		}
+		$lines[] = sprintf( /* translators: 1: hotel, 2: room, 3: rooms */ __( '%1$s · %2$s × %3$d', 'explore-katsina' ), $d['hotel'] ?? '', $d['room'] ?? '', (int) $b->quantity );
+		$lines[] = sprintf( /* translators: 1: check-in date, 2: time, 3: check-out date, 4: time */ __( 'Check-in %1$s (from %2$s) · Check-out %3$s (by %4$s)', 'explore-katsina' ), wp_date( 'D j M Y', strtotime( $b->start_date ) ), $d['checkin_at'] ?? '', wp_date( 'D j M Y', strtotime( $b->end_date ) ), $d['checkout_at'] ?? '' );
+		$lines[] = sprintf( /* translators: 1: nights, 2: guests */ __( '%1$d night(s) · %2$d guest(s)', 'explore-katsina' ), count( $d['nights'] ?? array() ), (int) $b->guests );
+		$lines[] = sprintf( /* translators: %s: total */ __( 'Total: %s', 'explore-katsina' ), Money::format( $b->total_kobo ) );
 		if ( (int) $b->paid_kobo > 0 ) {
-			/* translators: %s: amount */
-			$lines[] = sprintf( __( 'Paid online: %s', 'explore-katsina' ), Money::format( $b->paid_kobo ) );
+			$lines[] = sprintf( /* translators: %s: amount */ __( 'Paid online: %s', 'explore-katsina' ), Money::format( $b->paid_kobo ) );
 		}
 		$due = (int) $b->total_kobo - (int) $b->paid_kobo;
 		if ( $due > 0 ) {
-			/* translators: %s: amount */
-			$lines[] = sprintf( __( 'To pay at the hotel: %s', 'explore-katsina' ), Money::format( $due ) );
+			$lines[] = sprintf( /* translators: %s: amount */ __( 'To pay at the hotel: %s', 'explore-katsina' ), Money::format( $due ) );
 		}
 		return $lines;
+	}
+
+	private static function noun( $b ) {
+		return array(
+			'hotel'      => array( __( 'booking', 'explore-katsina' ), __( 'hotel', 'explore-katsina' ) ),
+			'restaurant' => array( __( 'reservation', 'explore-katsina' ), __( 'restaurant', 'explore-katsina' ) ),
+			'order'      => array( __( 'order', 'explore-katsina' ), __( 'restaurant', 'explore-katsina' ) ),
+		)[ $b->kind ] ?? array( __( 'booking', 'explore-katsina' ), __( 'business', 'explore-katsina' ) );
 	}
 
 	/** A booking is placed (pay at hotel) or paid online. */
@@ -234,11 +263,13 @@ final class Emails {
 			$b->customer_email,
 			/* translators: %s: booking code */
 			sprintf( __( 'Booking received: %s', 'explore-katsina' ), $b->code ),
-			__( 'Thank you, your booking request is in', 'explore-katsina' ),
+			/* translators: %s: booking/reservation/order */
+			sprintf( __( 'Thank you, your %s is in', 'explore-katsina' ), self::noun( $b )[0] ),
 			array_merge(
-				array( __( 'The hotel will confirm your booking shortly. We will email you as soon as they do.', 'explore-katsina' ) ),
+				/* translators: 1: hotel/restaurant, 2: booking/reservation/order */
+				array( sprintf( __( 'The %1$s will confirm your %2$s shortly. We will email you as soon as they do.', 'explore-katsina' ), self::noun( $b )[1], self::noun( $b )[0] ) ),
 				self::booking_lines( $b ),
-				array( __( 'Cancellation policy:', 'explore-katsina' ) . ' ' . ( $b->policy['text'] ?? '' ) )
+				! empty( $b->policy['text'] ) ? array( __( 'Cancellation policy:', 'explore-katsina' ) . ' ' . $b->policy['text'] ) : array()
 			),
 			array( 'label' => __( 'View my booking', 'explore-katsina' ), 'url' => Booking::link( $b ) ),
 			$ctx + array( 'phone' => $b->customer_phone )
@@ -247,8 +278,10 @@ final class Emails {
 			self::send(
 				$to,
 				/* translators: %s: booking code */
-				sprintf( __( 'New booking %s: please confirm', 'explore-katsina' ), $b->code ),
-				__( 'You have a new booking', 'explore-katsina' ),
+				/* translators: 1: booking/reservation/order, 2: code */
+				sprintf( __( 'New %1$s %2$s: please confirm', 'explore-katsina' ), self::noun( $b )[0], $b->code ),
+				/* translators: %s: booking/reservation/order */
+				sprintf( __( 'You have a new %s', 'explore-katsina' ), self::noun( $b )[0] ),
 				array_merge(
 					self::booking_lines( $b ),
 					array(
@@ -258,14 +291,14 @@ final class Emails {
 						__( 'Please confirm or decline it from your dashboard as soon as possible. Quick responses improve your ranking.', 'explore-katsina' ),
 					)
 				),
-				array( 'label' => __( 'Open bookings', 'explore-katsina' ), 'url' => Dashboard::url( 'bookings', $b->business_id ) ),
+				array( 'label' => __( 'Open dashboard', 'explore-katsina' ), 'url' => Dashboard::url( 'order' === $b->kind ? 'orders' : 'bookings', $b->business_id ) ),
 				$ctx + array( 'audience' => 'business' )
 			);
 		}
 		self::send(
 			self::admin_email(),
 			/* translators: 1: code, 2: hotel */
-			sprintf( __( '[Explore Katsina] New booking %1$s at %2$s', 'explore-katsina' ), $b->code, $b->details['hotel'] ?? '' ),
+			sprintf( __( '[Explore Katsina] New booking %1$s at %2$s', 'explore-katsina' ), $b->code, $b->details['hotel'] ?? ( $b->details['business'] ?? '' ) ),
 			__( 'New booking', 'explore-katsina' ),
 			array_merge( self::booking_lines( $b ), array( __( 'Payment option:', 'explore-katsina' ) . ' ' . $b->payment_mode ) ),
 			array(),
@@ -274,10 +307,17 @@ final class Emails {
 	}
 
 	public static function booking_status( $b ) {
+		$n     = self::noun( $b );
 		$heads = array(
-			'confirmed' => __( 'Your booking is confirmed', 'explore-katsina' ),
-			'declined'  => __( 'The hotel could not accept your booking', 'explore-katsina' ),
-			'cancelled' => __( 'Your booking has been cancelled', 'explore-katsina' ),
+			/* translators: %s: booking/reservation */
+			'confirmed'        => sprintf( __( 'Your %s is confirmed', 'explore-katsina' ), $n[0] ),
+			/* translators: 1: hotel/restaurant, 2: booking/reservation/order */
+			'declined'         => sprintf( __( 'The %1$s could not accept your %2$s', 'explore-katsina' ), $n[1], $n[0] ),
+			/* translators: %s: booking/reservation/order */
+			'cancelled'        => sprintf( __( 'Your %s has been cancelled', 'explore-katsina' ), $n[0] ),
+			'accepted'         => __( 'Your order was accepted', 'explore-katsina' ),
+			'ready'            => __( 'Your order is ready for pickup', 'explore-katsina' ),
+			'out_for_delivery' => __( 'Your order is on its way', 'explore-katsina' ),
 		);
 		$extra = array();
 		if ( in_array( $b->status, array( 'declined', 'cancelled' ), true ) && (int) $b->paid_kobo > 0 ) {
@@ -292,7 +332,7 @@ final class Emails {
 			array( 'label' => __( 'View my booking', 'explore-katsina' ), 'url' => Booking::link( $b ) ),
 			array( 'event' => 'booking_' . $b->status, 'booking' => $b->code, 'phone' => $b->customer_phone )
 		);
-		if ( 'confirmed' !== $b->status ) {
+		if ( in_array( $b->status, array( 'declined', 'cancelled' ), true ) ) {
 			self::send(
 				self::admin_email(),
 				/* translators: 1: code, 2: status */
