@@ -11,10 +11,11 @@ use EK\Rooms;
 
 defined( 'ABSPATH' ) || exit;
 
-$rooms = Rooms::for_hotel( $b['id'], true );
+$is_venue = 'event-centre' === $b['type'];
+$rooms    = $is_venue ? \EK\Halls::for_venue( $b['id'], true ) : Rooms::for_hotel( $b['id'], true );
 if ( ! $rooms ) :
 	?>
-	<div class="ek-empty"><strong><?php esc_html_e( 'Add a room category first', 'explore-katsina' ); ?></strong><a href="<?php echo esc_url( Dashboard::url( 'rooms', $b['id'], array( 'room' => 'new' ) ) ); ?>"><?php esc_html_e( 'Add room category', 'explore-katsina' ); ?></a></div>
+	<div class="ek-empty"><strong><?php echo $is_venue ? esc_html__( 'Add a hall first', 'explore-katsina' ) : esc_html__( 'Add a room category first', 'explore-katsina' ); ?></strong><a href="<?php echo esc_url( Dashboard::url( $is_venue ? 'halls' : 'rooms', $b['id'], $is_venue ? array( 'hall' => 'new' ) : array( 'room' => 'new' ) ) ); ?>"><?php echo $is_venue ? esc_html__( 'Add hall', 'explore-katsina' ) : esc_html__( 'Add room category', 'explore-katsina' ); ?></a></div>
 	<?php
 	return;
 endif;
@@ -54,7 +55,13 @@ $mkey  = $first->format( 'Y-m' );
 			<a class="ek-btn ek-btn--ghost ek-btn--sm" href="<?php echo esc_url( Dashboard::url( 'calendar', $b['id'], array( 'room' => $room['id'], 'month' => $next->format( 'Y-m' ) ) ) ); ?>" aria-label="<?php esc_attr_e( 'Next month', 'explore-katsina' ); ?>">→</a>
 		</div>
 	</div>
-	<p class="ek-small ek-muted" style="margin:0 0 10px"><?php /* translators: 1: rooms, 2: price */ printf( esc_html__( '%1$d rooms · normal price %2$s per night', 'explore-katsina' ), (int) $room['units'], esc_html( Money::format( $room['price'] ) ) ); ?><?php echo $room['weekend_price'] ? ' · ' . esc_html__( 'Fri & Sat nights', 'explore-katsina' ) . ' ' . esc_html( Money::format( $room['weekend_price'] ) ) : ''; ?></p>
+	<p class="ek-small ek-muted" style="margin:0 0 10px">
+		<?php if ( $is_venue ) : ?>
+			<?php /* translators: %s: price */ printf( esc_html__( 'Normal price %s', 'explore-katsina' ), esc_html( Money::format( $room['price'] ) ) ); ?><?php echo $room['weekend_price'] ? ' · ' . esc_html__( 'Fridays & Saturdays', 'explore-katsina' ) . ' ' . esc_html( Money::format( $room['weekend_price'] ) ) : ''; ?>
+		<?php else : ?>
+			<?php /* translators: 1: rooms, 2: price */ printf( esc_html__( '%1$d rooms · normal price %2$s per night', 'explore-katsina' ), (int) $room['units'], esc_html( Money::format( $room['price'] ) ) ); ?><?php echo $room['weekend_price'] ? ' · ' . esc_html__( 'Fri & Sat nights', 'explore-katsina' ) . ' ' . esc_html( Money::format( $room['weekend_price'] ) ) : ''; ?>
+		<?php endif; ?>
+	</p>
 	<div class="ek-cal" role="grid" aria-labelledby="cal-h">
 		<?php foreach ( array( __( 'Mon', 'explore-katsina' ), __( 'Tue', 'explore-katsina' ), __( 'Wed', 'explore-katsina' ), __( 'Thu', 'explore-katsina' ), __( 'Fri', 'explore-katsina' ), __( 'Sat', 'explore-katsina' ), __( 'Sun', 'explore-katsina' ) ) as $wd ) : ?>
 			<div class="ek-cal-head" role="columnheader"><?php echo esc_html( $wd ); ?></div>
@@ -76,20 +83,20 @@ $mkey  = $first->format( 'Y-m' );
 			if ( 'base' !== $n['why'] ) {
 				$class .= ' is-priced';
 			}
-			$label = $n['closed'] ? __( 'Closed', 'explore-katsina' ) : sprintf( /* translators: 1: free, 2: total */ __( '%1$d/%2$d free', 'explore-katsina' ), $n['available'], $room['units'] );
+			$label = $n['closed'] ? __( 'Closed', 'explore-katsina' ) : ( $is_venue ? ( $n['available'] ? __( 'Free', 'explore-katsina' ) : __( 'Booked', 'explore-katsina' ) ) : sprintf( /* translators: 1: free, 2: total */ __( '%1$d/%2$d free', 'explore-katsina' ), $n['available'], $room['units'] ) );
 			?>
 			<div class="<?php echo esc_attr( $class ); ?>" role="gridcell" aria-label="<?php echo esc_attr( wp_date( 'j F', strtotime( $date ) ) . ': ' . $label . ', ' . Money::format( $n['price'] ) ); ?>">
 				<span class="ek-cal-n"><?php echo (int) substr( $date, 8 ); ?></span>
 				<?php if ( ! $past ) : ?>
-					<span class="ek-cal-a"><?php echo esc_html( $n['closed'] ? __( 'Closed', 'explore-katsina' ) : $n['available'] . '/' . $room['units'] ); ?></span>
+					<span class="ek-cal-a"><?php echo esc_html( $n['closed'] ? __( 'Closed', 'explore-katsina' ) : ( $is_venue ? ( $n['available'] ? __( 'Free', 'explore-katsina' ) : __( 'Booked', 'explore-katsina' ) ) : $n['available'] . '/' . $room['units'] ) ); ?></span>
 					<span class="ek-cal-p"><?php echo esc_html( '₦' . ( $n['price'] >= 10000000 ? round( $n['price'] / 10000000, 1 ) . 'm' : round( $n['price'] / 100000, 1 ) . 'k' ) ); ?></span>
 				<?php endif; ?>
 			</div>
 		<?php endforeach; ?>
 	</div>
 	<ul class="ek-cal-legend">
-		<li><i class="is-some"></i><?php esc_html_e( 'Some rooms booked', 'explore-katsina' ); ?></li>
-		<li><i class="is-full"></i><?php esc_html_e( 'Sold out', 'explore-katsina' ); ?></li>
+		<?php if ( ! $is_venue ) : ?><li><i class="is-some"></i><?php esc_html_e( 'Some rooms booked', 'explore-katsina' ); ?></li><?php endif; ?>
+		<li><i class="is-full"></i><?php echo $is_venue ? esc_html__( 'Booked', 'explore-katsina' ) : esc_html__( 'Sold out', 'explore-katsina' ); ?></li>
 		<li><i class="is-closed"></i><?php esc_html_e( 'Closed', 'explore-katsina' ); ?></li>
 		<li><i class="is-priced"></i><?php esc_html_e( 'Special / seasonal / weekend price', 'explore-katsina' ); ?></li>
 	</ul>
@@ -110,18 +117,18 @@ $mkey  = $first->format( 'Y-m' );
 			<select id="c-op" name="op">
 				<option value="close"><?php esc_html_e( 'Close these dates (no bookings)', 'explore-katsina' ); ?></option>
 				<option value="open"><?php esc_html_e( 'Re-open these dates', 'explore-katsina' ); ?></option>
-				<option value="block"><?php esc_html_e( 'Mark some rooms unavailable (e.g. repairs)', 'explore-katsina' ); ?></option>
+				<?php if ( ! $is_venue ) : ?><option value="block"><?php esc_html_e( 'Mark some rooms unavailable (e.g. repairs)', 'explore-katsina' ); ?></option><?php endif; ?>
 				<option value="price"><?php esc_html_e( 'Set a special price per night', 'explore-katsina' ); ?></option>
 				<option value="clear_price"><?php esc_html_e( 'Remove special price', 'explore-katsina' ); ?></option>
 			</select>
 		</div>
-		<div class="ek-field"><label for="c-val"><?php esc_html_e( 'Number of unavailable rooms, or price (₦)', 'explore-katsina' ); ?></label><input type="text" id="c-val" name="value" inputmode="numeric"><span class="ek-hint"><?php esc_html_e( 'Only needed for "Mark some rooms unavailable" and "Set a special price".', 'explore-katsina' ); ?></span></div>
+		<div class="ek-field"><label for="c-val"><?php echo $is_venue ? esc_html__( 'Price (₦)', 'explore-katsina' ) : esc_html__( 'Number of unavailable rooms, or price (₦)', 'explore-katsina' ); ?></label><input type="text" id="c-val" name="value" inputmode="numeric"><span class="ek-hint"><?php esc_html_e( 'Only needed for "Mark some rooms unavailable" and "Set a special price".', 'explore-katsina' ); ?></span></div>
 		<div><button class="ek-btn" type="submit"><?php esc_html_e( 'Apply', 'explore-katsina' ); ?></button></div>
 	</form>
 
 	<section class="ek-card ek-stack" aria-labelledby="season-h">
 		<h2 id="season-h" style="margin:0"><?php esc_html_e( 'Seasonal & peak prices', 'explore-katsina' ); ?></h2>
-		<p class="ek-small ek-muted" style="margin:0"><?php esc_html_e( 'For busy periods such as Sallah and Durbar. A seasonal price replaces the normal and weekend price on those nights.', 'explore-katsina' ); ?></p>
+		<p class="ek-small ek-muted" style="margin:0"><?php esc_html_e( 'For busy periods such as Sallah and Durbar. A seasonal price replaces the normal and weekend price on those dates.', 'explore-katsina' ); ?></p>
 		<?php if ( $rules ) : ?>
 			<ul class="ek-rules">
 				<?php foreach ( $rules as $rule ) : ?>
@@ -142,7 +149,7 @@ $mkey  = $first->format( 'Y-m' );
 				<div class="ek-field"><label for="s-from"><?php esc_html_e( 'From', 'explore-katsina' ); ?></label><input type="date" id="s-from" name="from" min="<?php echo esc_attr( $today ); ?>" required></div>
 				<div class="ek-field"><label for="s-to"><?php esc_html_e( 'To (including)', 'explore-katsina' ); ?></label><input type="date" id="s-to" name="to" min="<?php echo esc_attr( $today ); ?>" required></div>
 			</div>
-			<div class="ek-field"><label for="s-price"><?php esc_html_e( 'Price per night (₦)', 'explore-katsina' ); ?></label><input type="text" id="s-price" name="price" inputmode="numeric" required></div>
+			<div class="ek-field"><label for="s-price"><?php echo $is_venue ? esc_html__( 'Price (₦)', 'explore-katsina' ) : esc_html__( 'Price per night (₦)', 'explore-katsina' ); ?></label><input type="text" id="s-price" name="price" inputmode="numeric" required></div>
 			<div><button class="ek-btn ek-btn--night" type="submit"><?php esc_html_e( 'Add seasonal price', 'explore-katsina' ); ?></button></div>
 		</form>
 	</section>

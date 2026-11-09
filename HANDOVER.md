@@ -7,8 +7,10 @@ from exactly where the last one stopped.
 - **Phase 1 (Architecture plan): done and approved.** See `docs/ARCHITECTURE.md`.
 - **Phase 2 (Business accounts & approval): done and approved.**
 - **Phase 3 (Hotels): done and approved.**
-- **Phase 4 (Restaurants): done, waiting for the owner's go-ahead.**
-- Next: **Phase 5 (Event centres)**.
+- **Phase 4 (Restaurants): done and approved.**
+- **Phase 5 (Event centres): done, waiting for the owner's go-ahead.**
+- Next: **Phase 6 (Customer accounts & reviews)**.
+- **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
 1. All business types live in our own plugin `explore-katsina-core`. No Directorist or GeoDirectory.
@@ -115,6 +117,40 @@ from exactly where the last one stopped.
 - **Deposits** are held like hotel money (commission 0% on table reservations) and start their 3-day release
   clock when the reservation is marked completed.
 
+## What Phase 5 built (plain language)
+- **Event centre dashboard, new sections:**
+  - *Venue details*: amenities (parking, generator/24-hour power, AC, chairs and tables, sound system,
+    outside catering/decorators allowed, changing rooms, security, stage, projector, wheelchair access),
+    **how guests book** (Request to book, or Instant booking with deposit), deposit % (default 30%),
+    cancellation policy and venue rules.
+  - *Halls*: name, seated and standing capacity, price per day or per event, optional weekend price,
+    indoor/outdoor, photos, on/off switch.
+  - *Calendar & prices*: the same calendar as hotels: block dates, weekend and peak (Sallah) prices.
+  - *Bookings*: Needs action / Upcoming / Past / Cancelled with Accept, Decline, Cancel, Mark event completed.
+- **Request to book:** the guest asks for a date (the date is held). The venue has **48 hours** to reply,
+  otherwise the request expires and the date is freed. After acceptance the guest has **72 hours** to pay the
+  deposit online, otherwise the booking is cancelled and the date freed. Statuses: requested → confirmed →
+  deposit paid → completed (or declined / cancelled / expired).
+- **Instant booking:** the guest pays the deposit straight away (15-minute hold while paying).
+- **Money:** 10% commission (placeholder) on the deposit; the venue's share is **released 3 days after the
+  event date** (the release job and payouts screen come in Phase 7). The balance is paid to the venue directly.
+- **Find an event centre** (`/event-centres/`): date, guests, seated/standing, LGA, Near me, max price,
+  amenities; sort by distance, rank, rating or price; list or map.
+- **Venue page:** amenities, every hall with capacity, price for the chosen date, deposit, availability,
+  "Request to book" / "Book now", cancellation policy and venue rules.
+
+## Photos (royalty-free, with credits)
+- Source: **Wikimedia Commons**, only files that are public domain, CC0, CC BY or CC BY-SA. Each photo keeps
+  its author, licence, licence link and source page, and business pages show a **"Photo credits"** list.
+- Tools: `scripts/commons_search.py "search words"` lists candidates with licences;
+  `scripts/fetch_commons.py sample-data/media/manifest.json sample-data/media` downloads the chosen ones
+  (standard 1280-pixel copies) and writes `sample-data/media/credits.json`.
+- Rules followed: generic photos only for SAMPLE businesses (no real hotel names or logos, no close-ups of
+  identifiable people); real attractions (Phase 10) will only use photos of that actual place.
+- The cloud environment "ugambo4" allows `commons.wikimedia.org` and `upload.wikimedia.org`. Wikimedia
+  rate-limits cloud servers: the tools identify themselves with this project's GitHub page and pause between
+  requests, but after a burst of searches Wikimedia may refuse requests for a while ("robot policy" 429).
+
 ## Payments: now installed
 - The cloud session now runs in a personal environment called **"ugambo4"** that allows wordpress.org, so
   `setup.sh` installs **WooCommerce 11.2.2**, **Paystack WooCommerce Payment Gateway 5.8.6** (by Paystack)
@@ -146,7 +182,7 @@ from exactly where the last one stopped.
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # 161 server-side checks + 80 browser checks (Phases 2–4)
+./tests/run.sh      # 198 server-side checks + 94 browser checks (Phases 2–5)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -160,6 +196,9 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase2/` | Screenshots of the sign-up, dashboard, admin and public page |
 | `docs/screenshots/phase3/` | Screenshots of hotel search, hotel page, booking, confirmation, calendar, rooms |
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
+| `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
+| `sample-data/media/` | Royalty-free sample photos + `credits.json` (author, licence, source) |
+| `scripts/` | Photo search/download tools for Wikimedia Commons |
 | `setup.sh` | Re-runnable setup |
 | `docker-compose.offline.yml` | "Offline" local site (used when wordpress.org is blocked) |
 | `.wp-env.json` | wp-env setup (normal local site) |
@@ -169,7 +208,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase4-woo-bridge.php`, `e2e/phase2–4.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase4-woo-bridge.php`, `e2e/phase2–5.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -214,3 +253,5 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Restaurant price-range bands (₦ under ₦3,000 … ₦₦₦₦ over ₦15,000 per person) in `includes/class-restaurant.php`
 - Default large-group deposit ₦2,000 per guest for groups of 8+ (each restaurant can change it)
 - Paystack / Flutterwave TEST keys, then LIVE keys at launch
+- Event centres: 48-hour reply window, 72-hour deposit window, 30% default deposit, 7-day maximum online booking
+- Sample photos are illustrative (Wikimedia Commons, credited); real businesses upload their own

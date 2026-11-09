@@ -15,6 +15,7 @@
   "mappings": {
     "ek-tests": "./tests",
     "wp-content/mu-plugins/ek-local-mail.php": "./mu-plugins/ek-local-mail.php",
-    "ek-plugin-cache": "./.cache/plugins"
+    "ek-plugin-cache": "./.cache/plugins",
+    "ek-sample-data": "./sample-data"
   }
 }

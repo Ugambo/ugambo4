@@ -50,7 +50,8 @@
 		var isHotel = ! el.hasAttribute( 'data-unit' );
 		var map = L.map( el, { scrollWheelZoom: false } );
 		L.tileLayer( cfg.tiles, { maxZoom: 19, attribution: cfg.attribution } ).addTo( map );
-		var glyph = isHotel
+		var kind = el.getAttribute( 'data-kind' ) || '';
+		var glyph = 'event' === kind ? '<path d="M11 15l9-5 9 5M12 15v11M17 15v11M23 15v11M28 15v11M10 27h20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' : isHotel
 			? '<path d="M11 24v-8M11 21h18v3M13 19a2 2 0 1 0 0-.1M17 19h10a2 2 0 0 1 2 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'
 			: '<path d="M15 11v16M12.5 11v5a2.5 2.5 0 0 0 5 0v-5M25 27V11c-2.5 1.5-3 5-3 8h3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
 		var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="30" height="39"><path d="M20 51C20 51 2 31 2 19a18 18 0 0 1 36 0c0 12-18 32-18 32Z" fill="' + colour + '" stroke="#fff" stroke-width="2"/>' + glyph + '</svg>';

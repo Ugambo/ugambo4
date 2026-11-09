@@ -28,12 +28,34 @@ require_once ABSPATH . 'wp-admin/includes/media.php';
 require_once ABSPATH . 'wp-admin/includes/file.php';
 require_once ABSPATH . 'wp-admin/includes/image.php';
 $photos = array();
-foreach ( array( 'photo-2.jpg', 'photo-1.jpg', 'photo-3.jpg' ) as $f ) {
-	$tmp = wp_tempnam( $f );
-	copy( ABSPATH . 'ek-tests/e2e/fixtures/' . $f, $tmp );
-	$pid = media_handle_sideload( array( 'name' => $f, 'tmp_name' => $tmp ), $id );
+// Real royalty-free photos (Wikimedia Commons) when downloaded, else plain placeholders.
+$media   = ABSPATH . 'ek-sample-data/media/';
+$credits = file_exists( $media . 'credits.json' ) ? json_decode( file_get_contents( $media . 'credits.json' ), true ) : array();
+$keys    = array(
+	'hotel'        => array( 'hotel-room-1', 'hotel-lobby-1', 'hotel-pool-1' ),
+	'restaurant'   => array( 'food-jollof-1', 'food-suya-1', 'restaurant-interior-1' ),
+	'event-centre' => array( 'event-hall-1', 'event-hall-2', 'event-hall-3' ),
+);
+$files = array();
+foreach ( $keys[ $type ] ?? array() as $k ) {
+	if ( isset( $credits[ $k ] ) && file_exists( $media . $k . '.jpg' ) ) {
+		$files[ $media . $k . '.jpg' ] = $credits[ $k ];
+	}
+}
+if ( ! $files ) {
+	foreach ( array( 'photo-2.jpg', 'photo-1.jpg', 'photo-3.jpg' ) as $f ) {
+		$files[ ABSPATH . 'ek-tests/e2e/fixtures/' . $f ] = null;
+	}
+}
+foreach ( $files as $path => $credit ) {
+	$tmp = wp_tempnam( basename( $path ) );
+	copy( $path, $tmp );
+	$pid = media_handle_sideload( array( 'name' => basename( $path ), 'tmp_name' => $tmp ), $id );
 	if ( ! is_wp_error( $pid ) ) {
 		update_post_meta( $pid, '_ek_business_photo', $id );
+		if ( $credit ) {
+			update_post_meta( $pid, '_ek_credit', $credit );
+		}
 		$photos[] = $pid;
 	}
 }

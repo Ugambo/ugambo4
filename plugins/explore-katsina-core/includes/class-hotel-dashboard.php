@@ -121,8 +121,8 @@ final class Hotel_Dashboard {
 
 			case 'dash_calendar':
 				$room_id = absint( $in['room_id'] ?? 0 );
-				if ( ! Rooms::belongs_to( $room_id, $business_id ) ) {
-					wp_die( esc_html__( 'That room belongs to another hotel.', 'explore-katsina' ), '', array( 'response' => 403 ) );
+				if ( ! Rooms::belongs_to( $room_id, $business_id ) && ! Halls::belongs_to( $room_id, $business_id ) ) {
+					wp_die( esc_html__( 'That room or hall belongs to another business.', 'explore-katsina' ), '', array( 'response' => 403 ) );
 				}
 				$back = Dashboard::url( 'calendar', $business_id, array( 'room' => $room_id, 'month' => sanitize_text_field( $in['month'] ?? '' ) ) );
 				$op   = sanitize_key( $in['op'] ?? '' );
@@ -134,7 +134,7 @@ final class Hotel_Dashboard {
 					$value = 'price' === $op ? Money::to_kobo( $in['value'] ?? '' ) : absint( $in['value'] ?? 0 );
 					if ( 'price' === $op && $value < 100000 ) {
 						$r = new \WP_Error( 'price', __( 'Enter a price of at least ₦1,000.', 'explore-katsina' ) );
-					} elseif ( 'block' === $op && $value > Rooms::data( $room_id )['units'] ) {
+					} elseif ( 'block' === $op && $value > self::item( $room_id )['units'] ) {
 						$r = new \WP_Error( 'units', __( 'You cannot mark more rooms unavailable than you have.', 'explore-katsina' ) );
 					} else {
 						$r = Availability::set_range( $room_id, $in['from'] ?? '', $in['to'] ?? ( $in['from'] ?? '' ), $op, $value );
@@ -149,10 +149,15 @@ final class Hotel_Dashboard {
 		return $redirect;
 	}
 
+	/** A hotel room category or an event hall (both use the same calendar). */
+	public static function item( $id ) {
+		return Halls::get( $id ) ? Halls::data( $id ) : Rooms::data( $id );
+	}
+
 	/** Tell the owner if they closed or reduced dates that already have bookings. */
 	private static function warn_overbooked( $room_id, $uid ) {
 		global $wpdb;
-		$room  = Rooms::data( $room_id );
+		$room  = self::item( $room_id );
 		$count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->prefix}ek_nights WHERE item_id = %d AND night >= %s AND booked > 0 AND (closed = 1 OR booked + blocked > %d)",

@@ -7,6 +7,7 @@
  */
 use EK\Assets;
 use EK\Business;
+use EK\View;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -49,6 +50,8 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 				include EK_DIR . 'templates/public/hotel.php';
 			} elseif ( 'restaurant' === $b['type'] ) {
 				include EK_DIR . 'templates/public/restaurant.php';
+			} elseif ( 'event-centre' === $b['type'] ) {
+				include EK_DIR . 'templates/public/venue.php';
 			}
 			?>
 
@@ -58,6 +61,7 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 				<div class="ek-mini-map" data-ek-mini-map data-lat="<?php echo esc_attr( $b['lat'] ); ?>" data-lng="<?php echo esc_attr( $b['lng'] ); ?>" data-colour="<?php echo esc_attr( $colour ); ?>" role="img" aria-label="<?php esc_attr_e( 'Map showing the location', 'explore-katsina' ); ?>"></div>
 			</section>
 			<?php include EK_DIR . 'templates/public/nearby.php'; ?>
+			<?php echo View::photo_credits( $b['id'] ); // phpcs:ignore ?>
 		</div>
 
 		<aside class="ek-card ek-contact-card ek-stack" aria-labelledby="pub-contact">

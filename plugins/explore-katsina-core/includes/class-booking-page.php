@@ -25,7 +25,7 @@ final class Booking_Page {
 
 	public static function handle() {
 		$action = 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) ? sanitize_key( $_POST['ek_action'] ?? '' ) : ''; // phpcs:ignore
-		if ( in_array( $action, array( 'reserve_table', 'place_order' ), true ) ) {
+		if ( in_array( $action, array( 'reserve_table', 'place_order', 'book_event' ), true ) ) {
 			self::handle_restaurant( $action );
 			return;
 		}
@@ -90,7 +90,18 @@ final class Booking_Page {
 			'notes'       => $in['notes'] ?? '',
 			'customer_id' => get_current_user_id(),
 		);
-		if ( 'reserve_table' === $action ) {
+		if ( 'book_event' === $action ) {
+			$b = Booking::create_event(
+				$guest + array(
+					'hall_id'    => absint( $in['hall'] ?? 0 ),
+					'start'      => sanitize_text_field( $in['date'] ?? '' ),
+					'end'        => sanitize_text_field( $in['end'] ?? '' ),
+					'guests'     => absint( $in['guests'] ?? 0 ),
+					'layout'     => sanitize_key( $in['layout'] ?? '' ),
+					'event_type' => sanitize_key( $in['event_type'] ?? '' ),
+				)
+			);
+		} elseif ( 'reserve_table' === $action ) {
 			$b = Booking::create_reservation(
 				$guest + array(
 					'business_id' => absint( $in['reserve'] ?? 0 ),
@@ -147,6 +158,15 @@ final class Booking_Page {
 				return '<div class="ek"><div class="ek-empty"><strong>' . esc_html__( 'Payment link not valid', 'explore-katsina' ) . '</strong></div></div>';
 			}
 			return View::render( 'booking/test-pay', array( 'b' => $b ) );
+		}
+
+		if ( ! empty( $g['hall'] ) || ! empty( self::$values['hall'] ) ) {
+			$src  = self::$values ? self::$values : $g;
+			$hall = Halls::data( absint( $src['hall'] ?? 0 ) );
+			if ( ! $hall || ! $hall['active'] || 'publish' !== get_post_status( $hall['venue_id'] ) ) {
+				return '<div class="ek"><div class="ek-empty"><strong>' . esc_html__( 'Hall not found', 'explore-katsina' ) . '</strong></div></div>';
+			}
+			return View::render( 'booking/event', array( 'hall' => $hall, 'venue' => Business::profile( $hall['venue_id'] ), 'src' => $src, 'error' => self::$error, 'v' => self::$values ) );
 		}
 
 		if ( ! empty( $g['reserve'] ) || ! empty( self::$values['reserve'] ) ) {

@@ -34,8 +34,13 @@ $heads  = array(
 	'expired'          => __( 'This booking expired because payment was not completed', 'explore-katsina' ),
 	'no_show'          => __( 'Marked as no-show', 'explore-katsina' ),
 	'payment_conflict' => __( 'We received your payment but need to contact you', 'explore-katsina' ),
+	'requested'        => __( 'Request sent: the venue will reply within 48 hours', 'explore-katsina' ),
+	'deposit_paid'     => __( 'Deposit paid: your date is secured', 'explore-katsina' ),
 );
-$good = in_array( $b->status, array( 'new', 'confirmed', 'checked_in', 'checked_out', 'seated', 'completed', 'accepted', 'preparing', 'ready', 'out_for_delivery' ), true );
+$good = in_array( $b->status, array( 'new', 'confirmed', 'checked_in', 'checked_out', 'seated', 'completed', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'requested', 'deposit_paid' ), true );
+if ( 'event' === $kind && 'confirmed' === $b->status && ! (int) $b->paid_kobo ) {
+	$heads['confirmed'] = __( 'Accepted! Pay the deposit to secure your date', 'explore-katsina' );
+}
 ?>
 <div class="ek ek-book" style="max-width:760px;margin:0 auto">
 	<div class="ek-confirm-head <?php echo $good ? 'is-good' : 'is-other'; ?>">
@@ -44,11 +49,15 @@ $good = in_array( $b->status, array( 'new', 'confirmed', 'checked_in', 'checked_
 		<h1 style="margin:0"><?php echo esc_html( $heads[ $b->status ] ?? $b->status ); ?></h1>
 	</div>
 
+	<?php if ( 'event' === $kind && 'confirmed' === $b->status && ! (int) $b->paid_kobo ) : ?>
+		<?php $heads['confirmed'] = __( 'Accepted! Pay the deposit to secure your date', 'explore-katsina' ); $pay = Payments::start( $b ); ?>
+		<?php if ( ! is_wp_error( $pay ) ) : ?><p><a class="ek-btn" href="<?php echo esc_url( $pay ); ?>"><?php /* translators: %s: amount */ printf( esc_html__( 'Pay %s deposit', 'explore-katsina' ), esc_html( Money::format( $b->deposit_kobo ) ) ); ?></a> <span class="ek-small ek-muted"><?php /* translators: %s: date */ printf( esc_html__( 'Pay by %s or the date will be released.', 'explore-katsina' ), esc_html( \EK\View::date( $b->hold_expires, true ) ) ); ?></span></p><?php endif; ?>
+	<?php endif; ?>
 	<?php if ( 'pending_payment' === $b->status ) : ?>
 		<?php $pay = Payments::start( $b ); ?>
 		<?php if ( ! is_wp_error( $pay ) ) : ?><p><a class="ek-btn" href="<?php echo esc_url( $pay ); ?>"><?php /* translators: %s: amount */ printf( esc_html__( 'Pay %s now', 'explore-katsina' ), esc_html( Money::format( $d['pay_now'] ?? 0 ) ) ); ?></a> <span class="ek-small ek-muted"><?php esc_html_e( 'Held for you for 15 minutes.', 'explore-katsina' ); ?></span></p><?php endif; ?>
 	<?php elseif ( 'expired' === $b->status || ( 'cancelled' === $b->status && ! (int) $b->paid_kobo ) ) : ?>
-		<p><a class="ek-btn" href="<?php echo esc_url( $hotel['url'] . ( 'hotel' === $kind ? '#rooms' : '#reserve' ) ); ?>"><?php esc_html_e( 'Try again', 'explore-katsina' ); ?></a></p>
+		<p><a class="ek-btn" href="<?php echo esc_url( $hotel['url'] . ( 'hotel' === $kind ? '#rooms' : ( 'event' === $kind ? '#halls' : '#reserve' ) ) ); ?>"><?php esc_html_e( 'Try again', 'explore-katsina' ); ?></a></p>
 	<?php endif; ?>
 
 	<section class="ek-card ek-stack">
@@ -63,6 +72,16 @@ $good = in_array( $b->status, array( 'new', 'confirmed', 'checked_in', 'checked_
 			<?php if ( (int) $b->paid_kobo ) : ?><dt><?php esc_html_e( 'Paid online', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $b->paid_kobo ) ); ?></dd><?php endif; ?>
 			<?php if ( $due > 0 && ! in_array( $b->status, array( 'cancelled', 'declined', 'expired' ), true ) ) : ?><dt><?php esc_html_e( 'Pay at the hotel', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $due ) ); ?></dd><?php endif; ?>
 			<dt><?php esc_html_e( 'Cancellation', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( ( $b->policy['label'] ?? '' ) . ': ' . ( $b->policy['text'] ?? '' ) ); ?></dd>
+		</dl>
+		<?php elseif ( 'event' === $kind ) : ?>
+		<dl class="ek-dl">
+			<dt><?php esc_html_e( 'Hall', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( $d['hall'] ?? '' ); ?></dd>
+			<dt><?php esc_html_e( 'Date', 'explore-katsina' ); ?></dt><dd><strong><?php echo esc_html( wp_date( 'l j F Y', strtotime( $b->start_date ) ) . ( $b->end_date !== $b->start_date ? ' – ' . wp_date( 'l j F Y', strtotime( $b->end_date ) ) : '' ) ); ?></strong></dd>
+			<dt><?php esc_html_e( 'Event', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( ( \EK\Venue::event_types()[ $d['event_type'] ?? 'other' ] ?? '' ) . ' · ' . (int) $b->guests . ' ' . ( 'standing' === ( $d['layout'] ?? '' ) ? __( 'standing', 'explore-katsina' ) : __( 'seated', 'explore-katsina' ) ) ); ?></dd>
+			<dt><?php esc_html_e( 'Hall price', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $b->total_kobo ) ); ?></dd>
+			<dt><?php esc_html_e( 'Deposit', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $b->deposit_kobo ) ); ?> <?php echo (int) $b->paid_kobo ? '<span class="ek-pill ek-pill--ok">' . esc_html__( 'paid', 'explore-katsina' ) . '</span>' : ''; ?></dd>
+			<dt><?php esc_html_e( 'Balance', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( (int) $b->total_kobo - (int) $b->deposit_kobo ) ); ?> <?php esc_html_e( '(pay the venue directly)', 'explore-katsina' ); ?></dd>
+			<dt><?php esc_html_e( 'Cancellation', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( ( $b->policy['label'] ?? '' ) . ': ' . str_replace( __( 'check-in', 'explore-katsina' ), __( 'the event', 'explore-katsina' ), $b->policy['text'] ?? '' ) ); ?></dd>
 		</dl>
 		<?php elseif ( 'restaurant' === $kind ) : ?>
 		<dl class="ek-dl">

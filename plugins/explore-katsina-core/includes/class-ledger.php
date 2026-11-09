@@ -53,6 +53,13 @@ final class Ledger {
 		$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}ek_ledger SET release_at = %s WHERE booking_id = %d AND status = 'on_hold'", $at, $b->id ) );
 	}
 
+	/** Release held money 3 days after a given (local) date, e.g. the last event day. */
+	public static function release_after( $b, $date ) {
+		global $wpdb;
+		$at = ( new \DateTimeImmutable( $date . ' 23:59:59', Availability::tz() ) )->modify( '+' . self::RELEASE_DAYS . ' days' )->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );
+		$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}ek_ledger SET release_at = %s WHERE booking_id = %d AND status = 'on_hold'", $at, $b->id ) );
+	}
+
 	/** A paid booking was declined/cancelled/no-show: freeze its money until the refund is decided (Phase 6). */
 	public static function freeze_for_refund( $b, $why ) {
 		global $wpdb;

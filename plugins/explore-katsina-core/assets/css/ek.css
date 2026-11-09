@@ -448,3 +448,7 @@ body:has(.ek-search) .wp-block-post-title, body:has(.ek-book) .wp-block-post-tit
 .ek .ek-order-bar { position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--ek-night); color: #fff; border-radius: var(--ek-radius-sm); font-weight: 700; }
 .ek .ek-status-seated, .ek .ek-status-accepted, .ek .ek-status-preparing, .ek .ek-status-ready, .ek .ek-status-out_for_delivery { background: var(--ek-emerald-tint); color: #134636; }
 @media (min-width: 860px) { .ek .ek-search-grid--food { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Photo credits */
+.ek .ek-credits { font-size: .82rem; color: var(--ek-muted); }
+.ek .ek-credits summary { cursor: pointer; font-weight: 600; }
+.ek .ek-credits ul { margin: 6px 0; padding-left: 1.1em; display: grid; gap: 2px; }

@@ -32,6 +32,7 @@ final class Install {
 		Settings::ensure_defaults();
 		Post_Types::register();
 		Rooms::register();
+		Halls::register();
 		self::add_terms();
 		self::add_pages();
 		Private_Files::protect_directory();
@@ -348,6 +349,11 @@ final class Install {
 				'title'   => __( 'Restaurants', 'explore-katsina' ),
 				'slug'    => 'restaurants',
 				'content' => '<!-- wp:shortcode -->[ek_restaurant_search]<!-- /wp:shortcode -->',
+			),
+			'event_centres' => array(
+				'title'   => __( 'Event Centres', 'explore-katsina' ),
+				'slug'    => 'event-centres',
+				'content' => '<!-- wp:shortcode -->[ek_venue_search]<!-- /wp:shortcode -->',
 			),
 			'book'          => array(
 				'title'   => __( 'Book', 'explore-katsina' ),

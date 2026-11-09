@@ -218,6 +218,22 @@ final class Emails {
 			}
 			return $lines;
 		}
+		if ( 'event' === $b->kind ) {
+			$days    = array_keys( (array) ( $d['days'] ?? array() ) );
+			$lines[] = ( $d['business'] ?? '' ) . ' · ' . ( $d['hall'] ?? '' );
+			$lines[] = count( $days ) > 1
+				? wp_date( 'D j M Y', strtotime( $b->start_date ) ) . ' – ' . wp_date( 'D j M Y', strtotime( $b->end_date ) )
+				: wp_date( 'l j F Y', strtotime( $b->start_date ) );
+			/* translators: 1: guests, 2: seated/standing, 3: event type */
+			$lines[] = sprintf( __( '%1$d guests (%2$s) · %3$s', 'explore-katsina' ), (int) $b->guests, 'standing' === ( $d['layout'] ?? '' ) ? __( 'standing', 'explore-katsina' ) : __( 'seated', 'explore-katsina' ), Venue::event_types()[ $d['event_type'] ?? 'other' ] ?? '' );
+			/* translators: %s: total */
+			$lines[] = sprintf( __( 'Hall price: %s', 'explore-katsina' ), Money::format( $b->total_kobo ) );
+			/* translators: %s: deposit */
+			$lines[] = sprintf( __( 'Deposit: %s', 'explore-katsina' ), Money::format( $b->deposit_kobo ) ) . ( (int) $b->paid_kobo ? ' ' . __( '(paid)', 'explore-katsina' ) : '' );
+			/* translators: %s: balance */
+			$lines[] = sprintf( __( 'Balance to pay the venue: %s', 'explore-katsina' ), Money::format( (int) $b->total_kobo - (int) $b->deposit_kobo ) );
+			return $lines;
+		}
 		if ( 'order' === $b->kind ) {
 			$lines[] = ( $d['business'] ?? '' ) . ' · ' . ( $d['title'] ?? '' );
 			foreach ( (array) ( $d['items'] ?? array() ) as $i ) {
@@ -253,6 +269,7 @@ final class Emails {
 			'hotel'      => array( __( 'booking', 'explore-katsina' ), __( 'hotel', 'explore-katsina' ) ),
 			'restaurant' => array( __( 'reservation', 'explore-katsina' ), __( 'restaurant', 'explore-katsina' ) ),
 			'order'      => array( __( 'order', 'explore-katsina' ), __( 'restaurant', 'explore-katsina' ) ),
+			'event'      => array( __( 'booking', 'explore-katsina' ), __( 'venue', 'explore-katsina' ) ),
 		)[ $b->kind ] ?? array( __( 'booking', 'explore-katsina' ), __( 'business', 'explore-katsina' ) );
 	}
 
@@ -263,11 +280,17 @@ final class Emails {
 			$b->customer_email,
 			/* translators: %s: booking code */
 			sprintf( __( 'Booking received: %s', 'explore-katsina' ), $b->code ),
-			/* translators: %s: booking/reservation/order */
-			sprintf( __( 'Thank you, your %s is in', 'explore-katsina' ), self::noun( $b )[0] ),
+			'event' === $b->kind && 'deposit_paid' === $b->status ? __( 'Deposit received: your date is secured', 'explore-katsina' )
+				/* translators: %s: booking/reservation/order */
+				: ( 'requested' === $b->status ? __( 'Your request has been sent to the venue', 'explore-katsina' ) : sprintf( __( 'Thank you, your %s is in', 'explore-katsina' ), self::noun( $b )[0] ) ),
 			array_merge(
-				/* translators: 1: hotel/restaurant, 2: booking/reservation/order */
-				array( sprintf( __( 'The %1$s will confirm your %2$s shortly. We will email you as soon as they do.', 'explore-katsina' ), self::noun( $b )[1], self::noun( $b )[0] ) ),
+				array(
+					'event' === $b->kind && 'deposit_paid' === $b->status ? __( 'Your deposit is paid and the hall is reserved for you. Pay the balance directly to the venue as agreed.', 'explore-katsina' )
+					: ( 'requested' === $b->status
+						? __( 'The venue will reply within 48 hours. If they accept, you will have 72 hours to pay the deposit online to secure the date.', 'explore-katsina' )
+						/* translators: 1: hotel/restaurant, 2: booking/reservation/order */
+						: sprintf( __( 'The %1$s will confirm your %2$s shortly. We will email you as soon as they do.', 'explore-katsina' ), self::noun( $b )[1], self::noun( $b )[0] ) ),
+				),
 				self::booking_lines( $b ),
 				! empty( $b->policy['text'] ) ? array( __( 'Cancellation policy:', 'explore-katsina' ) . ' ' . $b->policy['text'] ) : array()
 			),
@@ -319,7 +342,14 @@ final class Emails {
 			'ready'            => __( 'Your order is ready for pickup', 'explore-katsina' ),
 			'out_for_delivery' => __( 'Your order is on its way', 'explore-katsina' ),
 		);
+		if ( 'event' === $b->kind && 'confirmed' === $b->status ) {
+			$heads['confirmed'] = __( 'The venue accepted your request: pay the deposit to secure your date', 'explore-katsina' );
+		}
 		$extra = array();
+		if ( 'event' === $b->kind && 'confirmed' === $b->status ) {
+			/* translators: %s: amount */
+			$extra[] = sprintf( __( 'Pay the %s deposit within 72 hours using the button below, or the date will be released.', 'explore-katsina' ), Money::format( $b->deposit_kobo ) );
+		}
 		if ( in_array( $b->status, array( 'declined', 'cancelled' ), true ) && (int) $b->paid_kobo > 0 ) {
 			$extra[] = __( 'You paid online for this booking. Our team will review your refund and contact you.', 'explore-katsina' );
 		}

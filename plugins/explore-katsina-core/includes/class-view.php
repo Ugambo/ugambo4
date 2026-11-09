@@ -129,4 +129,35 @@ final class View {
 		$ts = strtotime( $mysql_gmt . ' UTC' );
 		return wp_date( $with_time ? 'j M Y, g:i a' : 'j M Y', $ts, new \DateTimeZone( 'Africa/Lagos' ) );
 	}
+
+	/**
+	 * Photo credits for a business page: every attached photo that carries licence details
+	 * (author, licence, source), e.g. royalty-free sample photos from Wikimedia Commons.
+	 */
+	public static function photo_credits( $business_id ) {
+		$atts = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_parent'    => (int) $business_id,
+				'posts_per_page' => 50,
+				'meta_key'       => '_ek_credit', // phpcs:ignore
+				'fields'         => 'ids',
+			)
+		);
+		$items = array();
+		foreach ( $atts as $id ) {
+			$c = get_post_meta( $id, '_ek_credit', true );
+			if ( ! is_array( $c ) || empty( $c['license'] ) ) {
+				continue;
+			}
+			$lic  = ! empty( $c['license_url'] ) ? '<a href="' . esc_url( $c['license_url'] ) . '" rel="license noopener" target="_blank">' . esc_html( $c['license'] ) . '</a>' : esc_html( $c['license'] );
+			$src  = ! empty( $c['source'] ) ? ' · <a href="' . esc_url( $c['source'] ) . '" rel="noopener" target="_blank">' . esc_html__( 'source', 'explore-katsina' ) . '</a>' : '';
+			$who  = ! empty( $c['author'] ) ? esc_html( $c['author'] ) : esc_html__( 'Unknown author', 'explore-katsina' );
+			$items[ md5( $c['source'] ?? $id ) ] = '<li>' . $who . ' · ' . $lic . $src . '</li>';
+		}
+		if ( ! $items ) {
+			return '';
+		}
+		return '<details class="ek-credits"><summary>' . esc_html__( 'Photo credits', 'explore-katsina' ) . '</summary><ul>' . implode( '', $items ) . '</ul><p class="ek-small ek-muted">' . esc_html__( 'Illustrative photos from Wikimedia Commons, used under the licences shown.', 'explore-katsina' ) . '</p></details>';
+	}
 }

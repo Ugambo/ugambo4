@@ -21,7 +21,7 @@ final class Booking {
 	const CRON_HOOK    = 'ek_expire_holds';
 
 	/** Statuses that occupy rooms / table slots. */
-	const OCCUPYING = array( 'pending_payment', 'new', 'confirmed', 'checked_in', 'seated' );
+	const OCCUPYING = array( 'pending_payment', 'new', 'confirmed', 'checked_in', 'seated', 'requested', 'deposit_paid' );
 
 	public static function init() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedule' ) );
@@ -61,6 +61,8 @@ final class Booking {
 			'preparing'        => __( 'Preparing', 'explore-katsina' ),
 			'ready'            => __( 'Ready for pickup', 'explore-katsina' ),
 			'out_for_delivery' => __( 'Out for delivery', 'explore-katsina' ),
+			'requested'        => __( 'Requested', 'explore-katsina' ),
+			'deposit_paid'     => __( 'Deposit paid', 'explore-katsina' ),
 		);
 	}
 
@@ -81,6 +83,14 @@ final class Booking {
 				'new'       => array( 'confirmed' => __( 'Confirm', 'explore-katsina' ), 'declined' => __( 'Decline', 'explore-katsina' ) ),
 				'confirmed' => array( 'seated' => __( 'Mark seated', 'explore-katsina' ), 'no_show' => __( 'Mark no-show', 'explore-katsina' ), 'cancelled' => __( 'Cancel reservation', 'explore-katsina' ) ),
 				'seated'    => array( 'completed' => __( 'Mark completed', 'explore-katsina' ) ),
+			);
+			return $map[ $b->status ] ?? array();
+		}
+		if ( 'event' === $b->kind ) {
+			$map = array(
+				'requested'    => array( 'confirmed' => __( 'Accept request', 'explore-katsina' ), 'declined' => __( 'Decline', 'explore-katsina' ) ),
+				'confirmed'    => array( 'cancelled' => __( 'Cancel booking', 'explore-katsina' ) ),
+				'deposit_paid' => array( 'completed' => __( 'Mark event completed', 'explore-katsina' ), 'cancelled' => __( 'Cancel booking', 'explore-katsina' ) ),
 			);
 			return $map[ $b->status ] ?? array();
 		}
@@ -131,6 +141,9 @@ final class Booking {
 	}
 
 	public static function nights_of( $b ) {
+		if ( 'event' === $b->kind ) {
+			return Venue::days( $b->start_date, $b->end_date );
+		}
 		return Availability::nights( $b->start_date, $b->end_date );
 	}
 
@@ -506,6 +519,135 @@ final class Booking {
 		return $b;
 	}
 
+	/**
+	 * Event centre booking (request-to-book or instant deposit).
+	 *
+	 * @param array $a hall_id, start, end, guests, layout (seated|standing), event_type, name, email, phone, notes, customer_id
+	 * @return object|\WP_Error
+	 */
+	public static function create_event( array $a ) {
+		global $wpdb;
+		self::expire_holds();
+		$hall = Halls::data( $a['hall_id'] ?? 0 );
+		if ( ! $hall || ! $hall['active'] ) {
+			return new \WP_Error( 'hall', __( 'This hall is not available for booking.', 'explore-katsina' ) );
+		}
+		$venue = Business::get( $hall['venue_id'] );
+		if ( ! $venue || 'publish' !== $venue->post_status || 'event-centre' !== Business::type_of( $venue->ID ) ) {
+			return new \WP_Error( 'venue', __( 'This event centre is not taking bookings right now.', 'explore-katsina' ) );
+		}
+		$start = (string) ( $a['start'] ?? '' );
+		$end   = (string) ( $a['end'] ?? '' ) ? (string) $a['end'] : $start;
+		if ( ! Availability::valid_date( $start ) || ! Availability::valid_date( $end ) || $end < $start ) {
+			return new \WP_Error( 'dates', __( 'Choose the event date.', 'explore-katsina' ) );
+		}
+		if ( $start < Availability::today() ) {
+			return new \WP_Error( 'past', __( 'The event date cannot be in the past.', 'explore-katsina' ) );
+		}
+		$days = Venue::days( $start, $end );
+		if ( count( $days ) > Venue::MAX_DAYS ) {
+			/* translators: %d: days */
+			return new \WP_Error( 'long', sprintf( __( 'Online bookings are for up to %d days. Contact the venue for longer events.', 'explore-katsina' ), Venue::MAX_DAYS ) );
+		}
+		if ( 'event' === $hall['pricing'] && count( $days ) > 1 ) {
+			return new \WP_Error( 'one_day', __( 'This hall is priced per event: please book one day at a time, or contact the venue.', 'explore-katsina' ) );
+		}
+		$layout = 'standing' === ( $a['layout'] ?? '' ) ? 'standing' : 'seated';
+		$cap    = 'standing' === $layout ? $hall['capacity_standing'] : $hall['capacity_seated'];
+		$guests = (int) ( $a['guests'] ?? 0 );
+		if ( $guests < 1 ) {
+			return new \WP_Error( 'guests', __( 'How many guests are you expecting?', 'explore-katsina' ) );
+		}
+		if ( $guests > $cap ) {
+			/* translators: 1: capacity, 2: seated/standing */
+			return new \WP_Error( 'capacity', sprintf( __( 'This hall holds up to %1$d guests %2$s.', 'explore-katsina' ), $cap, 'standing' === $layout ? __( 'standing', 'explore-katsina' ) : __( 'seated', 'explore-katsina' ) ) );
+		}
+		$type = isset( Venue::event_types()[ $a['event_type'] ?? '' ] ) ? $a['event_type'] : 'other';
+		$g    = self::guest( $a, __( 'event centre', 'explore-katsina' ) );
+		if ( is_wp_error( $g ) ) {
+			return $g;
+		}
+		$s = Venue::settings( $venue->ID );
+		if ( 'instant' === $s['booking_mode'] && ! Payments::online_available() ) {
+			return new \WP_Error( 'payment', __( 'Online payment is not available right now. Please contact the venue.', 'explore-katsina' ) );
+		}
+		Availability::forget( $hall['id'] );
+		$quote = Venue::quote( $hall, $start, $end );
+		if ( ! $quote['ok'] ) {
+			return new \WP_Error( 'sold_out', $quote['reason'] );
+		}
+		$total   = (int) $quote['total'];
+		$deposit = (int) round( $total * $s['deposit_pct'] / 100 );
+		$rate_bp = Commission::rate_bp( $venue->ID, 'event-centre' );
+		$status  = 'instant' === $s['booking_mode'] ? 'pending_payment' : 'requested';
+
+		Availability::ensure_rows( $hall['id'], $days );
+		for ( $attempt = 1; $attempt <= 3; $attempt++ ) {
+			$wpdb->query( 'START TRANSACTION' );
+			$taken = Availability::take( $hall, $days, 1 );
+			if ( ! is_wp_error( $taken ) ) {
+				break;
+			}
+			$wpdb->query( 'ROLLBACK' );
+			if ( 'lock' !== $taken->get_error_code() || 3 === $attempt ) {
+				return 'sold_out' === $taken->get_error_code() ? new \WP_Error( 'sold_out', __( 'Sorry, this hall was just booked by someone else for that date. Please choose another date or hall.', 'explore-katsina' ) ) : $taken;
+			}
+			usleep( random_int( 50000, 200000 ) );
+		}
+		$id = self::insert(
+			array(
+				'kind'               => 'event',
+				'business_id'        => $venue->ID,
+				'item_id'            => $hall['id'],
+				'customer_id'        => (int) ( $a['customer_id'] ?? 0 ),
+				'customer_name'      => $g[0],
+				'customer_email'     => $g[1],
+				'customer_phone'     => $g[2],
+				'start_date'         => $start,
+				'end_date'           => $end,
+				'guests'             => $guests,
+				'quantity'           => 1,
+				'total_kobo'         => $total,
+				'deposit_kobo'       => $deposit,
+				'commission_rate_bp' => $rate_bp,
+				'commission_kobo'    => (int) round( $deposit * $rate_bp / 10000 ),
+				'payment_mode'       => 'deposit',
+				'status'             => $status,
+				'details'            => wp_json_encode(
+					array(
+						'business'   => $venue->post_title,
+						'hall'       => $hall['name'],
+						/* translators: %s: hall */
+						'title'      => $hall['name'],
+						'days'       => $quote['days'],
+						'pricing'    => $hall['pricing'],
+						'layout'     => $layout,
+						'event_type' => $type,
+						'pay_now'    => $deposit,
+						'pay_later'  => $total - $deposit,
+						'mode'       => $s['booking_mode'],
+					)
+				),
+				'policy_snapshot'    => wp_json_encode( array_merge( array( 'key' => $s['policy'] ), Hotel::policies()[ $s['policy'] ], array( 'note' => $s['policy_note'] ) ) ),
+				'notes'              => sanitize_textarea_field( $a['notes'] ?? '' ),
+			)
+		);
+		if ( ! $id ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new \WP_Error( 'db', __( 'The booking could not be saved. Please try again.', 'explore-katsina' ) );
+		}
+		if ( 'requested' === $status ) {
+			$wpdb->update( $wpdb->prefix . 'ek_bookings', array( 'hold_expires' => gmdate( 'Y-m-d H:i:s', time() + Venue::REPLY_HOURS * HOUR_IN_SECONDS ) ), array( 'id' => $id ) );
+		}
+		$wpdb->query( 'COMMIT' );
+		$b = self::get( $id );
+		self::history( $id, '', $status, 0 );
+		if ( 'requested' === $status ) {
+			Emails::booking_created( $b );
+		}
+		return $b;
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* Payments                                                             */
 	/* ------------------------------------------------------------------ */
@@ -526,7 +668,9 @@ final class Booking {
 		}
 
 		$new_status = $b->status;
-		if ( 'pending_payment' === $b->status ) {
+		if ( 'event' === $b->kind && in_array( $b->status, array( 'pending_payment', 'confirmed' ), true ) ) {
+			$new_status = 'deposit_paid';
+		} elseif ( 'pending_payment' === $b->status ) {
 			$new_status = 'new';
 		} elseif ( in_array( $b->status, array( 'expired', 'cancelled' ), true ) ) {
 			// The hold ran out before the money arrived: try to take the rooms / table again.
@@ -539,7 +683,7 @@ final class Booking {
 				$wpdb->query( 'START TRANSACTION' );
 				$taken = true;
 			} else {
-				$room = Rooms::data( $b->item_id );
+				$room = 'event' === $b->kind ? Halls::data( $b->item_id ) : Rooms::data( $b->item_id );
 				if ( $room ) {
 					Availability::ensure_rows( $room['id'], self::nights_of( $b ) );
 				}
@@ -551,7 +695,7 @@ final class Booking {
 				$new_status = 'payment_conflict';
 			} else {
 				$wpdb->query( 'COMMIT' );
-				$new_status = 'new';
+				$new_status = 'event' === $b->kind ? 'deposit_paid' : 'new';
 			}
 		}
 
@@ -576,6 +720,10 @@ final class Booking {
 			return $b;
 		}
 		Ledger::record_payment( $b, (int) $amount_kobo, $reference );
+		if ( 'event' === $b->kind ) {
+			// Event centre money is released 3 days after the (last) event day, if there is no complaint.
+			Ledger::release_after( $b, $b->end_date );
+		}
 		Emails::booking_created( $b );
 		return $b;
 	}
@@ -591,11 +739,23 @@ final class Booking {
 	/** Free rooms held by unpaid bookings older than 15 minutes. */
 	public static function expire_holds() {
 		global $wpdb;
-		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}ek_bookings WHERE status = 'pending_payment' AND hold_expires < %s LIMIT 200", current_time( 'mysql', true ) ) );
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}ek_bookings WHERE hold_expires < %s AND ( status IN ('pending_payment','requested') OR ( kind = 'event' AND status = 'confirmed' AND paid_kobo = 0 ) ) LIMIT 200",
+				current_time( 'mysql', true )
+			)
+		);
 		foreach ( $ids as $id ) {
 			$b = self::get( $id );
-			if ( $b && 'pending_payment' === $b->status ) {
+			if ( ! $b ) {
+				continue;
+			}
+			if ( 'pending_payment' === $b->status ) {
 				self::set_status( $b, 'expired', 0, 'hold expired' );
+			} elseif ( 'requested' === $b->status ) {
+				self::set_status( $b, 'expired', 0, 'venue did not reply in time' );
+			} elseif ( 'confirmed' === $b->status && 'event' === $b->kind ) {
+				self::set_status( $b, 'cancelled', 0, 'deposit not paid in time' );
 			}
 		}
 		return count( $ids );
@@ -625,8 +785,20 @@ final class Booking {
 			return new \WP_Error( 'transition', __( 'That change is not possible for this booking now.', 'explore-katsina' ) );
 		}
 		$today = Availability::today();
+		if ( 'event' === $b->kind && 'completed' === $to && $today < $b->end_date ) {
+			return new \WP_Error( 'early', __( 'You can mark the event completed on or after its date.', 'explore-katsina' ) );
+		}
 		if ( in_array( $to, array( 'checked_in', 'no_show', 'seated' ), true ) && $today < $b->start_date ) {
 			return new \WP_Error( 'early', __( 'You can only do this on or after the check-in date.', 'explore-katsina' ) );
+		}
+		if ( 'event' === $b->kind && 'confirmed' === $to ) {
+			// The guest now has 72 hours to pay the deposit; until then the date stays held.
+			global $wpdb;
+			$pay_by = gmdate( 'Y-m-d H:i:s', time() + Venue::PAY_BY_HOURS * HOUR_IN_SECONDS );
+			$wpdb->update( $wpdb->prefix . 'ek_bookings', array( 'hold_expires' => $pay_by ), array( 'id' => $b->id ) );
+			self::set_status( $b, $to, $actor_id, $note );
+			$wpdb->update( $wpdb->prefix . 'ek_bookings', array( 'hold_expires' => $pay_by ), array( 'id' => $b->id ) );
+			return true;
 		}
 		self::set_status( $b, $to, $actor_id, $note );
 		return true;
@@ -651,7 +823,7 @@ final class Booking {
 
 		$was_occupying = in_array( $from, self::OCCUPYING, true );
 		$now_occupying = in_array( $to, self::OCCUPYING, true ) || in_array( $to, array( 'checked_out', 'completed' ), true );
-		if ( 'hotel' === $b->kind && $was_occupying && ! $now_occupying ) {
+		if ( in_array( $b->kind, array( 'hotel', 'event' ), true ) && $was_occupying && ! $now_occupying ) {
 			// Cancelled / declined / expired / no-show: give back all nights that haven't passed.
 			Availability::give_back( $b->item_id, self::nights_of( $b ), (int) $b->quantity, 'no_show' === $to ? Availability::today() : '' );
 		}

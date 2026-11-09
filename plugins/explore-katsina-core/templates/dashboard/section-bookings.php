@@ -50,7 +50,13 @@ $modes  = array(
 					<span class="ek-pill ek-status-<?php echo esc_attr( $bk->status ); ?>"><?php echo esc_html( Dashboard::booking_status_label( $bk->status ) ); ?></span>
 				</div>
 				<dl class="ek-dl">
-					<?php if ( 'restaurant' === $bk->kind ) : ?>
+					<?php if ( 'event' === $bk->kind ) : ?>
+						<dt><?php esc_html_e( 'Hall', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( $d['hall'] ?? '' ); ?></dd>
+						<dt><?php esc_html_e( 'Date', 'explore-katsina' ); ?></dt><dd><strong><?php echo esc_html( wp_date( 'D j M Y', strtotime( $bk->start_date ) ) . ( $bk->end_date !== $bk->start_date ? ' – ' . wp_date( 'D j M Y', strtotime( $bk->end_date ) ) : '' ) ); ?></strong></dd>
+						<dt><?php esc_html_e( 'Event', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( ( \EK\Venue::event_types()[ $d['event_type'] ?? 'other' ] ?? '' ) . ' · ' . (int) $bk->guests . ' ' . ( 'standing' === ( $d['layout'] ?? '' ) ? __( 'standing', 'explore-katsina' ) : __( 'seated', 'explore-katsina' ) ) ); ?></dd>
+						<dt><?php esc_html_e( 'Money', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $bk->total_kobo ) ); ?> · <?php esc_html_e( 'deposit', 'explore-katsina' ); ?> <?php echo esc_html( Money::format( $bk->deposit_kobo ) ); ?> <?php echo (int) $bk->paid_kobo ? '<span class="ek-pill ek-pill--ok">' . esc_html__( 'paid', 'explore-katsina' ) . '</span>' : '<span class="ek-pill">' . esc_html__( 'not paid yet', 'explore-katsina' ) . '</span>'; ?></dd>
+						<?php if ( 'requested' === $bk->status && $bk->hold_expires ) : ?><dt><?php esc_html_e( 'Reply by', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( \EK\View::date( $bk->hold_expires, true ) ); ?></dd><?php endif; ?>
+					<?php elseif ( 'restaurant' === $bk->kind ) : ?>
 						<dt><?php esc_html_e( 'When', 'explore-katsina' ); ?></dt><dd><strong><?php echo esc_html( wp_date( 'D j M Y', strtotime( $bk->start_date ) ) . ' · ' . substr( (string) $bk->start_time, 0, 5 ) ); ?></strong></dd>
 						<dt><?php esc_html_e( 'Party', 'explore-katsina' ); ?></dt><dd><?php /* translators: %d: people */ printf( esc_html( _n( '%d person', '%d people', (int) $bk->guests, 'explore-katsina' ) ), (int) $bk->guests ); ?></dd>
 						<?php if ( (int) $bk->deposit_kobo ) : ?><dt><?php esc_html_e( 'Deposit', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Money::format( $bk->deposit_kobo ) ); ?> <?php echo (int) $bk->paid_kobo ? esc_html__( '(paid online, deduct from the bill)', 'explore-katsina' ) : ''; ?></dd><?php endif; ?>

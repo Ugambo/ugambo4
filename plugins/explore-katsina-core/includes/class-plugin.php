@@ -21,6 +21,9 @@ final class Plugin {
 		Payments::init();
 		Hotel_Dashboard::init();
 		Restaurant_Dashboard::init();
+		Halls::init();
+		Venue_Dashboard::init();
+		Venue_Search::init();
 		Restaurant_Search::init();
 		Hotel_Search::init();
 		Booking_Page::init();
