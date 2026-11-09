@@ -262,7 +262,7 @@ $msgs = array();
 $b8   = ek6_book( $room, $d( 18 ), $d( 19 ), $guest_email );
 Refunds::guest_cancel( $b8, 0 );
 EK\Settings::update( array( 'messaging_sms' => $was_sms ? 1 : 0 ) );
-$evs = wp_list_pluck( $msgs, 'phone', 'event' );
+$evs = array_column( $msgs, 'phone', 'event' );
 ek6( ! empty( $evs['guest_cancelled'] ) && ! empty( $evs['business_guest_cancelled'] ), 'Switched on: guest and business messages carry their phone numbers' );
 
 WP_CLI::line( 'Emails' );

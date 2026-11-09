@@ -224,7 +224,7 @@ from exactly where the last one stopped.
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 390 automatic checks, server and browser (Phases 2–6)
+./tests/run.sh      # about 400 automatic checks, server and browser (Phases 2–6)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
