@@ -25,6 +25,10 @@ final class Booking_Page {
 
 	public static function handle() {
 		$action = 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) ? sanitize_key( $_POST['ek_action'] ?? '' ) : ''; // phpcs:ignore
+		if ( in_array( $action, array( 'guest_cancel', 'guest_review' ), true ) ) {
+			self::handle_guest_action( $action );
+			return;
+		}
 		if ( in_array( $action, array( 'reserve_table', 'place_order', 'book_event' ), true ) ) {
 			self::handle_restaurant( $action );
 			return;
@@ -72,6 +76,39 @@ final class Booking_Page {
 			return;
 		}
 		wp_redirect( $url ); // phpcs:ignore WordPress.Security.SafeRedirect -- may be the payment page.
+		exit;
+	}
+
+	/** @var string Messages for the confirmation page. */
+	public static $notice = '';
+	public static $review_values = array();
+
+	/**
+	 * The guest cancels or reviews from their booking page. Allowed with the booking's secret
+	 * link (code + key from the email) or when logged in as the customer who made it.
+	 */
+	private static function handle_guest_action( $action ) {
+		$in = wp_unslash( $_POST ); // phpcs:ignore
+		$b  = Booking::by_code( sanitize_text_field( $in['code'] ?? '' ), sanitize_text_field( $in['key'] ?? '' ) );
+		if ( ! $b || ! wp_verify_nonce( $in['_ek_nonce'] ?? '', 'ek_' . $action . '_' . $b->code ) ) {
+			wp_die( esc_html__( 'This link is not valid. Please use the link in your email.', 'explore-katsina' ), '', array( 'response' => 403 ) );
+		}
+		if ( 'guest_cancel' === $action ) {
+			$r = Refunds::guest_cancel( $b, get_current_user_id() );
+			self::$notice = is_wp_error( $r ) ? $r->get_error_message() : '';
+			if ( ! is_wp_error( $r ) ) {
+				wp_safe_redirect( add_query_arg( 'cancelled', 1, Booking::link( $b ) ) );
+				exit;
+			}
+			return;
+		}
+		$r = Reviews::submit( $b, $in );
+		if ( is_wp_error( $r ) ) {
+			self::$notice        = $r->get_error_message();
+			self::$review_values = $in;
+			return;
+		}
+		wp_safe_redirect( add_query_arg( 'reviewed', 1, Booking::link( $b ) ) . '#review' );
 		exit;
 	}
 

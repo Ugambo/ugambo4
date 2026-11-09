@@ -102,6 +102,7 @@ if ( 'event' === $kind && 'confirmed' === $b->status && ! (int) $b->paid_kobo ) 
 			<?php if ( $hotel['whatsapp'] ) : ?><a class="ek-btn ek-btn--wa" href="<?php echo esc_url( 'https://wa.me/' . ltrim( $hotel['whatsapp'], '+' ) . '?text=' . rawurlencode( sprintf( /* translators: %s: code */ __( 'Hello, about my booking %s', 'explore-katsina' ), $b->code ) ) ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'WhatsApp', 'explore-katsina' ); ?></a><?php endif; ?>
 			<a class="ek-btn ek-btn--ghost" href="<?php echo esc_url( 'tel:' . $hotel['phone'] ); ?>"><?php esc_html_e( 'Call', 'explore-katsina' ); ?></a>
 		</div>
-		<p class="ek-small ek-muted" style="margin:0"><?php esc_html_e( 'Keep this link: it shows the latest status of your booking. Cancelling online and adding to your calendar are coming soon.', 'explore-katsina' ); ?></p>
+		<p class="ek-small ek-muted" style="margin:0"><?php esc_html_e( 'Keep this link: it always shows the latest status of your booking.', 'explore-katsina' ); ?></p>
 	</section>
+	<?php include EK_DIR . 'templates/booking/guest-actions.php'; ?>
 </div>

@@ -26,12 +26,17 @@ final class Access {
 		return ! user_can( $user, 'edit_posts' );
 	}
 
+	/** Business owners land on their dashboard; customers on My Account. */
+	public static function home_for( $user ) {
+		return in_array( Install::ROLE_OWNER, (array) $user->roles, true ) ? Install::page_url( 'dashboard' ) : Install::page_url( 'account' );
+	}
+
 	public static function block_admin() {
 		if ( wp_doing_ajax() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 			return;
 		}
 		if ( self::is_front_end_only() ) {
-			wp_safe_redirect( Install::page_url( 'dashboard' ) );
+			wp_safe_redirect( self::home_for( wp_get_current_user() ) );
 			exit;
 		}
 	}
@@ -45,7 +50,7 @@ final class Access {
 			if ( $requested && false === strpos( $requested, 'wp-admin' ) ) {
 				return $requested;
 			}
-			return Install::page_url( 'dashboard' );
+			return self::home_for( $user );
 		}
 		return $redirect_to;
 	}

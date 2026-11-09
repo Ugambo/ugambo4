@@ -62,6 +62,10 @@ final class Log {
 			'stars_verified'     => __( 'Star rating verified', 'explore-katsina' ),
 			'stars_unverified'   => __( 'Star rating verification removed', 'explore-katsina' ),
 			'refund_review'      => __( 'Paid booking needs a refund decision', 'explore-katsina' ),
+			'refund_created'     => __( 'Refund due to guest', 'explore-katsina' ),
+			'refund_paid'        => __( 'Refund paid', 'explore-katsina' ),
+			'refund_gateway_failed' => __( 'Automatic refund failed (pay by hand)', 'explore-katsina' ),
+			'review_posted'      => __( 'Verified review posted', 'explore-katsina' ),
 			'review_replied'     => __( 'Owner replied to a review', 'explore-katsina' ),
 		);
 		return $labels[ $action ] ?? $action;

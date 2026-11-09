@@ -804,7 +804,12 @@ final class Booking {
 		return true;
 	}
 
-	public static function set_status( $b, $to, $actor_id = 0, $note = '' ) {
+	/**
+	 * @param int|null $refund_kobo Refund to give if this cancels a paid booking. null = full refund
+	 *                              (the business declined/cancelled); a number = the guest cancelled
+	 *                              under the cancellation policy.
+	 */
+	public static function set_status( $b, $to, $actor_id = 0, $note = '', $refund_kobo = null ) {
 		global $wpdb;
 		$from = $b->status;
 		if ( $from === $to ) {
@@ -839,13 +844,19 @@ final class Booking {
 			Availability::give_back( $b->item_id, self::nights_of( $b ), (int) $b->quantity, $tomorrow );
 			Ledger::start_release_clock( $b );
 		}
-		if ( in_array( $to, array( 'declined', 'cancelled', 'no_show' ), true ) && (int) $b->paid_kobo > 0 ) {
-			Ledger::freeze_for_refund( $b, $to );
+		if ( in_array( $to, array( 'declined', 'cancelled' ), true ) && (int) $b->paid_kobo > 0 ) {
+			Refunds::issue( self::get( $b->id ), null === $refund_kobo ? (int) $b->paid_kobo : (int) $refund_kobo, $note ? $note : $to );
+		} elseif ( 'no_show' === $to && (int) $b->paid_kobo > 0 ) {
+			Ledger::start_release_clock( $b ); // Guest didn't come: the business keeps the payment.
 		}
 
 		$b = self::get( $b->id );
-		if ( in_array( $to, array( 'confirmed', 'declined', 'cancelled', 'accepted', 'ready', 'out_for_delivery' ), true ) ) {
+		$by_guest = null !== $refund_kobo; // Guest cancellations get their own emails (Emails::guest_cancelled).
+		if ( ! $by_guest && in_array( $to, array( 'confirmed', 'declined', 'cancelled', 'accepted', 'ready', 'out_for_delivery' ), true ) && ! in_array( $from, array( 'pending_payment' ), true ) ) {
 			Emails::booking_status( $b );
+		}
+		if ( in_array( $to, array( 'checked_out', 'completed' ), true ) && 'order' !== $b->kind ) {
+			Emails::review_invite( $b );
 		}
 		do_action( 'ek_booking_status_changed', $b, $from, $to );
 	}

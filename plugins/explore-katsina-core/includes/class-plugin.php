@@ -27,6 +27,10 @@ final class Plugin {
 		Restaurant_Search::init();
 		Hotel_Search::init();
 		Booking_Page::init();
+		Calendar::init();
+		Account::init();
+		Favourites::init();
+		Nav::init();
 		Access::init();
 		Assets::init();
 		Signup::init();

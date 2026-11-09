@@ -8,8 +8,9 @@ from exactly where the last one stopped.
 - **Phase 2 (Business accounts & approval): done and approved.**
 - **Phase 3 (Hotels): done and approved.**
 - **Phase 4 (Restaurants): done and approved.**
-- **Phase 5 (Event centres): done, waiting for the owner's go-ahead.**
-- Next: **Phase 6 (Customer accounts & reviews)**.
+- **Phase 5 (Event centres): done and approved.**
+- **Phase 6 (Customer accounts & reviews): done, waiting for the owner's go-ahead.**
+- Next: **Phase 7**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -89,7 +90,7 @@ from exactly where the last one stopped.
 - **Money:** each online payment is recorded as the hotel's earning minus commission (10% placeholder),
   both **on hold**. When the hotel marks check-out, the 3-day release clock starts. (The job that
   releases held money, and the admin payout screen, come in Phase 7.) If a paid booking is declined or
-  cancelled, its money is frozen and you get a "refund review" email. Refunds are Phase 6.
+  cancelled by the business, the guest is refunded in full automatically (Phase 6).
 - **Delete sample data:** `wp ek delete-sample --yes` removes every business whose name starts with
   "SAMPLE", plus their rooms, bookings, calendar, money records, photos and owner accounts.
 
@@ -139,6 +140,42 @@ from exactly where the last one stopped.
 - **Venue page:** amenities, every hall with capacity, price for the chosen date, deposit, availability,
   "Request to book" / "Book now", cancellation policy and venue rules.
 
+## What Phase 6 built (plain language)
+- **My Account** (`/account/`, in the menu): log in or create an account (name, email, optional phone,
+  password). Tabs: **My Bookings** (hotels and event centres), **My Reservations** (restaurant tables),
+  **My Orders** (shop orders now; tickets, guides and tours plug in later), **Favourites**, **Profile**
+  (name, phone, password). Customers never see WordPress admin. Booking forms fill in their name, email
+  and phone automatically, and the booking lands in their account.
+- **Booked before having an account?** "Email me the link" sends a 24-hour link; opening it adds every
+  booking made with that email. Only the real owner of the email can do this; bookings already in someone
+  else's account are never moved.
+- **Confirmation page** (also reachable from the email link): booking code, **Add to calendar**
+  (.ics file for phones/Outlook/Apple, and Google Calendar), Directions, WhatsApp, Call.
+- **Cancel online, refund by policy.** The page tells the guest exactly how much comes back *before* they
+  cancel:
+  - Flexible: full until 24h before; after that everything except the first night.
+  - Moderate: full until 5 days before; after that 50%.
+  - Strict: 50% until 7 days before; after that nothing. Non-refundable: nothing.
+  - Restaurant deposits: full until 24h before; after that nothing.
+  - Food orders: full refund until the restaurant accepts them.
+  - **If the business declines or cancels, the guest always gets everything back.**
+  Refunds go back through Paystack/Flutterwave automatically when possible. If not, they wait in
+  **wp-admin → Explore Katsina → Refunds** (with a count badge); you pay by transfer and type the reference.
+  The business's earnings are adjusted: it keeps only the non-refunded part, minus commission on that part.
+- **Verified reviews only:** hotel after check-out, restaurant after a completed reservation, event centre
+  after a completed event (tours in Phase 9). One review per booking, up to 180 days after. Overall stars
+  plus cleanliness, service, value and location (optional), title, text, English or Hausa. The guest is
+  emailed an invitation. Reviews appear on the business page as **"Verified booking"** with averages,
+  and the owner's reply underneath.
+- **Favourites:** "♡ Save" on every business page; saved places are listed under Favourites.
+- **Emails** for every booking, reservation, cancellation, refund and review go to the guest, the business
+  and you (admin). **WhatsApp/SMS:** every email also fires a hook (`ek_send_message`) so a WhatsApp/SMS provider
+  can be plugged in later. It is off by default (no provider chosen, no cost).
+- **Fixes along the way:** business-page photos were showing zoomed-in on wide screens (fixed for all
+  businesses); the menu no longer lists utility pages (Book, Cart, Checkout, WooCommerce's own
+  "My account", Sample Page, the agreement, Business Dashboard). Business owners reach their dashboard
+  through log-in or the button in My Account. A designed menu comes with the design work later.
+
 ## Photos (royalty-free, with credits)
 - Source: **Wikimedia Commons**, only files that are public domain, CC0, CC BY or CC BY-SA. Each photo keeps
   its author, licence, licence link and source page, and business pages show a **"Photo credits"** list.
@@ -187,7 +224,7 @@ from exactly where the last one stopped.
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # 198 server-side checks + 94 browser checks (Phases 2–5)
+./tests/run.sh      # about 390 automatic checks, server and browser (Phases 2–6)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -202,6 +239,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase3/` | Screenshots of hotel search, hotel page, booking, confirmation, calendar, rooms |
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
+| `docs/screenshots/phase6/` | Screenshots of My Account, confirmation with calendar/cancel, cancelled booking, review form, reviews on a page, favourites, admin Refunds |
 | `sample-data/media/` | Royalty-free sample photos + `credits.json` (author, licence, source) |
 | `scripts/` | Photo search/download tools for Wikimedia Commons |
 | `setup.sh` | Re-runnable setup |
@@ -213,7 +251,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase4-woo-bridge.php`, `e2e/phase2–5.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase4-woo-bridge.php`, `e2e/phase2–6.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -260,3 +298,5 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Paystack / Flutterwave TEST keys, then LIVE keys at launch
 - Event centres: 48-hour reply window, 72-hour deposit window, 30% default deposit, 7-day maximum online booking
 - Sample photos are illustrative (Wikimedia Commons, credited); real businesses upload their own
+- Refund rules above (24h / 5 days / 7 days, restaurant 24h) and the 180-day review window: check with your lawyer
+- WhatsApp/SMS notifications: off until you choose a provider (e.g. Termii, Twilio). Costs per message

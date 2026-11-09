@@ -26,7 +26,7 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 ?>
 <div class="ek ek-public"<?php echo $track ? ' data-ek-view="' . (int) $b['id'] . '"' : ''; ?>>
 	<?php if ( $b['photos'] ) : ?>
-		<div class="ek-gallery">
+		<div class="ek-gallery ek-gallery--<?php echo (int) min( 5, count( $b['photos'] ) ); ?>">
 			<?php foreach ( array_slice( $b['photos'], 0, 5 ) as $i => $pid ) : ?>
 				<?php echo wp_get_attachment_image( $pid, 0 === $i ? 'large' : 'medium_large', false, array( 'loading' => 0 === $i ? 'eager' : 'lazy', 'alt' => $b['name'] ) ); ?>
 			<?php endforeach; ?>
@@ -42,6 +42,7 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 				<div class="ek-row">
 					<span class="ek-pill <?php echo $open ? 'ek-pill--ok' : 'ek-pill--bad'; ?>"><?php echo $open ? esc_html__( 'Open now', 'explore-katsina' ) : esc_html__( 'Closed now', 'explore-katsina' ); ?></span>
 					<?php if ( $b['verified'] ) : ?><span class="ek-badge ek-badge--verified">✓ <?php esc_html_e( 'Verified', 'explore-katsina' ); ?></span><?php endif; ?>
+					<?php echo \EK\Favourites::button( $b['id'] ); // phpcs:ignore ?>
 				</div>
 			</div>
 			<div class="ek-description"><?php echo wpautop( wp_kses_post( $b['description'] ) ); // phpcs:ignore ?></div>
@@ -60,6 +61,7 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 				<p><?php echo esc_html( $b['address'] ); ?></p>
 				<div class="ek-mini-map" data-ek-mini-map data-lat="<?php echo esc_attr( $b['lat'] ); ?>" data-lng="<?php echo esc_attr( $b['lng'] ); ?>" data-colour="<?php echo esc_attr( $colour ); ?>" role="img" aria-label="<?php esc_attr_e( 'Map showing the location', 'explore-katsina' ); ?>"></div>
 			</section>
+			<?php include EK_DIR . 'templates/public/reviews.php'; ?>
 			<?php include EK_DIR . 'templates/public/nearby.php'; ?>
 			<?php echo View::photo_credits( $b['id'] ); // phpcs:ignore ?>
 		</div>

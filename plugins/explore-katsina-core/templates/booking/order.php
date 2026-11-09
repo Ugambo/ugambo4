@@ -51,7 +51,7 @@ $user = wp_get_current_user();
 			<div class="ek-grid ek-grid--2">
 				<div class="ek-field ek-span-2"><label for="g-name"><?php esc_html_e( 'Name', 'explore-katsina' ); ?></label><input type="text" id="g-name" name="guest_name" required value="<?php echo esc_attr( $src['guest_name'] ?? ( $user->exists() ? $user->display_name : '' ) ); ?>"></div>
 				<div class="ek-field"><label for="g-email"><?php esc_html_e( 'Email', 'explore-katsina' ); ?></label><input type="email" id="g-email" name="guest_email" required value="<?php echo esc_attr( $src['guest_email'] ?? ( $user->exists() ? $user->user_email : '' ) ); ?>"></div>
-				<div class="ek-field"><label for="g-phone"><?php esc_html_e( 'Phone', 'explore-katsina' ); ?></label><input type="tel" id="g-phone" name="guest_phone" required value="<?php echo esc_attr( $src['guest_phone'] ?? '' ); ?>"></div>
+				<div class="ek-field"><label for="g-phone"><?php esc_html_e( 'Phone', 'explore-katsina' ); ?></label><input type="tel" id="g-phone" name="guest_phone" required value="<?php echo esc_attr( $src['guest_phone'] ?? ( $user->exists() ? get_user_meta( $user->ID, '_ek_phone', true ) : '' ) ); ?>"></div>
 				<div class="ek-field ek-span-2"><label for="g-notes"><?php esc_html_e( 'Notes (optional)', 'explore-katsina' ); ?></label><input type="text" id="g-notes" name="notes" maxlength="300" value="<?php echo esc_attr( $src['notes'] ?? '' ); ?>"></div>
 			</div>
 			<fieldset style="border:0;padding:0;margin:0"><legend class="ek-label"><?php esc_html_e( 'Payment', 'explore-katsina' ); ?></legend>

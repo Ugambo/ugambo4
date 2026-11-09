@@ -32,6 +32,8 @@ final class Admin {
 		add_menu_page( 'Explore Katsina', 'Explore Katsina' . $badge, self::CAP, 'ek-approvals', array( __CLASS__, 'page_approvals' ), 'dashicons-location-alt', 3 );
 		add_submenu_page( 'ek-approvals', __( 'Approvals', 'explore-katsina' ), __( 'Approvals', 'explore-katsina' ) . $badge, self::CAP, 'ek-approvals', array( __CLASS__, 'page_approvals' ) );
 		add_submenu_page( 'ek-approvals', __( 'Settings', 'explore-katsina' ), __( 'Settings', 'explore-katsina' ), self::CAP, 'ek-settings', array( __CLASS__, 'page_settings' ) );
+		$pending = count( Refunds::pending() );
+		add_submenu_page( 'ek-approvals', __( 'Refunds', 'explore-katsina' ), __( 'Refunds', 'explore-katsina' ) . ( $pending ? ' <span class="awaiting-mod"><span class="pending-count">' . $pending . '</span></span>' : '' ), self::CAP, 'ek-refunds', array( __CLASS__, 'page_refunds' ) );
 		add_submenu_page( 'ek-approvals', __( 'Activity log', 'explore-katsina' ), __( 'Activity log', 'explore-katsina' ), self::CAP, 'ek-log', array( __CLASS__, 'page_log' ) );
 	}
 
@@ -74,6 +76,23 @@ final class Admin {
 			return;
 		}
 		$action = sanitize_key( $_POST['ek_admin_action'] );
+
+		if ( in_array( $action, array( 'refund_done', 'refund_retry' ), true ) ) {
+			$rid = absint( $_POST['refund_id'] ?? 0 );
+			check_admin_referer( 'ek_admin_' . $action . '_' . $rid );
+			if ( 'refund_done' === $action ) {
+				$ref = sanitize_text_field( wp_unslash( $_POST['reference'] ?? '' ) );
+				if ( '' === $ref ) {
+					wp_safe_redirect( admin_url( 'admin.php?page=ek-refunds&ek_msg=ref' ) );
+					exit;
+				}
+				Refunds::mark_done( $rid, 'manual', $ref, get_current_user_id() );
+			} else {
+				Refunds::try_automatic( $rid );
+			}
+			wp_safe_redirect( admin_url( 'admin.php?page=ek-refunds&ek_msg=done' ) );
+			exit;
+		}
 
 		if ( 'settings' === $action ) {
 			check_admin_referer( 'ek_admin_settings' );
@@ -178,6 +197,13 @@ final class Admin {
 			return;
 		}
 		echo '<div class="wrap ek-admin">' . View::render( 'admin/settings', array( 's' => Settings::all() ) ) . '</div>'; // phpcs:ignore
+	}
+
+	public static function page_refunds() {
+		if ( ! current_user_can( self::CAP ) ) {
+			return;
+		}
+		echo '<div class="wrap ek-admin">' . View::render( 'admin/refunds' ) . '</div>'; // phpcs:ignore
 	}
 
 	public static function page_log() {

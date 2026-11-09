@@ -88,9 +88,10 @@ final class CLI {
 			foreach ( Menu::items( $id ) as $it ) {
 				Menu::delete_item( $it->id, $id );
 			}
-			foreach ( array( 'ek_menu_categories', 'ek_slots', 'ek_bookings', 'ek_ledger', 'ek_payouts', 'ek_invoices', 'ek_reviews', 'ek_rankings', 'ek_analytics_daily' ) as $t ) {
+			foreach ( array( 'ek_menu_categories', 'ek_slots', 'ek_bookings', 'ek_ledger', 'ek_payouts', 'ek_invoices', 'ek_reviews', 'ek_rankings', 'ek_analytics_daily', 'ek_refunds' ) as $t ) {
 				$wpdb->delete( $wpdb->prefix . $t, array( 'business_id' => $id ) );
 			}
+			$wpdb->delete( $wpdb->prefix . 'ek_favourites', array( 'object_id' => $id ) );
 			$priv = Business::private_details( $id );
 			if ( ! empty( $priv['id_doc_file'] ) ) {
 				Private_Files::delete( $priv['id_doc_file'] );

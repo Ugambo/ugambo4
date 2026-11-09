@@ -146,8 +146,9 @@ Booking::hotel_transition( $dec, 'declined', $o1 );
 Availability::forget();
 ek3( 3 === Availability::quote( Rooms::data( $dlx ), $d( 20 ), $d( 22 ) )['available'], 'Declining gives the 3 rooms back to the calendar' );
 Booking::hotel_transition( Booking::get( $p1->id ), 'declined', $o1 );
-$frozen = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT status FROM {$wpdb->prefix}ek_ledger WHERE booking_id = %d", $p1->id ) );
-ek3( array( 'frozen' ) === $frozen, 'Declining a paid booking freezes its money for a refund decision' );
+$net = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(amount_kobo),0) FROM {$wpdb->prefix}ek_ledger WHERE booking_id = %d", $p1->id ) );
+$ref = \EK\Refunds::for_booking( $p1->id );
+ek3( 0 === $net && $ref && (int) $ref[0]->amount_kobo === (int) Booking::get( $p1->id )->paid_kobo, 'Declining a paid booking refunds the guest in full; the hotel earns nothing from it (Phase 6)' );
 
 WP_CLI::line( 'Security (owner of Hotel Two vs Hotel One)' );
 wp_set_current_user( $o2 );

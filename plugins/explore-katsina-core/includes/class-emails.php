@@ -47,6 +47,12 @@ final class Emails {
 		return $sent;
 	}
 
+	/** WhatsApp number if given, otherwise the main phone (for the optional WhatsApp/SMS hook). */
+	private static function business_phone( $business_id ) {
+		$p = Business::profile( $business_id );
+		return $p['whatsapp'] ? $p['whatsapp'] : $p['phone'];
+	}
+
 	public static function render( $heading, array $lines, array $cta = array() ) {
 		$body = '';
 		foreach ( array_filter( $lines, 'strlen' ) as $line ) {
@@ -315,7 +321,7 @@ final class Emails {
 					)
 				),
 				array( 'label' => __( 'Open dashboard', 'explore-katsina' ), 'url' => Dashboard::url( 'order' === $b->kind ? 'orders' : 'bookings', $b->business_id ) ),
-				$ctx + array( 'audience' => 'business' )
+				$ctx + array( 'audience' => 'business', 'phone' => self::business_phone( $b->business_id ) )
 			);
 		}
 		self::send(
@@ -405,6 +411,142 @@ final class Emails {
 			self::booking_lines( $b ),
 			array(),
 			array( 'event' => 'admin_refund_review' )
+		);
+	}
+
+	/* ---- Cancellations, refunds, reviews (Phase 6) ---- */
+
+	public static function welcome( $uid ) {
+		$u = get_userdata( $uid );
+		self::send(
+			$u->user_email,
+			__( 'Welcome to Explore Katsina', 'explore-katsina' ),
+			/* translators: %s: name */
+			sprintf( __( 'Welcome, %s', 'explore-katsina' ), $u->first_name ? $u->first_name : $u->display_name ),
+			array( __( 'Your account is ready. Book hotels, reserve tables and event centres, save favourite places, and find everything in My Account.', 'explore-katsina' ) ),
+			array( 'label' => __( 'Open My Account', 'explore-katsina' ), 'url' => Account::url() ),
+			array( 'event' => 'welcome' )
+		);
+	}
+
+
+	public static function guest_cancelled( $b, array $q ) {
+		$n     = self::noun( $b );
+		$lines = array_merge(
+			self::booking_lines( $b ),
+			array(
+				$q['rule'],
+				(int) $q['refund'] > 0
+					/* translators: %s: amount */
+					? sprintf( __( 'Refund: %s. It goes back to the card or account you paid with, usually within 5–10 working days.', 'explore-katsina' ), Money::format( $q['refund'] ) )
+					: __( 'No refund is due.', 'explore-katsina' ),
+			)
+		);
+		self::send(
+			$b->customer_email,
+			/* translators: 1: booking/reservation/order, 2: code */
+			sprintf( __( 'Your %1$s %2$s is cancelled', 'explore-katsina' ), $n[0], $b->code ),
+			/* translators: %s: booking/reservation/order */
+			sprintf( __( 'Your %s is cancelled', 'explore-katsina' ), $n[0] ),
+			$lines,
+			array( 'label' => __( 'View details', 'explore-katsina' ), 'url' => Booking::link( $b ) ),
+			array( 'event' => 'guest_cancelled', 'phone' => $b->customer_phone )
+		);
+		foreach ( self::business_recipients( $b->business_id ) as $to ) {
+			self::send(
+				$to,
+				/* translators: 1: booking/reservation/order, 2: code */
+				sprintf( __( 'Guest cancelled %1$s %2$s', 'explore-katsina' ), $n[0], $b->code ),
+				/* translators: %s: booking/reservation/order */
+				sprintf( __( 'A guest cancelled their %s', 'explore-katsina' ), $n[0] ),
+				array_merge( self::booking_lines( $b ), array( $q['rule'], __( 'The dates or table are free again in your calendar.', 'explore-katsina' ) ) ),
+				array( 'label' => __( 'Open dashboard', 'explore-katsina' ), 'url' => Dashboard::url( 'bookings', $b->business_id ) ),
+				array( 'event' => 'business_guest_cancelled', 'audience' => 'business', 'phone' => self::business_phone( $b->business_id ) )
+			);
+		}
+		self::send(
+			self::admin_email(),
+			/* translators: %s: code */
+			sprintf( __( '[Explore Katsina] Guest cancelled %s', 'explore-katsina' ), $b->code ),
+			__( 'Guest cancellation', 'explore-katsina' ),
+			array_merge( self::booking_lines( $b ), array( $q['rule'] ) ),
+			array(),
+			array( 'event' => 'admin_guest_cancelled' )
+		);
+	}
+
+	public static function refund_needed( $b, $amount, $reason ) {
+		self::send(
+			self::admin_email(),
+			/* translators: 1: amount, 2: code */
+			sprintf( __( 'ACTION NEEDED: refund %1$s for %2$s', 'explore-katsina' ), Money::format( $amount ), $b ? $b->code : '' ),
+			__( 'A refund needs to be paid by hand', 'explore-katsina' ),
+			array_merge(
+				/* translators: 1: amount, 2: reason */
+				array( sprintf( __( 'Refund %1$s (%2$s). The payment gateway could not send it automatically. Pay it by bank transfer, then mark it as refunded in wp-admin → Explore Katsina → Refunds.', 'explore-katsina' ), Money::format( $amount ), $reason ) ),
+				$b ? self::booking_lines( $b ) : array(),
+				$b ? array( __( 'Guest:', 'explore-katsina' ) . ' ' . $b->customer_name . ' · ' . $b->customer_email . ' · ' . Business::display_phone( $b->customer_phone ) ) : array()
+			),
+			array( 'label' => __( 'Open refunds', 'explore-katsina' ), 'url' => admin_url( 'admin.php?page=ek-refunds' ) ),
+			array( 'event' => 'admin_refund_needed' )
+		);
+	}
+
+	public static function refund_paid( $b, $amount ) {
+		self::send(
+			$b->customer_email,
+			/* translators: %s: code */
+			sprintf( __( 'Your refund for %s has been sent', 'explore-katsina' ), $b->code ),
+			__( 'Refund sent', 'explore-katsina' ),
+			/* translators: %s: amount */
+			array( sprintf( __( 'We have sent your refund of %s. Depending on your bank it can take a few working days to appear.', 'explore-katsina' ), Money::format( $amount ) ) ),
+			array( 'label' => __( 'View booking', 'explore-katsina' ), 'url' => Booking::link( $b ) ),
+			array( 'event' => 'refund_paid', 'phone' => $b->customer_phone )
+		);
+	}
+
+	public static function review_invite( $b ) {
+		$heads = array(
+			'hotel'      => __( 'How was your stay?', 'explore-katsina' ),
+			'restaurant' => __( 'How was your meal?', 'explore-katsina' ),
+			'event'      => __( 'How was your event?', 'explore-katsina' ),
+		);
+		$name = $b->details['hotel'] ?? ( $b->details['business'] ?? '' );
+		self::send(
+			$b->customer_email,
+			/* translators: %s: business */
+			sprintf( __( 'Review %s on Explore Katsina', 'explore-katsina' ), $name ),
+			$heads[ $b->kind ] ?? __( 'How was it?', 'explore-katsina' ),
+			array(
+				/* translators: %s: business */
+				sprintf( __( 'Thank you for choosing %s. Your honest review helps other visitors and helps good businesses rise in the rankings. Only guests with a real booking can review, so your opinion really counts.', 'explore-katsina' ), $name ),
+			),
+			array( 'label' => __( 'Write a review', 'explore-katsina' ), 'url' => Booking::link( $b ) . '#review' ),
+			array( 'event' => 'review_invite', 'phone' => $b->customer_phone )
+		);
+	}
+
+	public static function review_received( $review, $b ) {
+		$p = Business::profile( $review->business_id );
+		foreach ( self::business_recipients( $review->business_id ) as $to ) {
+			self::send(
+				$to,
+				/* translators: 1: stars, 2: business */
+				sprintf( __( 'New %1$d★ review for %2$s', 'explore-katsina' ), (int) $review->rating_overall, $p['name'] ),
+				__( 'You have a new verified review', 'explore-katsina' ),
+				array( $review->title, $review->body, __( 'A polite, helpful reply improves your response rate and your ranking.', 'explore-katsina' ) ),
+				array( 'label' => __( 'Reply to this review', 'explore-katsina' ), 'url' => Dashboard::url( 'reviews', $review->business_id ) ),
+				array( 'event' => 'review_received', 'audience' => 'business', 'phone' => self::business_phone( $b->business_id ) )
+			);
+		}
+		self::send(
+			self::admin_email(),
+			/* translators: 1: stars, 2: business */
+			sprintf( __( '[Explore Katsina] New %1$d★ review: %2$s', 'explore-katsina' ), (int) $review->rating_overall, $p['name'] ),
+			__( 'New review', 'explore-katsina' ),
+			array( $review->author_name . ' · ' . $b->code, $review->title, $review->body ),
+			array(),
+			array( 'event' => 'admin_review_received' )
 		);
 	}
 }

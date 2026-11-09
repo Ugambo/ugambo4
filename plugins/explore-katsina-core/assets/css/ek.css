@@ -249,7 +249,18 @@ body.ek-app-body { margin: 0; background: var(--ek-ivory); }
 .ek-public { max-width: 1100px; margin: 0 auto; }
 .ek-public .ek-gallery { display: grid; gap: 6px; grid-template-columns: minmax(0, 1fr); border-radius: var(--ek-radius); overflow: hidden; margin-bottom: 18px; }
 .ek-public .ek-gallery img { min-width: 0; width: 100%; height: 100%; object-fit: cover; display: block; aspect-ratio: 4 / 3; max-width: 100%; }
-@media (min-width: 760px) { .ek-public .ek-gallery { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr 1fr; max-height: 420px; } .ek-public .ek-gallery img:first-child { grid-row: span 2; aspect-ratio: auto; } .ek-public .ek-gallery img { aspect-ratio: auto; } }
+@media (min-width: 760px) {
+	/* Fixed-height mosaic: rows never grow to the photos' natural height (that zoomed photos in). */
+	.ek-public .ek-gallery { height: clamp(300px, 34vw, 440px); grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+	.ek-public .ek-gallery img { aspect-ratio: auto; height: 100%; min-height: 0; }
+	.ek-public .ek-gallery img:first-child { grid-row: span 2; }
+	.ek-public .ek-gallery--1 { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+	.ek-public .ek-gallery--1 img:first-child { grid-row: auto; }
+	.ek-public .ek-gallery--2 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+	.ek-public .ek-gallery--2 img:nth-child(2) { grid-row: span 2; }
+	.ek-public .ek-gallery--3 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+	.ek-public .ek-gallery--4 img:nth-child(2) { grid-row: span 2; }
+}
 .ek-public .ek-gallery-placeholder { aspect-ratio: 16 / 7; background: var(--ek-night); position: relative; display: grid; place-items: center; color: var(--ek-brass); font-family: var(--ek-font-display); }
 .ek-public .ek-gallery-placeholder::before { content: ""; position: absolute; inset: 0; background-image: var(--ek-pattern); background-size: 44px 44px; opacity: .14; }
 .ek-public .ek-pub-layout { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
@@ -452,3 +463,36 @@ body:has(.ek-search) .wp-block-post-title, body:has(.ek-book) .wp-block-post-tit
 .ek .ek-credits { font-size: .82rem; color: var(--ek-muted); }
 .ek .ek-credits summary { cursor: pointer; font-weight: 600; }
 .ek .ek-credits ul { margin: 6px 0; padding-left: 1.1em; display: grid; gap: 2px; }
+
+/* =====================================================================
+ * Phase 6: accounts, cancellations, reviews, favourites
+ * ===================================================================== */
+.ek-account { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+body:has(.ek-account) .wp-block-post-title { display: none; }
+.ek .ek-acct-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 2px solid var(--ek-line); }
+.ek .ek-acct-tabs a { padding: 10px 14px; white-space: nowrap; text-decoration: none; font-weight: 600; color: var(--ek-night); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.ek .ek-acct-tabs a[aria-current] { color: var(--ek-crimson); border-color: var(--ek-crimson); }
+.ek .ek-trip { margin: 0 !important; display: flex; flex-direction: column; gap: 8px; }
+.ek .ek-trip.is-past { background: var(--ek-sand); }
+.ek .ek-status-requested { background: var(--ek-brass-tint); color: #6A4B05; }
+.ek .ek-status-deposit_paid, .ek .ek-status-checked_out, .ek .ek-status-completed { background: var(--ek-emerald-tint); color: #134636; }
+.ek .ek-favlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ek .ek-favcard { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; margin: 0 !important; }
+.ek .ek-favcard-img img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; display: block; }
+.ek .ek-fav { display: inline; margin: 0; }
+.ek .ek-fav-btn { min-height: 34px; padding: 4px 12px; border-radius: 999px; border: 1.5px solid var(--ek-crimson); background: #fff; color: var(--ek-crimson); font: 700 .85rem var(--ek-font-body); cursor: pointer; }
+.ek .ek-fav-btn.is-on { background: var(--ek-crimson); color: #fff; }
+.ek .ek-stars-input { display: inline-flex; flex-direction: row-reverse; gap: 2px; }
+.ek .ek-stars-input input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.ek .ek-stars-input label { font-size: 2rem; line-height: 1; color: #D9D2C2; cursor: pointer; padding: 2px; }
+.ek .ek-stars-input input:checked ~ label, .ek .ek-stars-input label:hover, .ek .ek-stars-input label:hover ~ label { color: var(--ek-brass-dark); }
+.ek .ek-stars-input input:focus-visible + label { outline: 3px solid var(--ek-brass); border-radius: 4px; }
+.ek .ek-rev-summary { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: center; background: #fff; border: 1px solid var(--ek-line); border-radius: var(--ek-radius); padding: 16px; }
+@media (min-width: 640px) { .ek .ek-rev-summary { grid-template-columns: 180px minmax(0, 1fr); } }
+.ek .ek-rev-big { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.ek .ek-score--big { font-size: 1.6rem; min-width: 2.6em; height: 2em; font-family: var(--ek-font-display); }
+.ek .ek-rev-parts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; margin: 0; align-items: center; font-size: .9rem; }
+.ek .ek-rev-parts dd { margin: 0; display: flex; align-items: center; gap: 8px; }
+.ek .ek-bar { flex: 1; height: 8px; background: var(--ek-sand); border-radius: 999px; overflow: hidden; }
+.ek .ek-bar span { display: block; height: 100%; background: var(--ek-night); }
+.ek .ek-verified-stay { color: var(--ek-emerald); font-weight: 700; }

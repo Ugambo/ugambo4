@@ -285,6 +285,32 @@ final class Install {
 			PRIMARY KEY  (business_id,slot_at)
 		) $c;";
 
+		/* Refunds: one row per refund owed to a guest (processed automatically or by the admin). */
+		$sql[] = "CREATE TABLE {$p}refunds (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			booking_id bigint(20) unsigned NOT NULL,
+			business_id bigint(20) unsigned NOT NULL,
+			amount_kobo bigint(20) NOT NULL,
+			reason varchar(255) NOT NULL DEFAULT '',
+			status varchar(20) NOT NULL,
+			method varchar(20) NOT NULL DEFAULT '',
+			reference varchar(120) NOT NULL DEFAULT '',
+			created_at datetime NOT NULL,
+			processed_at datetime NULL,
+			processed_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			PRIMARY KEY  (id),
+			KEY booking (booking_id),
+			KEY status (status)
+		) $c;";
+
+		/* Customers' saved places. */
+		$sql[] = "CREATE TABLE {$p}favourites (
+			user_id bigint(20) unsigned NOT NULL,
+			object_id bigint(20) unsigned NOT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (user_id,object_id)
+		) $c;";
+
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}
@@ -354,6 +380,11 @@ final class Install {
 				'title'   => __( 'Event Centres', 'explore-katsina' ),
 				'slug'    => 'event-centres',
 				'content' => '<!-- wp:shortcode -->[ek_venue_search]<!-- /wp:shortcode -->',
+			),
+			'account'       => array(
+				'title'   => __( 'My Account', 'explore-katsina' ),
+				'slug'    => 'account',
+				'content' => '<!-- wp:shortcode -->[ek_my_account]<!-- /wp:shortcode -->',
 			),
 			'book'          => array(
 				'title'   => __( 'Book', 'explore-katsina' ),
