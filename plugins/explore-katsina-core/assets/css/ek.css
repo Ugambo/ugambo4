@@ -602,3 +602,40 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 @media (max-width: 520px) { .ek-top-item { grid-template-columns: 38px minmax(0, 1fr); } .ek-top-item > a:first-of-type { display: none; } .ek-top-num { font-size: 1.3rem; } }
 .ek-top-nav { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
 .ek-score-parts { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; gap: 6px 10px; align-items: center; font-size: .9rem; }
+
+/* =====================================================================
+ * Phase 9: plans, paid services, ads, events, tickets, tours, advertise
+ * ===================================================================== */
+.ek .ek-plan.is-current { border: 2px solid var(--ek-emerald); }
+.ek .ek-choice { display: block; cursor: pointer; }
+.ek .ek-choice input { margin-right: 6px; }
+.ek .ek-badge--sponsored { background: var(--ek-brass); color: var(--ek-night); }
+.ek-sponsored-label { margin: 0 0 12px; font-size: .9rem; }
+.ek-ad { margin: 12px 0; text-align: center; }
+.ek-ad a { display: inline-block; max-width: 100%; }
+.ek-ad img { max-width: 100%; height: auto; border-radius: 8px; display: block; }
+.ek-ad-label { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ek-muted, #5B5965); margin-bottom: 4px; }
+.ek-spot-list, .ek .ek-event-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.ek .ek-spot { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.ek .ek-spot-img img, .ek .ek-event-img img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; display: block; background: var(--ek-sand); }
+.ek .ek-spot h3, .ek .ek-spot p { margin: 0; }
+.ek .ek-event-card { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.ek .ek-event-card.is-promoted { border: 2px solid var(--ek-brass); }
+.ek .ek-event-card h3 a { color: var(--ek-night); text-decoration: none; }
+.ek .ek-ticket-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 72px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ek-line); }
+.ek .ek-ticket-row select { min-height: 40px; border-radius: 8px; border: 1.5px solid var(--ek-line); padding: 4px 8px; }
+.ek .ek-tickets { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ek .ek-ticket { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 14px; align-items: center; background: #fff; border: 2px dashed var(--ek-night); border-radius: var(--ek-radius); padding: 12px; break-inside: avoid; }
+.ek .ek-ticket.is-used { opacity: .6; }
+.ek .ek-ticket.is-void { opacity: .45; border-color: #b32d2e; }
+.ek .ek-ticket-qr svg { width: 140px; height: 140px; display: block; }
+.ek .ek-ticket-code { font-size: 1rem; letter-spacing: .05em; background: var(--ek-sand); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+@media (max-width: 420px) { .ek .ek-ticket { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
+@media print { .ek .ek-ticket { page-break-inside: avoid; } header, footer, .ek-confirm-head + .ek-notice, .ek-btn { display: none !important; } }
+.ek-checkin .ek-ci-camera video { width: 100%; max-height: 50vh; background: #000; border-radius: 12px; display: block; }
+.ek-checkin .ek-ci-camera video:not([src]):not([srcObject]) { min-height: 0; }
+.ek-ci-result { padding: 16px; border-radius: 12px; font-size: 1.1rem; }
+.ek-ci-result p { margin: 4px 0 0; }
+.ek-ci-result.is-ok { background: #E3F1EB; color: #134636; border: 2px solid var(--ek-emerald); }
+.ek-ci-result.is-already, .ek-ci-result.is-wrong_event { background: #FBF1DC; color: #6A4B05; border: 2px solid var(--ek-brass); }
+.ek-ci-result.is-invalid, .ek-ci-result.is-void { background: #FBE9E7; color: #7A1A14; border: 2px solid #b32d2e; }

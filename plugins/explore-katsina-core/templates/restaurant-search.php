@@ -84,6 +84,7 @@ $pages   = (int) ceil( $r['total'] / Restaurant_Search::PER_PAGE );
 	<?php if ( ! $r['items'] ) : ?>
 		<div class="ek-empty"><strong><?php esc_html_e( 'No restaurants match your search', 'explore-katsina' ); ?></strong><?php esc_html_e( 'Try fewer filters, or all of Katsina State.', 'explore-katsina' ); ?></div>
 	<?php else : ?>
+		<?php echo \EK\Ads::zone( 'search' ); // phpcs:ignore ?>
 		<ol class="ek-results">
 			<?php foreach ( $r['items'] as $i ) : ?>
 				<li class="ek-result">
@@ -96,7 +97,7 @@ $pages   = (int) ceil( $r['total'] / Restaurant_Search::PER_PAGE );
 							<span class="ek-pill <?php echo $i['open'] ? 'ek-pill--ok' : 'ek-pill--bad'; ?>"><?php echo $i['open'] ? esc_html__( 'Open now', 'explore-katsina' ) : esc_html__( 'Closed now', 'explore-katsina' ); ?></span>
 							<?php if ( $i['halal'] ) : ?><span class="ek-pill"><?php esc_html_e( 'Halal', 'explore-katsina' ); ?></span><?php endif; ?>
 							<?php if ( $i['reviews'] ) : ?><span class="ek-score"><?php echo esc_html( number_format_i18n( $i['rating'], 1 ) ); ?></span><span class="ek-small"><?php /* translators: %d: reviews */ printf( esc_html( _n( '%d verified review', '%d verified reviews', $i['reviews'], 'explore-katsina' ) ), (int) $i['reviews'] ); ?></span><?php else : ?><span class="ek-small ek-muted"><?php esc_html_e( 'No reviews yet', 'explore-katsina' ); ?></span><?php endif; ?>
-							<?php if ( $i['rank'] ) : ?><span class="ek-pill">#<?php echo (int) $i['rank']; ?> <?php /* translators: %d: total */ printf( esc_html__( 'of %d restaurants in Katsina', 'explore-katsina' ), (int) $i['rank_total'] ); ?></span><?php endif; ?>
+							<?php if ( ! empty( $i['featured'] ) ) : ?><span class="ek-badge ek-badge--featured"><?php esc_html_e( 'Featured', 'explore-katsina' ); ?></span><?php endif; ?><?php if ( $i['rank'] ) : ?><span class="ek-pill">#<?php echo (int) $i['rank']; ?> <?php /* translators: %d: total */ printf( esc_html__( 'of %d restaurants in Katsina', 'explore-katsina' ), (int) $i['rank_total'] ); ?></span><?php endif; ?>
 							<?php if ( $i['verified'] ) : ?><span class="ek-badge ek-badge--verified">✓ <?php esc_html_e( 'Verified', 'explore-katsina' ); ?></span><?php endif; ?>
 						</div>
 					</div>

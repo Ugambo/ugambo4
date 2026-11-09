@@ -115,6 +115,7 @@ $pages = (int) ceil( $r['total'] / Hotel_Search::PER_PAGE );
 	<?php if ( ! $r['items'] ) : ?>
 		<div class="ek-empty"><strong><?php esc_html_e( 'No hotels match your search', 'explore-katsina' ); ?></strong><?php esc_html_e( 'Try other dates, fewer filters, or all of Katsina State.', 'explore-katsina' ); ?></div>
 	<?php else : ?>
+		<?php echo \EK\Ads::zone( 'search' ); // phpcs:ignore ?>
 		<ol class="ek-results" start="<?php echo (int) ( ( $p['page'] - 1 ) * Hotel_Search::PER_PAGE + 1 ); ?>">
 			<?php
 			foreach ( $r['items'] as $i ) :
@@ -130,7 +131,7 @@ $pages = (int) ceil( $r['total'] / Hotel_Search::PER_PAGE );
 						<p class="ek-result-meta"><?php echo esc_html( $i['lga'] ); ?><?php echo null !== $i['distance'] ? ' · <strong>' . esc_html( Hotel_Search::format_distance( $i['distance'] ) ) . '</strong>' : ''; ?></p>
 						<div class="ek-row" style="gap:6px">
 							<?php if ( $i['reviews'] ) : ?><span class="ek-score"><?php echo esc_html( number_format_i18n( $i['rating'], 1 ) ); ?></span><span class="ek-small"><?php /* translators: %d: reviews */ printf( esc_html( _n( '%d verified review', '%d verified reviews', $i['reviews'], 'explore-katsina' ) ), (int) $i['reviews'] ); ?></span><?php else : ?><span class="ek-small ek-muted"><?php esc_html_e( 'No reviews yet', 'explore-katsina' ); ?></span><?php endif; ?>
-							<?php if ( $i['rank'] ) : ?><span class="ek-pill">#<?php echo (int) $i['rank']; ?> <?php /* translators: %d: total */ printf( esc_html__( 'of %d hotels in Katsina', 'explore-katsina' ), (int) $i['rank_total'] ); ?></span><?php endif; ?>
+							<?php if ( ! empty( $i['featured'] ) ) : ?><span class="ek-badge ek-badge--featured"><?php esc_html_e( 'Featured', 'explore-katsina' ); ?></span><?php endif; ?><?php if ( $i['rank'] ) : ?><span class="ek-pill">#<?php echo (int) $i['rank']; ?> <?php /* translators: %d: total */ printf( esc_html__( 'of %d hotels in Katsina', 'explore-katsina' ), (int) $i['rank_total'] ); ?></span><?php endif; ?>
 							<?php if ( $i['verified'] ) : ?><span class="ek-badge ek-badge--verified">✓ <?php esc_html_e( 'Verified', 'explore-katsina' ); ?></span><?php endif; ?>
 						</div>
 						<p class="ek-small ek-muted ek-result-amen"><?php echo esc_html( implode( ' · ', array_slice( array_map( static fn( $k ) => $amen[ $k ], $i['amenities'] ), 0, 4 ) ) ); ?></p>

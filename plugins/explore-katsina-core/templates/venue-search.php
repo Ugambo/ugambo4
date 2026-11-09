@@ -76,6 +76,7 @@ $link_q  = array_filter( array( 'date' => $p['date'], 'guests' => $p['guests'] ?
 	<?php if ( ! $r['items'] ) : ?>
 		<div class="ek-empty"><strong><?php esc_html_e( 'No event centres match your search', 'explore-katsina' ); ?></strong><?php esc_html_e( 'Try another date, fewer guests or all of Katsina State.', 'explore-katsina' ); ?></div>
 	<?php else : ?>
+		<?php echo \EK\Ads::zone( 'search' ); // phpcs:ignore ?>
 		<ol class="ek-results">
 			<?php foreach ( $r['items'] as $i ) : $link = add_query_arg( $link_q, $i['url'] ) . '#halls'; ?>
 				<li class="ek-result">
@@ -86,7 +87,7 @@ $link_q  = array_filter( array( 'date' => $p['date'], 'guests' => $p['guests'] ?
 						<p class="ek-result-meta"><?php /* translators: 1: halls, 2: capacity */ printf( esc_html( _n( '%1$d hall · up to %2$s guests', '%1$d halls · up to %2$s guests', $i['halls'], 'explore-katsina' ) ), (int) $i['halls'], esc_html( number_format_i18n( $i['capacity'] ) ) ); ?></p>
 						<div class="ek-row" style="gap:6px">
 							<?php if ( $i['reviews'] ) : ?><span class="ek-score"><?php echo esc_html( number_format_i18n( $i['rating'], 1 ) ); ?></span><span class="ek-small"><?php /* translators: %d: reviews */ printf( esc_html( _n( '%d verified review', '%d verified reviews', $i['reviews'], 'explore-katsina' ) ), (int) $i['reviews'] ); ?></span><?php else : ?><span class="ek-small ek-muted"><?php esc_html_e( 'No reviews yet', 'explore-katsina' ); ?></span><?php endif; ?>
-							<?php if ( $i['rank'] ) : ?><span class="ek-pill">#<?php echo (int) $i['rank']; ?> <?php /* translators: %d: total */ printf( esc_html__( 'of %d event centres in Katsina', 'explore-katsina' ), (int) $i['rank_total'] ); ?></span><?php endif; ?>
+							<?php if ( ! empty( $i['featured'] ) ) : ?><span class="ek-badge ek-badge--featured"><?php esc_html_e( 'Featured', 'explore-katsina' ); ?></span><?php endif; ?><?php if ( $i['rank'] ) : ?><span class="ek-pill">#<?php echo (int) $i['rank']; ?> <?php /* translators: %d: total */ printf( esc_html__( 'of %d event centres in Katsina', 'explore-katsina' ), (int) $i['rank_total'] ); ?></span><?php endif; ?>
 							<span class="ek-pill"><?php echo 'instant' === $i['mode'] ? esc_html__( 'Instant booking', 'explore-katsina' ) : esc_html__( 'Request to book', 'explore-katsina' ); ?></span>
 						</div>
 						<p class="ek-small ek-muted ek-result-amen"><?php echo esc_html( implode( ' · ', array_slice( array_map( static fn( $k ) => $amen[ $k ], $i['amenities'] ), 0, 4 ) ) ); ?></p>

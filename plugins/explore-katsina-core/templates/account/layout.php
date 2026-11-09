@@ -69,17 +69,23 @@ $card  = static function ( $b ) {
 			<div><button class="ek-btn ek-btn--ghost ek-btn--sm" type="submit"><?php esc_html_e( 'Email me the link', 'explore-katsina' ); ?></button></div>
 		</form>
 	<?php elseif ( 'orders' === $tab ) : ?>
-		<?php $food = Account::bookings( $uid, array( 'order' ) ); $shop = Account::shop_orders( $uid ); ?>
-		<?php if ( ! $food && ! $shop ) : ?>
+		<?php $food = Account::bookings( $uid, array( 'order' ) ); $shop = Account::shop_orders( $uid ); $sales = \EK\Sales::for_customer( $uid, array( 'ticket', 'tour' ) ); ?>
+		<?php if ( ! $food && ! $shop && ! $sales ) : ?>
 			<div class="ek-empty"><strong><?php esc_html_e( 'No orders yet', 'explore-katsina' ); ?></strong><?php esc_html_e( 'Tickets, tours, shop items, digital guides and food orders will appear here.', 'explore-katsina' ); ?></div>
 		<?php endif; ?>
 		<div class="ek-stack">
+			<?php foreach ( $sales as $sl ) : ?>
+				<article class="ek-card ek-trip"><div class="ek-row ek-row--between"><h3 style="margin:0"><?php echo esc_html( $sl->details['title'] ?? '' ); ?></h3><span class="ek-pill"><?php echo esc_html( \EK\Sales::kinds()[ $sl->kind ] ?? $sl->kind ); ?></span></div>
+				<p class="ek-small ek-muted" style="margin:0"><?php echo esc_html( $sl->code . ' · ' . \EK\Money::format( $sl->amount_kobo ) . ( 'tour' === $sl->kind ? ' · ' . wp_date( 'j M Y', strtotime( ( $sl->details['date'] ?? 'now' ) . ' 12:00' ) ) : ' · ' . sprintf( /* translators: %d: tickets */ _n( '%d ticket', '%d tickets', (int) $sl->quantity, 'explore-katsina' ), (int) $sl->quantity ) ) . ( 'paid' !== $sl->status ? ' · ' . $sl->status : '' ) ); ?></p>
+				<div><a class="ek-btn ek-btn--sm ek-btn--night" href="<?php echo esc_url( \EK\Sales::link( $sl ) ); ?>"><?php echo 'ticket' === $sl->kind ? esc_html__( 'Show tickets', 'explore-katsina' ) : esc_html__( 'View', 'explore-katsina' ); ?></a></div></article>
+			<?php endforeach; ?>
 			<?php foreach ( $food as $b ) { echo $card( $b ); } // phpcs:ignore ?>
 			<?php foreach ( $shop as $o ) : ?>
 				<article class="ek-card ek-trip"><div class="ek-row ek-row--between"><h3 style="margin:0"><?php /* translators: %s: order number */ printf( esc_html__( 'Order #%s', 'explore-katsina' ), esc_html( $o->get_order_number() ) ); ?></h3><span class="ek-pill"><?php echo esc_html( wc_get_order_status_name( $o->get_status() ) ); ?></span></div>
 				<p class="ek-small ek-muted" style="margin:0"><?php echo esc_html( wc_format_datetime( $o->get_date_created() ) ); ?> · <?php echo wp_kses_post( $o->get_formatted_order_total() ); ?></p>
 				<div><a class="ek-btn ek-btn--sm ek-btn--night" href="<?php echo esc_url( $o->get_view_order_url() ); ?>"><?php esc_html_e( 'View', 'explore-katsina' ); ?></a></div></article>
 			<?php endforeach; ?>
+			<?php if ( function_exists( 'wc_get_account_endpoint_url' ) ) : ?><p class="ek-small" style="margin:0"><a href="<?php echo esc_url( wc_get_account_endpoint_url( 'downloads' ) ); ?>"><?php esc_html_e( 'My downloads (digital guides and maps) →', 'explore-katsina' ); ?></a></p><?php endif; ?>
 		</div>
 	<?php elseif ( 'favourites' === $tab ) : ?>
 		<?php $favs = Favourites::for_user( $uid ); ?>
@@ -87,10 +93,18 @@ $card  = static function ( $b ) {
 			<div class="ek-empty"><strong><?php esc_html_e( 'No favourites yet', 'explore-katsina' ); ?></strong><?php esc_html_e( 'Tap "♡ Save" on any hotel, restaurant or event centre to keep it here.', 'explore-katsina' ); ?></div>
 		<?php else : ?>
 			<ul class="ek-favlist">
-				<?php foreach ( $favs as $p ) : $t = Business::type_of( $p->ID ); $photo = (array) get_post_meta( $p->ID, '_ek_gallery', true ); ?>
+				<?php
+				$ek_other = array( 'ek_attraction' => __( 'Attraction', 'explore-katsina' ), 'ek_event' => __( 'Event', 'explore-katsina' ), 'ek_tour' => __( 'Tour', 'explore-katsina' ) );
+				foreach ( $favs as $p ) :
+					$t     = Business::type_of( $p->ID );
+					$photo = (array) get_post_meta( $p->ID, '_ek_gallery', true );
+					if ( empty( $photo[0] ) && get_post_thumbnail_id( $p ) ) {
+						$photo = array( get_post_thumbnail_id( $p ) );
+					}
+					?>
 					<li class="ek-card ek-favcard">
 						<a href="<?php echo esc_url( get_permalink( $p ) ); ?>" class="ek-favcard-img" tabindex="-1" aria-hidden="true"><?php echo ! empty( $photo[0] ) ? wp_get_attachment_image( (int) $photo[0], 'thumbnail', false, array( 'alt' => '' ) ) : ''; // phpcs:ignore ?></a>
-						<div style="min-width:0"><a href="<?php echo esc_url( get_permalink( $p ) ); ?>"><strong><?php echo esc_html( $p->post_title ); ?></strong></a><br><span class="ek-small ek-muted"><?php echo esc_html( $types[ $t ]['label'] ?? '' ); ?></span></div>
+						<div style="min-width:0"><a href="<?php echo esc_url( get_permalink( $p ) ); ?>"><strong><?php echo esc_html( $p->post_title ); ?></strong></a><br><span class="ek-small ek-muted"><?php echo esc_html( $types[ $t ]['label'] ?? ( $ek_other[ $p->post_type ] ?? '' ) ); ?></span></div>
 						<?php echo Favourites::button( $p->ID ); // phpcs:ignore ?>
 					</li>
 				<?php endforeach; ?>

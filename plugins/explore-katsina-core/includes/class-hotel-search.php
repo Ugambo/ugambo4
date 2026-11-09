@@ -202,6 +202,7 @@ final class Hotel_Search {
 		}
 
 		usort( $items, self::comparator( $p['sort'] ) );
+		$items = Plans::promote( $items );
 		$total = count( $items );
 		return array(
 			'all'   => $items,

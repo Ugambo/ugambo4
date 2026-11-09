@@ -34,6 +34,7 @@ final class Money_Jobs {
 			'invoices' => Invoices::run_monthly( $now ),
 		);
 		Invoices::enforce( $now );
+		$out['plans'] = Plans::tick( $now );
 		update_option( 'ek_money_tick_last', gmdate( 'Y-m-d H:i:s', $now ), false );
 		return $out;
 	}

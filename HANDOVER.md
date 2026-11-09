@@ -11,8 +11,9 @@ from exactly where the last one stopped.
 - **Phase 5 (Event centres): done and approved.**
 - **Phase 6 (Customer accounts & reviews): done and approved.**
 - **Phase 7 (Commissions, payouts & invoices): done and approved.**
-- **Phase 8 (Katsina Map & rankings): done, waiting for the owner's go-ahead.**
-- Next: **Phase 9 (Revenue features)**.
+- **Phase 8 (Katsina Map & rankings): done and approved.**
+- **Phase 9 (Revenue features): done, waiting for the owner's go-ahead.**
+- Next: **Phase 10 (Tourism guide)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -250,6 +251,59 @@ from exactly where the last one stopped.
   hidden. "Show again" undoes it.
 - **Command line:** `wp ek rank` (recalculate now), `wp ek map-index` (rebuild every pin).
 
+## What Phase 9 built (plain language)
+Owner decisions (9 Nov 2026): use **placeholder prices** (all in wp-admin → Settings → "Prices for paid
+features", marked PLACEHOLDER); **only events you add sell tickets** (organisers can pay to promote events).
+
+Everything Explore Katsina sells directly goes through one "sales" record book, paid the same way as bookings
+(Paystack/Flutterwave through WooCommerce on the live site; a "test payment" screen locally). Each sale has a
+code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to you.
+1. **Featured / Premium plans** (business dashboard → "Plan & Verified"): Featured ₦10,000/month or
+   ₦100,000/year; Premium ₦25,000/month or ₦250,000/year. Featured: top of search results (max 3 places,
+   marked "Featured"), gold-ringed map pin, 20 photos. Premium: also the homepage spot (`[ek_premium_spotlight]`)
+   and 40 photos. Rank numbers never change. Renewing early adds time; switching plan starts the new one today.
+   Reminders 7 days and 1 day before the end; plans end automatically.
+2. **Verified badge**: the business pays ₦5,000 once; it waits in **wp-admin → Sales & services**, where you approve
+   (badge given) or reject with a reason (optionally refunding).
+3. **Listing setup service** (`/listing-setup/`): ₦15,000 from their information, or ₦30,000 with a photo visit.
+   Orders appear in Sales & services (New → In progress → Done; the customer is emailed when done).
+4. **Banner ads** (wp-admin → Banner ads, built in, no paid plugin): zones Homepage, Search results, Katsina Map,
+   Sidebar, Inside articles; dates; image + link; daily views and clicks. Always labelled "Advertisement"; links
+   marked sponsored. Record what the advertiser paid so it shows in Revenue. Banner prices are "on request".
+5. **Sponsored articles**: tick "Sponsored" (and the sponsor's name) on a post: clear label at the top, links
+   marked rel="sponsored".
+6. **Event promotion** (`/promote-event/`): ₦15,000 for 7 days or ₦40,000 for 30 days. You approve each one in
+   Sales & services (a new event is created from the organiser's details); then it shows "Promoted" at the top of
+   `/events/` and on the homepage block (`[ek_promoted_events]`). Reject = automatic refund.
+7. **Google AdSense**: OFF. Settings → Advertising: tick on, add your publisher ID (ca-pub-…) and slot numbers;
+   it then fills zones that have no booked banner.
+8. **Own tours** (wp-admin → Tours, page `/tours/`): price per person, group size, pickup point, duration, what's
+   included, and dates with seats. Seats are held 15 minutes while paying (never overbooked). Guests can cancel
+   online for a full refund until 48 hours before (a setting). No tour descriptions were invented.
+9. **Event tickets** (wp-admin → Events → ticket types, e.g. Regular / VIP, price, quantity, sales end): tickets held
+   15 minutes while paying, max 10 per order, free tickets issued at once. Each ticket has its own secret code shown
+   as a **QR code** on the receipt (print or show on phone). **Check-in page** `/check-in/` for staff (role "Ticket
+   check-in staff", or admins): scan with the phone camera or type the code: "Welcome!", "Already used", "another
+   event" or "not valid", with a running count.
+10. **Shop** (WooCommerce): categories Leatherwork, Fabrics & textiles, Crafts, Guides & maps; delivery fees by state
+    (PLACEHOLDERS: Katsina ₦1,500; Kano/Jigawa/Kaduna/Zamfara ₦3,000; rest of Nigeria ₦5,000; change them in
+    WooCommerce → Settings → Shipping). Settings → "External store link": if filled, every product's button
+    becomes "Buy on our store" linking there. No products were added (Phase 13 adds SAMPLE ones).
+11. **Digital guides**: make a WooCommerce product "Virtual" + "Downloadable" and attach the PDF: buyers get an
+    instant private download (also under My Account → My Orders → My downloads).
+12. **Partner referral links** (wp-admin → Partners): name, type, their link with your referral code. Use
+    `/go/short-name/` or `[ek_partner slug="…" label="…"]`. Clicks are counted by month (CSV for claiming commission);
+    record commission received so it shows in Revenue. Robots aren't counted.
+13. **Advertise with us** (`/advertise/`): packages and prices, media kit download (upload the PDF in Settings),
+    enquiry form → wp-admin → Enquiries (+ email to you).
+- **Revenue dashboard** (wp-admin → Revenue): your own income per month for 12 months, from every source (booking
+  commission, invoices, plans, Verified, setup, promotions, tours, tickets, shop, guides, ads, partners), net of
+  refunds. Businesses' share of bookings is not counted as income.
+- New pages (kept out of the main menu except Events and Tours): Events, Tours, Promote your event, Listing setup
+  service, Advertise with us, Ticket check-in.
+- Free libraries added: qrcode-generator 1.4.4 (MIT) for ticket QR codes, jsQR 1.4.0 (Apache 2.0) for the camera
+  scanner (only loaded on /check-in/).
+
 ## Photos (royalty-free, with credits)
 - Source: **Wikimedia Commons**, only files that are public domain, CC0, CC BY or CC BY-SA. Each photo keeps
   its author, licence, licence link and source page, and business pages show a **"Photo credits"** list.
@@ -298,7 +352,7 @@ from exactly where the last one stopped.
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 580 automatic checks, server and browser (Phases 2–8)
+./tests/run.sh      # about 700 automatic checks, server and browser (Phases 2–9)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -313,6 +367,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase3/` | Screenshots of hotel search, hotel page, booking, confirmation, calendar, rooms |
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
+| `docs/screenshots/phase9/` | Screenshots of the plan page, search with Featured + banner ad, tickets with QR codes, check-in, tour, events, advertise, admin sales and revenue |
 | `docs/screenshots/phase8/` | Screenshots of the Katsina Map (computer and phone), map cards, Top 10 page, rank on a hotel page, attraction page, review moderation |
 | `docs/screenshots/phase7/` | Screenshots of commission settings, complaints, payouts, invoices, reports, hotel earnings and invoice |
 | `docs/screenshots/phase6/` | Screenshots of My Account, confirmation with calendar/cancel, cancelled booking, review form, reviews on a page, favourites, admin Refunds |
@@ -326,9 +381,10 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  templates/` | Screens (sign-up, dashboard sections, admin pages, public page) |
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
+| `  assets/vendor/qrcode/`, `jsqr/` | QR code drawing (MIT) and camera scanning (Apache 2.0) for tickets |
 | `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase4-woo-bridge.php`, `e2e/phase2–8.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase4-woo-bridge.php`, `e2e/phase2–9.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -383,5 +439,8 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Map price bands (hotels under ₦15k / ₦35k / ₦70k per night; event centres under ₦200k / ₦500k / ₦1m) in
   `includes/class-map-index.php`, and the ranking settings (all placeholders, easy to change)
 - Real attractions: to be researched and added in Phase 10 (with sources); none are invented
+- **All Phase 9 prices** (plans, Verified, setup, promotion), delivery fees, tour cancellation window (48 h),
+  banner ad prices ("on request"), the media kit PDF, AdSense code (off), partner agreements
+- Your own tours (city tour, Durbar package, Daura day trip): you write the descriptions, prices and dates
 - OpenStreetMap tiles: free with a fair-use limit. If the map gets very busy, switch the tile provider
   (one setting)

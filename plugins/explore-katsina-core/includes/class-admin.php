@@ -35,6 +35,14 @@ final class Admin {
 		$badge_n = static fn( $n ) => $n ? ' <span class="awaiting-mod"><span class="pending-count">' . (int) $n . '</span></span>' : '';
 		add_submenu_page( 'ek-approvals', __( 'Payouts', 'explore-katsina' ), __( 'Payouts', 'explore-katsina' ) . $badge_n( count( Payouts::waiting() ) ), self::CAP, 'ek-payouts', array( __CLASS__, 'page' ) );
 		add_submenu_page( 'ek-approvals', __( 'Complaints', 'explore-katsina' ), __( 'Complaints', 'explore-katsina' ) . $badge_n( count( Complaints::open_list() ) ), self::CAP, 'ek-complaints', array( __CLASS__, 'page' ) );
+		global $wpdb;
+		$todo = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ek_sales WHERE status = 'paid' AND ((kind IN ('verified','promotion') AND stage IN ('','submitted')) OR (kind = 'setup' AND stage IN ('','new','in_progress')))" );
+		$enq  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ek_enquiries WHERE status = 'new'" );
+		add_submenu_page( 'ek-approvals', __( 'Sales & services', 'explore-katsina' ), __( 'Sales & services', 'explore-katsina' ) . $badge_n( $todo ), self::CAP, 'ek-sales', array( __CLASS__, 'page' ) );
+		add_submenu_page( 'ek-approvals', __( 'Revenue', 'explore-katsina' ), __( 'Revenue', 'explore-katsina' ), self::CAP, 'ek-revenue', array( __CLASS__, 'page' ) );
+		add_submenu_page( 'ek-approvals', __( 'Banner ads', 'explore-katsina' ), __( 'Banner ads', 'explore-katsina' ), self::CAP, 'ek-ads', array( __CLASS__, 'page' ) );
+		add_submenu_page( 'ek-approvals', __( 'Partners', 'explore-katsina' ), __( 'Partners', 'explore-katsina' ), self::CAP, 'ek-partners', array( __CLASS__, 'page' ) );
+		add_submenu_page( 'ek-approvals', __( 'Enquiries', 'explore-katsina' ), __( 'Enquiries', 'explore-katsina' ) . $badge_n( $enq ), self::CAP, 'ek-enquiries', array( __CLASS__, 'page' ) );
 		add_submenu_page( 'ek-approvals', __( 'Reviews', 'explore-katsina' ), __( 'Reviews', 'explore-katsina' ), self::CAP, 'ek-reviews', array( __CLASS__, 'page' ) );
 		add_submenu_page( 'ek-approvals', __( 'Invoices', 'explore-katsina' ), __( 'Invoices', 'explore-katsina' ), self::CAP, 'ek-invoices', array( __CLASS__, 'page' ) );
 		add_submenu_page( 'ek-approvals', __( 'Reports', 'explore-katsina' ), __( 'Reports', 'explore-katsina' ), self::CAP, 'ek-reports', array( __CLASS__, 'page' ) );
@@ -247,6 +255,66 @@ final class Admin {
 				/* translators: %d: count */
 				$go( in_array( $back, array( 'ek-settings', 'ek-reviews' ), true ) ? $back : 'ek-settings', sprintf( __( 'Rankings recalculated for %d businesses.', 'explore-katsina' ), array_sum( $n ) ), array( 'ek_ok' => 1 ) );
 				break;
+			case 'verified_approve':
+			case 'verified_reject':
+			case 'setup_stage':
+			case 'promo_approve':
+			case 'promo_reject':
+			case 'sale_cancel':
+				$id = absint( $_POST['sale_id'] ?? 0 );
+				check_admin_referer( 'ek_admin_' . $action . '_' . $id );
+				$note = sanitize_text_field( wp_unslash( $_POST['note'] ?? '' ) );
+				$s    = Sales::get( $id );
+				if ( ! $s ) {
+					$go( 'ek-sales', __( 'Order not found.', 'explore-katsina' ), array( 'ek_ok' => 0 ) );
+				}
+				if ( 'verified_approve' === $action || 'verified_reject' === $action ) {
+					$r = Services::decide_verified( $id, 'verified_approve' === $action, $note, $uid, ! empty( $_POST['refund'] ) );
+				} elseif ( 'setup_stage' === $action ) {
+					$stage = in_array( $_POST['stage'] ?? '', array( 'in_progress', 'done' ), true ) ? sanitize_key( $_POST['stage'] ) : 'new';
+					$r     = Sales::set_stage( $id, $stage, $note ) ? true : new \WP_Error( 'x', 'x' );
+					if ( 'done' === $stage && $s->customer_email ) {
+						Emails::send( $s->customer_email, __( 'Your listing setup is done', 'explore-katsina' ), __( 'Your listing is ready', 'explore-katsina' ), array_filter( array( __( 'Our team has finished setting up your listing. Thank you for choosing Explore Katsina.', 'explore-katsina' ), $note ) ), array( 'label' => __( 'View order', 'explore-katsina' ), 'url' => Sales::link( $s ) ), array( 'event' => 'setup_done', 'phone' => $s->customer_phone ) );
+					}
+				} elseif ( 'promo_approve' === $action ) {
+					$r = Events::approve_promotion( $id, $uid );
+				} elseif ( 'promo_reject' === $action ) {
+					Sales::set_stage( $id, 'rejected', $note );
+					$r = Sales::cancel( Sales::get( $id ), null, $note, $uid );
+				} else {
+					$r = Sales::cancel( $s, null, $note, $uid );
+				}
+				$go( 'ek-sales', is_wp_error( $r ) ? $r->get_error_message() : $done, array( 'ek_ok' => is_wp_error( $r ) ? 0 : 1, 'tab' => 'sale_cancel' === $action ? 'all' : 'todo' ) );
+				break;
+			case 'ad_save':
+				check_admin_referer( 'ek_admin_ad_save' );
+				$in = wp_unslash( $_POST );
+				$r  = Ads::save( $in, absint( $in['ad_id'] ?? 0 ) );
+				if ( ! is_wp_error( $r ) && Money::to_kobo( $in['paid'] ?? '' ) > 0 ) {
+					Revenue::record( 'ads', Money::to_kobo( $in['paid'] ), sanitize_text_field( $in['paid_on'] ?? '' ), sanitize_text_field( $in['title'] ) . ' · ' . sanitize_text_field( $in['advertiser'] ?? '' ), $r );
+				}
+				$go( 'ek-ads', is_wp_error( $r ) ? $r->get_error_message() : $done, array( 'ek_ok' => is_wp_error( $r ) ? 0 : 1 ) );
+				break;
+			case 'partner_save':
+				check_admin_referer( 'ek_admin_partner_save' );
+				$in = wp_unslash( $_POST );
+				$r  = Partners::save( $in, absint( $in['partner_id'] ?? 0 ) );
+				$go( 'ek-partners', is_wp_error( $r ) ? $r->get_error_message() : $done, array( 'ek_ok' => is_wp_error( $r ) ? 0 : 1 ) );
+				break;
+			case 'income_record':
+				check_admin_referer( 'ek_admin_income_record' );
+				$in   = wp_unslash( $_POST );
+				$r    = Revenue::record( sanitize_key( $in['source'] ?? '' ), Money::to_kobo( $in['amount'] ?? '' ), sanitize_text_field( $in['received_on'] ?? '' ), $in['note'] ?? '' );
+				$back = in_array( $in['back'] ?? '', array( 'ek-partners', 'ek-revenue' ), true ) ? $in['back'] : 'ek-revenue';
+				$go( $back, is_wp_error( $r ) ? $r->get_error_message() : $done, array( 'ek_ok' => is_wp_error( $r ) ? 0 : 1 ) );
+				break;
+			case 'enquiry_status':
+				$id = absint( $_POST['enquiry_id'] ?? 0 );
+				check_admin_referer( 'ek_admin_enquiry_status_' . $id );
+				global $wpdb;
+				$wpdb->update( $wpdb->prefix . 'ek_enquiries', array( 'status' => in_array( $_POST['status'] ?? '', array( 'new', 'replied', 'won', 'closed' ), true ) ? sanitize_key( $_POST['status'] ) : 'new' ), array( 'id' => $id ) );
+				$go( 'ek-enquiries', $done, array( 'ek_ok' => 1 ) );
+				break;
 			case 'invoices_generate':
 				check_admin_referer( 'ek_admin_invoices_generate' );
 				$month = preg_match( '/^\d{4}-\d{2}$/', (string) ( $_POST['month'] ?? '' ) ) ? (string) $_POST['month'] : '';
@@ -258,8 +326,17 @@ final class Admin {
 		return false;
 	}
 
-	/** Reports → CSV download (GET with nonce). */
+	/** Reports → CSV download (GET with nonce). Also the partners' monthly click report. */
 	public static function csv() {
+		if ( ! empty( $_GET['ek_partner_csv'] ) && current_user_can( self::CAP ) ) { // phpcs:ignore
+			check_admin_referer( 'ek_partner_csv' );
+			$m = preg_match( '/^\d{4}-\d{2}$/', (string) $_GET['ek_partner_csv'] ) ? (string) $_GET['ek_partner_csv'] : wp_date( 'Y-m' ); // phpcs:ignore
+			nocache_headers();
+			header( 'Content-Type: text/csv; charset=utf-8' );
+			header( 'Content-Disposition: attachment; filename="partner-clicks-' . $m . '.csv"' );
+			echo "\xEF\xBB\xBF" . Partners::csv( $m ); // phpcs:ignore
+			exit;
+		}
 		if ( empty( $_GET['ek_csv'] ) || ! current_user_can( self::CAP ) ) { // phpcs:ignore
 			return;
 		}
@@ -291,6 +368,23 @@ final class Admin {
 				'max_photo_mb'         => max( 1, min( 20, absint( $in['max_photo_mb'] ?? 5 ) ) ),
 				'food_ordering_enabled'=> ! empty( $in['food_ordering_enabled'] ) ? 1 : 0,
 				'commission_bp'        => $rates,
+				'price_featured_month'  => Money::to_kobo( $in['price_featured_month'] ?? Settings::get( 'price_featured_month' ) / 100 ),
+				'price_featured_year'   => Money::to_kobo( $in['price_featured_year'] ?? Settings::get( 'price_featured_year' ) / 100 ),
+				'price_premium_month'   => Money::to_kobo( $in['price_premium_month'] ?? Settings::get( 'price_premium_month' ) / 100 ),
+				'price_premium_year'    => Money::to_kobo( $in['price_premium_year'] ?? Settings::get( 'price_premium_year' ) / 100 ),
+				'price_verified'        => Money::to_kobo( $in['price_verified'] ?? Settings::get( 'price_verified' ) / 100 ),
+				'price_setup_basic'     => Money::to_kobo( $in['price_setup_basic'] ?? Settings::get( 'price_setup_basic' ) / 100 ),
+				'price_setup_photos'    => Money::to_kobo( $in['price_setup_photos'] ?? Settings::get( 'price_setup_photos' ) / 100 ),
+				'price_promo_7'         => Money::to_kobo( $in['price_promo_7'] ?? Settings::get( 'price_promo_7' ) / 100 ),
+				'price_promo_30'        => Money::to_kobo( $in['price_promo_30'] ?? Settings::get( 'price_promo_30' ) / 100 ),
+				'max_photos_featured'   => max( 1, min( 100, absint( $in['max_photos_featured'] ?? 20 ) ) ),
+				'max_photos_premium'    => max( 1, min( 100, absint( $in['max_photos_premium'] ?? 40 ) ) ),
+				'tour_cancel_hours'     => max( 0, min( 720, absint( $in['tour_cancel_hours'] ?? 48 ) ) ),
+				'adsense_enabled'       => empty( $in['adsense_enabled'] ) ? 0 : 1,
+				'adsense_client'        => preg_match( '/^ca-pub-\d{10,20}$/', trim( (string) ( $in['adsense_client'] ?? '' ) ) ) ? trim( $in['adsense_client'] ) : '',
+				'adsense_slots'         => array_map( static fn( $v ) => preg_replace( '/\D/', '', (string) $v ), array_intersect_key( (array) ( $in['adsense_slots'] ?? array() ), Ads::zones() ) ),
+				'shop_external_url'     => View::valid_url( $in['shop_external_url'] ?? '' ),
+				'media_kit_id'          => absint( $in['media_kit_id'] ?? 0 ),
 				'rank_prior_reviews'    => max( 0, min( 100, absint( $in['rank_prior_reviews'] ?? 10 ) ) ),
 				'rank_half_life_months' => max( 1, min( 60, absint( $in['rank_half_life_months'] ?? 12 ) ) ),
 				'rank_weight_rating'    => max( 0, min( 100, absint( $in['rank_weight_rating'] ?? 70 ) ) ),
@@ -335,7 +429,7 @@ final class Admin {
 			return;
 		}
 		$page = str_replace( 'ek-', '', sanitize_key( $_GET['page'] ?? '' ) ); // phpcs:ignore
-		if ( in_array( $page, array( 'payouts', 'complaints', 'invoices', 'reports', 'reviews' ), true ) ) {
+		if ( in_array( $page, array( 'payouts', 'complaints', 'invoices', 'reports', 'reviews', 'sales', 'revenue', 'ads', 'partners', 'enquiries' ), true ) ) {
 			echo '<div class="wrap ek-admin">' . View::render( 'admin/' . $page ) . '</div>'; // phpcs:ignore
 		}
 	}

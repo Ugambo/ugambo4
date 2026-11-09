@@ -30,6 +30,7 @@ final class Dashboard {
 			'earnings'  => __( 'Earnings', 'explore-katsina' ),
 			'payouts'   => __( 'Payouts', 'explore-katsina' ),
 			'invoices'  => __( 'Invoices', 'explore-katsina' ),
+			'plan'      => __( 'Plan & Verified', 'explore-katsina' ),
 			'reviews'   => __( 'Reviews', 'explore-katsina' ),
 			'ranking'   => __( 'Ranking', 'explore-katsina' ),
 			'analytics' => __( 'Analytics', 'explore-katsina' ),
@@ -159,6 +160,17 @@ final class Dashboard {
 				}
 				$redirect = self::url( 'invoices', $business_id );
 				break;
+			case 'dash_plan_buy':
+			case 'dash_verify_apply':
+				$sale = 'dash_plan_buy' === $action ? Plans::buy( $business_id, sanitize_key( $in['plan'] ?? '' ), sanitize_key( $in['period'] ?? '' ), $uid ) : Services::apply_verified( $business_id, $uid );
+				$url  = is_wp_error( $sale ) ? $sale : Sales::pay_url( $sale );
+				if ( is_wp_error( $url ) ) {
+					View::flash( 'error', $url->get_error_message(), $uid );
+					$redirect = self::url( 'plan', $business_id );
+					break;
+				}
+				wp_redirect( $url ); // phpcs:ignore WordPress.Security.SafeRedirect -- payment page.
+				exit;
 			case 'dash_reply':
 				$res = Reviews::reply( absint( $in['review_id'] ?? 0 ), $business_id, $in['reply'] ?? '' );
 				View::flash( is_wp_error( $res ) ? 'error' : 'ok', is_wp_error( $res ) ? $res->get_error_message() : __( 'Your reply is published.', 'explore-katsina' ), $uid );

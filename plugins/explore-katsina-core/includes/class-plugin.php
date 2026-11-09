@@ -37,6 +37,16 @@ final class Plugin {
 		Map_Index::init();
 		Map_Page::init();
 		Top::init();
+		Sales::init();
+		Plans::init();
+		Services::init();
+		Events::init();
+		Tickets::init();
+		Tours::init();
+		Ads::init();
+		Shop::init();
+		Partners::init();
+		Advertise::init();
 		Access::init();
 		Assets::init();
 		Signup::init();

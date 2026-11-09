@@ -32,6 +32,38 @@ defined( 'ABSPATH' ) || exit;
 		</td></tr>
 		<tr><th><label for="invoice_due_days"><?php esc_html_e( 'Invoice payment time (days)', 'explore-katsina' ); ?></label></th><td><input type="number" min="7" max="90" id="invoice_due_days" name="invoice_due_days" value="<?php echo (int) $s['invoice_due_days']; ?>"><p class="description"><?php esc_html_e( 'Monthly commission invoices (for pay-at-hotel bookings) are due this many days after they are issued. If unpaid by then, the listing is paused automatically until paid. Your brief: 30 days.', 'explore-katsina' ); ?></p></td></tr>
 	</table>
+	<h2><?php esc_html_e( 'Prices for paid features (PLACEHOLDERS: set real prices before launch)', 'explore-katsina' ); ?></h2>
+	<table class="form-table" role="presentation">
+		<?php
+		$ek_prices = array(
+			'price_featured_month' => __( 'Featured plan, 1 month', 'explore-katsina' ),
+			'price_featured_year'  => __( 'Featured plan, 1 year', 'explore-katsina' ),
+			'price_premium_month'  => __( 'Premium plan, 1 month', 'explore-katsina' ),
+			'price_premium_year'   => __( 'Premium plan, 1 year', 'explore-katsina' ),
+			'price_verified'       => __( 'Verified badge application (one-time)', 'explore-katsina' ),
+			'price_setup_basic'    => __( 'Listing setup service', 'explore-katsina' ),
+			'price_setup_photos'   => __( 'Listing setup + photo visit', 'explore-katsina' ),
+			'price_promo_7'        => __( 'Event promotion, 7 days', 'explore-katsina' ),
+			'price_promo_30'       => __( 'Event promotion, 30 days', 'explore-katsina' ),
+		);
+		foreach ( $ek_prices as $k => $label ) :
+			?>
+			<tr><th><label for="<?php echo esc_attr( $k ); ?>"><?php echo esc_html( $label ); ?></label></th><td>₦ <input type="text" inputmode="decimal" id="<?php echo esc_attr( $k ); ?>" name="<?php echo esc_attr( $k ); ?>" value="<?php echo esc_attr( (string) ( (int) $s[ $k ] / 100 ) ); ?>"></td></tr>
+		<?php endforeach; ?>
+		<tr><th><?php esc_html_e( 'Photos allowed', 'explore-katsina' ); ?></th><td><?php esc_html_e( 'Featured', 'explore-katsina' ); ?> <input type="number" min="1" max="100" name="max_photos_featured" value="<?php echo (int) $s['max_photos_featured']; ?>" style="width:5em"> · <?php esc_html_e( 'Premium', 'explore-katsina' ); ?> <input type="number" min="1" max="100" name="max_photos_premium" value="<?php echo (int) $s['max_photos_premium']; ?>" style="width:5em"></td></tr>
+		<tr><th><label for="tour_cancel_hours"><?php esc_html_e( 'Own tours: free cancellation until', 'explore-katsina' ); ?></label></th><td><input type="number" min="0" id="tour_cancel_hours" name="tour_cancel_hours" value="<?php echo (int) $s['tour_cancel_hours']; ?>" style="width:6em"> <?php esc_html_e( 'hours before departure', 'explore-katsina' ); ?></td></tr>
+	</table>
+	<h2><?php esc_html_e( 'Advertising & shop', 'explore-katsina' ); ?></h2>
+	<table class="form-table" role="presentation">
+		<tr><th><?php esc_html_e( 'Google AdSense', 'explore-katsina' ); ?></th><td>
+			<p><label><input type="checkbox" name="adsense_enabled" value="1" <?php checked( ! empty( $s['adsense_enabled'] ) ); ?>> <?php esc_html_e( 'Show AdSense in zones that have no booked banner (OFF until you add your code)', 'explore-katsina' ); ?></label></p>
+			<p><label><?php esc_html_e( 'Publisher ID', 'explore-katsina' ); ?> <input type="text" name="adsense_client" value="<?php echo esc_attr( $s['adsense_client'] ); ?>" placeholder="ca-pub-0000000000000000"></label></p>
+			<?php foreach ( \EK\Ads::zones() as $k => $label ) : ?><p><label><?php echo esc_html( $label ); ?>: <?php esc_html_e( 'slot number', 'explore-katsina' ); ?> <input type="text" name="adsense_slots[<?php echo esc_attr( $k ); ?>]" value="<?php echo esc_attr( (string) ( $s['adsense_slots'][ $k ] ?? '' ) ); ?>" style="width:12em"></label></p><?php endforeach; ?>
+		</td></tr>
+		<tr><th><label for="shop_external_url"><?php esc_html_e( 'External store link', 'explore-katsina' ); ?></label></th><td><input type="url" id="shop_external_url" name="shop_external_url" class="regular-text" value="<?php echo esc_attr( $s['shop_external_url'] ); ?>" placeholder="https://"><p class="description"><?php esc_html_e( 'Leave empty to sell crafts and guides here. If you fill it in, every product\'s "Add to cart" becomes "Buy on our store" linking there.', 'explore-katsina' ); ?></p></td></tr>
+		<tr><th><?php esc_html_e( 'Media kit (PDF)', 'explore-katsina' ); ?></th><td><?php wp_enqueue_media(); ?><input type="hidden" name="media_kit_id" id="ek-kit" value="<?php echo (int) $s['media_kit_id']; ?>"><span id="ek-kit-name"><?php echo $s['media_kit_id'] ? esc_html( basename( (string) get_attached_file( (int) $s['media_kit_id'] ) ) ) : esc_html__( 'None yet', 'explore-katsina' ); ?></span> <button type="button" class="button" id="ek-kit-btn"><?php esc_html_e( 'Choose PDF', 'explore-katsina' ); ?></button><p class="description"><?php esc_html_e( 'Offered for download on the "Advertise with us" page.', 'explore-katsina' ); ?></p>
+			<script>jQuery(function($){$('#ek-kit-btn').on('click',function(){var f=wp.media({title:'Media kit',library:{type:'application/pdf'},multiple:false});f.on('select',function(){var a=f.state().get('selection').first().toJSON();$('#ek-kit').val(a.id);$('#ek-kit-name').text(a.filename);});f.open();});});</script></td></tr>
+	</table>
 	<h2><?php esc_html_e( 'Rankings', 'explore-katsina' ); ?></h2>
 	<table class="form-table" role="presentation">
 		<tr><th><label for="min_reviews_for_rank"><?php esc_html_e( 'Verified reviews needed for a rank number', 'explore-katsina' ); ?></label></th><td><input type="number" min="1" max="50" id="min_reviews_for_rank" name="min_reviews_for_rank" value="<?php echo (int) $s['min_reviews_for_rank']; ?>"></td></tr>

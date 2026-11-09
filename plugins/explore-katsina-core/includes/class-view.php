@@ -122,6 +122,12 @@ final class View {
 			. '<circle cx="' . esc_attr( $lx ) . '" cy="' . esc_attr( $ly ) . '" r="2.4" fill="#8E1B2C"/></svg>';
 	}
 
+	/** A proper http(s) link typed by the admin (format only: no network lookup). */
+	public static function valid_url( $url ) {
+		$url = trim( (string) $url );
+		return $url && filter_var( $url, FILTER_VALIDATE_URL ) && in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ? esc_url_raw( $url ) : '';
+	}
+
 	public static function date( $mysql_gmt, $with_time = false ) {
 		if ( ! $mysql_gmt ) {
 			return '';

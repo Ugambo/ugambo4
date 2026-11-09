@@ -187,6 +187,19 @@ final class Booking_Page {
 		nocache_headers();
 		$g = $_GET; // phpcs:ignore WordPress.Security.NonceVerification
 
+		if ( ! empty( $g['sale'] ) || ! empty( $g['pay_sale'] ) ) {
+			$test = ! empty( $g['pay_sale'] );
+			$s    = Sales::by_code( sanitize_text_field( wp_unslash( $test ? $g['pay_sale'] : $g['sale'] ) ), sanitize_text_field( wp_unslash( $g['key'] ?? '' ) ) );
+			if ( ! $s || ( $test && ! Payments::test_mode_allowed() ) ) {
+				return '<div class="ek"><div class="ek-empty"><strong>' . esc_html__( 'Order not found', 'explore-katsina' ) . '</strong>' . esc_html__( 'Please use the link in your email.', 'explore-katsina' ) . '</div></div>';
+			}
+			if ( 'pending_payment' === $s->status && $s->hold_expires && strtotime( $s->hold_expires . ' UTC' ) < time() ) {
+				Sales::expire_holds();
+				$s = Sales::get( $s->id );
+			}
+			return View::render( $test ? 'sale/test-pay' : 'sale/receipt', array( 's' => $s ) );
+		}
+
 		if ( ! empty( $g['booking'] ) ) {
 			$b = Booking::by_code( sanitize_text_field( wp_unslash( $g['booking'] ) ), sanitize_text_field( wp_unslash( $g['key'] ?? '' ) ) );
 			if ( ! $b ) {

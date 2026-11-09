@@ -17,6 +17,7 @@ final class Payments_Woo {
 
 	const META         = '_ek_booking_id';
 	const META_INVOICE = '_ek_invoice_id';
+	const META_SALE    = '_ek_sale_id';
 
 	public static function init() {
 		add_action( 'woocommerce_payment_complete', array( __CLASS__, 'paid' ) );
@@ -97,6 +98,37 @@ final class Payments_Woo {
 		return $order->get_checkout_payment_url();
 	}
 
+	/** Sales (plans, tickets, tours…) paid online. @return string|\WP_Error */
+	public static function sale_checkout_url( $s ) {
+		$order = $s->order_id ? wc_get_order( $s->order_id ) : null;
+		if ( ! $order || ! $order->needs_payment() ) {
+			$order = wc_create_order( array( 'customer_id' => (int) $s->customer_id ) );
+			if ( is_wp_error( $order ) ) {
+				return $order;
+			}
+			$item = new \WC_Order_Item_Product();
+			$item->set_name( ( Sales::kinds()[ $s->kind ] ?? $s->kind ) . ' · ' . ( $s->details['title'] ?? '' ) . ' · ' . $s->code );
+			$item->set_quantity( 1 );
+			$item->set_subtotal( $s->amount_kobo / 100 );
+			$item->set_total( $s->amount_kobo / 100 );
+			$order->add_item( $item );
+			$name = explode( ' ', $s->customer_name, 2 );
+			$order->set_billing_first_name( $name[0] );
+			$order->set_billing_last_name( $name[1] ?? '' );
+			$order->set_billing_email( $s->customer_email );
+			$order->set_billing_phone( $s->customer_phone );
+			$order->set_billing_country( 'NG' );
+			$order->set_currency( 'NGN' );
+			$order->update_meta_data( self::META_SALE, (int) $s->id );
+			$order->calculate_totals( false );
+			$order->set_status( 'pending' );
+			$order->save();
+			global $wpdb;
+			$wpdb->update( $wpdb->prefix . 'ek_sales', array( 'order_id' => $order->get_id() ), array( 'id' => $s->id ) );
+		}
+		return $order->get_checkout_payment_url();
+	}
+
 	private static function booking_for( $order_id ) {
 		$order = wc_get_order( $order_id );
 		return $order ? (int) $order->get_meta( self::META ) : 0;
@@ -104,6 +136,13 @@ final class Payments_Woo {
 
 	public static function paid( $order_id ) {
 		$order      = wc_get_order( $order_id );
+		$sale_id = $order ? (int) $order->get_meta( self::META_SALE ) : 0;
+		if ( $sale_id ) {
+			if ( $order->is_paid() ) {
+				Sales::mark_paid( $sale_id, (int) round( (float) $order->get_total() * 100 ), 'wc-' . $order_id );
+			}
+			return;
+		}
 		$invoice_id = $order ? (int) $order->get_meta( self::META_INVOICE ) : 0;
 		if ( $invoice_id && $order->is_paid() ) {
 			$inv = Invoices::get( $invoice_id );
@@ -125,6 +164,11 @@ final class Payments_Woo {
 	}
 
 	public static function failed( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( $order && $order->get_meta( self::META_SALE ) ) {
+			Sales::payment_failed( (int) $order->get_meta( self::META_SALE ) );
+			return;
+		}
 		$booking_id = self::booking_for( $order_id );
 		if ( $booking_id ) {
 			Booking::payment_failed( $booking_id );
@@ -133,11 +177,16 @@ final class Payments_Woo {
 
 	/** Booking payments need no shipping/processing: mark them completed. */
 	public static function complete_status( $status, $order_id, $order ) {
-		return ( $order && ( $order->get_meta( self::META ) || $order->get_meta( self::META_INVOICE ) ) ) ? 'completed' : $status;
+		return ( $order && ( $order->get_meta( self::META ) || $order->get_meta( self::META_INVOICE ) || $order->get_meta( self::META_SALE ) ) ) ? 'completed' : $status;
 	}
 
 	/** After paying, show our booking confirmation instead of the shop's thank-you page. */
 	public static function thank_you_url( $url, $order ) {
+		$sale_id = $order ? (int) $order->get_meta( self::META_SALE ) : 0;
+		if ( $sale_id ) {
+			$s = Sales::get( $sale_id );
+			return $s ? Sales::done_url( $s ) : $url;
+		}
 		$invoice_id = $order ? (int) $order->get_meta( self::META_INVOICE ) : 0;
 		if ( $invoice_id ) {
 			$inv = Invoices::get( $invoice_id );

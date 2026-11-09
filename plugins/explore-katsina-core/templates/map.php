@@ -65,6 +65,7 @@ $lga    = absint( $_GET['lga'] ?? 0 ); // phpcs:ignore
 				</div>
 				<p class="ek-small ek-kmap-msg" data-msg role="status" hidden></p>
 				<ol class="ek-kmap-list" data-list></ol>
+				<?php echo \EK\Ads::zone( 'map' ); // phpcs:ignore ?>
 				<p class="ek-small ek-muted ek-kmap-note"><?php esc_html_e( 'Rank numbers come from verified reviews, completed bookings and response rate. Featured places pay for a highlighted pin; it never changes their rank.', 'explore-katsina' ); ?></p>
 			</div>
 		</aside>

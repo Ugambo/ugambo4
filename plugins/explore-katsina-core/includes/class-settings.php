@@ -31,7 +31,25 @@ final class Settings {
 			'rank_weight_response'  => 15,
 			'rank_bookings_full'    => 50,  // Completed bookings a year that earn full marks for activity.
 			'rank_top_percent'      => 10,  // "Top Rated" badge: top 10% of its type.
-			'rank_rising_points'    => 5,   // "Rising": score up at least this many points (of 100) in 90 days. // Phase 7: unpaid invoices pause the listing after this many days.
+			'rank_rising_points'    => 5,
+			// Phase 9 prices (kobo). ALL PLACEHOLDERS: set real prices before launch.
+			'price_featured_month'  => 1000000,  // ₦10,000.
+			'price_featured_year'   => 10000000, // ₦100,000.
+			'price_premium_month'   => 2500000,  // ₦25,000.
+			'price_premium_year'    => 25000000, // ₦250,000.
+			'price_verified'        => 500000,   // ₦5,000 one-time application.
+			'price_setup_basic'     => 1500000,  // ₦15,000 listing setup from your information.
+			'price_setup_photos'    => 3000000,  // ₦30,000 with a photo visit.
+			'price_promo_7'         => 1500000,  // ₦15,000 event promotion, 7 days.
+			'price_promo_30'        => 4000000,  // ₦40,000 event promotion, 30 days.
+			'max_photos_featured'   => 20,
+			'max_photos_premium'    => 40,
+			'tour_cancel_hours'     => 48,       // Own tours: full refund until this many hours before departure.
+			'adsense_enabled'       => 0,        // Google AdSense: OFF until you add your code.
+			'adsense_client'        => '',
+			'adsense_slots'         => array(),
+			'shop_external_url'     => '',       // Send shop buyers to an external store instead (empty = sell here).
+			'media_kit_id'          => 0,   // "Rising": score up at least this many points (of 100) in 90 days. // Phase 7: unpaid invoices pause the listing after this many days.
 			// Commission placeholders (Phase 7). Basis points: 1000 = 10%.
 			'commission_bp'         => array(
 				'hotel'             => 1000,

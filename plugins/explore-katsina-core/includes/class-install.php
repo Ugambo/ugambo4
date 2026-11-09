@@ -34,9 +34,13 @@ final class Install {
 		Rooms::register();
 		Halls::register();
 		Attractions::register();
+		Events::register();
+		Tours::register();
+		Tickets::add_role();
 		self::add_terms();
 		self::add_pages();
 		Private_Files::protect_directory();
+		Shop::setup();
 		update_option( 'ek_db_version', EK_DB_VERSION );
 		update_option( 'ek_flush_rewrite', 1 );
 	}
@@ -386,6 +390,156 @@ final class Install {
 			KEY type_lga (type,lga_id)
 		) $c;";
 
+		/*
+		 * Phase 9: everything Explore Katsina sells directly (plans, Verified applications, listing
+		 * setup, event promotion, tour seats, event tickets). Shop products and guides use WooCommerce.
+		 */
+		$sql[] = "CREATE TABLE {$p}sales (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			code varchar(14) NOT NULL,
+			access_key varchar(40) NOT NULL,
+			kind varchar(20) NOT NULL,
+			object_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			item_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			quantity int(10) unsigned NOT NULL DEFAULT 1,
+			amount_kobo bigint(20) NOT NULL DEFAULT 0,
+			status varchar(20) NOT NULL,
+			stage varchar(20) NOT NULL DEFAULT '',
+			customer_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			customer_name varchar(190) NOT NULL DEFAULT '',
+			customer_email varchar(190) NOT NULL DEFAULT '',
+			customer_phone varchar(30) NOT NULL DEFAULT '',
+			details longtext NULL,
+			order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			reference varchar(100) NOT NULL DEFAULT '',
+			hold_expires datetime NULL,
+			created_at datetime NOT NULL,
+			paid_at datetime NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY code (code),
+			KEY kind_status (kind,status),
+			KEY object (object_id),
+			KEY customer (customer_id),
+			KEY hold (status,hold_expires)
+		) $c;";
+
+		/* Tour dates with seats. */
+		$sql[] = "CREATE TABLE {$p}tour_departures (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			tour_id bigint(20) unsigned NOT NULL,
+			depart_date date NOT NULL,
+			depart_time time NULL,
+			seats int(10) unsigned NOT NULL DEFAULT 0,
+			taken int(10) unsigned NOT NULL DEFAULT 0,
+			price_kobo bigint(20) NOT NULL DEFAULT 0,
+			status varchar(20) NOT NULL DEFAULT 'open',
+			PRIMARY KEY  (id),
+			KEY tour_date (tour_id,depart_date)
+		) $c;";
+
+		/* Event ticket types (Regular, VIP…) and the tickets sold. */
+		$sql[] = "CREATE TABLE {$p}ticket_types (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			event_id bigint(20) unsigned NOT NULL,
+			name varchar(100) NOT NULL,
+			price_kobo bigint(20) NOT NULL DEFAULT 0,
+			quantity int(10) unsigned NOT NULL DEFAULT 0,
+			sold int(10) unsigned NOT NULL DEFAULT 0,
+			sales_end datetime NULL,
+			sort int(10) NOT NULL DEFAULT 0,
+			PRIMARY KEY  (id),
+			KEY event (event_id)
+		) $c;";
+		$sql[] = "CREATE TABLE {$p}tickets (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			sale_id bigint(20) unsigned NOT NULL,
+			event_id bigint(20) unsigned NOT NULL,
+			type_id bigint(20) unsigned NOT NULL,
+			code varchar(32) NOT NULL,
+			holder varchar(190) NOT NULL DEFAULT '',
+			status varchar(20) NOT NULL DEFAULT 'valid',
+			checked_in_at datetime NULL,
+			checked_in_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			PRIMARY KEY  (id),
+			UNIQUE KEY code (code),
+			KEY sale (sale_id),
+			KEY event (event_id)
+		) $c;";
+
+		/* Banner ads and their daily counts. */
+		$sql[] = "CREATE TABLE {$p}ads (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			title varchar(190) NOT NULL,
+			advertiser varchar(190) NOT NULL DEFAULT '',
+			zone varchar(30) NOT NULL,
+			image_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			link_url varchar(500) NOT NULL DEFAULT '',
+			alt_text varchar(190) NOT NULL DEFAULT '',
+			starts_on date NULL,
+			ends_on date NULL,
+			active tinyint(1) unsigned NOT NULL DEFAULT 1,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY zone (zone,active)
+		) $c;";
+		$sql[] = "CREATE TABLE {$p}ad_stats (
+			ad_id bigint(20) unsigned NOT NULL,
+			day date NOT NULL,
+			views int(10) unsigned NOT NULL DEFAULT 0,
+			clicks int(10) unsigned NOT NULL DEFAULT 0,
+			PRIMARY KEY  (ad_id,day)
+		) $c;";
+
+		/* Partner referral links and clicks. */
+		$sql[] = "CREATE TABLE {$p}partners (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			slug varchar(60) NOT NULL,
+			name varchar(190) NOT NULL,
+			category varchar(40) NOT NULL DEFAULT '',
+			url varchar(500) NOT NULL,
+			commission_note varchar(255) NOT NULL DEFAULT '',
+			active tinyint(1) unsigned NOT NULL DEFAULT 1,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY slug (slug)
+		) $c;";
+		$sql[] = "CREATE TABLE {$p}partner_clicks (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			partner_id bigint(20) unsigned NOT NULL,
+			source_url varchar(255) NOT NULL DEFAULT '',
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY partner_date (partner_id,created_at)
+		) $c;";
+
+		/* "Advertise with us" enquiries. */
+		$sql[] = "CREATE TABLE {$p}enquiries (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			name varchar(190) NOT NULL,
+			company varchar(190) NOT NULL DEFAULT '',
+			email varchar(190) NOT NULL,
+			phone varchar(30) NOT NULL DEFAULT '',
+			interest varchar(60) NOT NULL DEFAULT '',
+			message text NULL,
+			status varchar(20) NOT NULL DEFAULT 'new',
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id)
+		) $c;";
+
+		/* Money received outside the website (banner ads sold directly, partner commissions…). */
+		$sql[] = "CREATE TABLE {$p}income_manual (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			source varchar(30) NOT NULL,
+			ref_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			amount_kobo bigint(20) NOT NULL,
+			received_on date NOT NULL,
+			note varchar(255) NOT NULL DEFAULT '',
+			created_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY source_date (source,received_on)
+		) $c;";
+
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}
@@ -480,6 +634,36 @@ final class Install {
 				'title'   => __( 'Top Event Centres in Katsina', 'explore-katsina' ),
 				'slug'    => 'top-event-centres',
 				'content' => '<!-- wp:shortcode -->[ek_top type="event-centre"]<!-- /wp:shortcode -->',
+			),
+			'events'            => array(
+				'title'   => __( 'Events', 'explore-katsina' ),
+				'slug'    => 'events',
+				'content' => '<!-- wp:shortcode -->[ek_events]<!-- /wp:shortcode -->',
+			),
+			'tours'             => array(
+				'title'   => __( 'Tours', 'explore-katsina' ),
+				'slug'    => 'tours',
+				'content' => '<!-- wp:shortcode -->[ek_tours]<!-- /wp:shortcode -->',
+			),
+			'promote_event'     => array(
+				'title'   => __( 'Promote your event', 'explore-katsina' ),
+				'slug'    => 'promote-event',
+				'content' => '<!-- wp:shortcode -->[ek_promote_event]<!-- /wp:shortcode -->',
+			),
+			'listing_setup'     => array(
+				'title'   => __( 'Listing setup service', 'explore-katsina' ),
+				'slug'    => 'listing-setup',
+				'content' => '<!-- wp:shortcode -->[ek_setup_service]<!-- /wp:shortcode -->',
+			),
+			'advertise'         => array(
+				'title'   => __( 'Advertise with us', 'explore-katsina' ),
+				'slug'    => 'advertise',
+				'content' => '<!-- wp:shortcode -->[ek_advertise]<!-- /wp:shortcode -->',
+			),
+			'checkin'           => array(
+				'title'   => __( 'Ticket check-in', 'explore-katsina' ),
+				'slug'    => 'check-in',
+				'content' => '<!-- wp:shortcode -->[ek_checkin]<!-- /wp:shortcode -->',
 			),
 			'account'       => array(
 				'title'   => __( 'My Account', 'explore-katsina' ),

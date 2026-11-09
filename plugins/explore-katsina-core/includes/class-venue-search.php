@@ -137,6 +137,7 @@ final class Venue_Search {
 			default:
 				usort( $items, static fn( $a, $b ) => ( $a['rank'] ?? PHP_INT_MAX ) <=> ( $b['rank'] ?? PHP_INT_MAX ) ?: $b['rating'] <=> $a['rating'] ?: $by_name( $a, $b ) );
 		}
+		$items = Plans::promote( $items );
 		return array(
 			'all'   => $items,
 			'items' => array_slice( $items, ( $p['page'] - 1 ) * self::PER_PAGE, self::PER_PAGE ),
