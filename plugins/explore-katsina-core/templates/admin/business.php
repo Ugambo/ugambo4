@@ -56,6 +56,26 @@ $msg     = sanitize_key( $_GET['ek_msg'] ?? '' ); // phpcs:ignore
 	<p class="description"><?php esc_html_e( 'Verified means you have checked the ID, CAC (if given) and that the business really exists at the pinned location.', 'explore-katsina' ); ?></p>
 </div>
 
+<div class="card">
+	<h2><?php esc_html_e( 'Commission & money', 'explore-katsina' ); ?></h2>
+	<?php
+	$ek_rates = \EK\Commission::for_business( $id );
+	$ek_over  = \EK\Commission::has_override( $id );
+	$ek_sum   = \EK\Money::summary( $id );
+	?>
+	<p><?php foreach ( $ek_rates as $k => $bp ) { echo esc_html( \EK\Commission::labels()[ $k ] . ': ' . \EK\Commission::percent( $bp ) ) . '<br>'; } ?>
+	<span class="description"><?php echo $ek_over ? esc_html__( 'This business has its own rate (overrides the default).', 'explore-katsina' ) : esc_html__( 'Using the default rates from Settings.', 'explore-katsina' ); ?></span></p>
+	<form method="post">
+		<?php wp_nonce_field( 'ek_admin_commission_' . $id ); ?>
+		<input type="hidden" name="ek_admin_action" value="commission"><input type="hidden" name="business_id" value="<?php echo (int) $id; ?>">
+		<label><?php esc_html_e( 'Own commission rate for this business', 'explore-katsina' ); ?> <input type="text" inputmode="decimal" size="5" name="commission" value="<?php echo $ek_over ? esc_attr( (string) ( (int) get_post_meta( $id, '_ek_commission_bp', true ) / 100 ) ) : ''; ?>"> %</label>
+		<input type="text" name="reason" placeholder="<?php esc_attr_e( 'Why (for the log)', 'explore-katsina' ); ?>">
+		<button class="button"><?php esc_html_e( 'Save rate', 'explore-katsina' ); ?></button>
+		<p class="description"><?php esc_html_e( 'Leave empty to use the default rates. Applies to new bookings only.', 'explore-katsina' ); ?></p>
+	</form>
+	<p><?php /* translators: 1: on hold, 2: available, 3: paid out */ printf( esc_html__( 'On hold: %1$s · Available: %2$s · Paid out so far: %3$s', 'explore-katsina' ), esc_html( \EK\Money::format( $ek_sum['on_hold'] ) ), esc_html( \EK\Money::format( $ek_sum['available'] ) ), esc_html( \EK\Money::format( $ek_sum['paid_out'] ) ) ); ?></p>
+</div>
+
 <div class="ek-grid">
 	<div>
 		<div class="card">

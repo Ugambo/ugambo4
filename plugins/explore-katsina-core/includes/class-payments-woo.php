@@ -15,7 +15,8 @@ defined( 'ABSPATH' ) || exit;
 
 final class Payments_Woo {
 
-	const META = '_ek_booking_id';
+	const META         = '_ek_booking_id';
+	const META_INVOICE = '_ek_invoice_id';
 
 	public static function init() {
 		add_action( 'woocommerce_payment_complete', array( __CLASS__, 'paid' ) );
@@ -66,17 +67,56 @@ final class Payments_Woo {
 		return $order->get_checkout_payment_url();
 	}
 
+	/** Commission invoice paid online (Phase 7). @return string|\WP_Error */
+	public static function invoice_checkout_url( $inv ) {
+		$order = $inv->order_id ? wc_get_order( $inv->order_id ) : null;
+		if ( ! $order || ! $order->needs_payment() ) {
+			$owner = get_userdata( Business::owner_id( $inv->business_id ) );
+			$order = wc_create_order( array( 'customer_id' => $owner ? $owner->ID : 0 ) );
+			if ( is_wp_error( $order ) ) {
+				return $order;
+			}
+			$item = new \WC_Order_Item_Product();
+			/* translators: 1: invoice number, 2: business */
+			$item->set_name( sprintf( __( 'Commission invoice %1$s: %2$s', 'explore-katsina' ), $inv->number, get_the_title( $inv->business_id ) ) );
+			$item->set_quantity( 1 );
+			$item->set_subtotal( $inv->amount_kobo / 100 );
+			$item->set_total( $inv->amount_kobo / 100 );
+			$order->add_item( $item );
+			$order->set_billing_first_name( get_the_title( $inv->business_id ) );
+			$order->set_billing_email( $owner ? $owner->user_email : get_option( 'admin_email' ) );
+			$order->set_billing_country( 'NG' );
+			$order->set_currency( 'NGN' );
+			$order->update_meta_data( self::META_INVOICE, (int) $inv->id );
+			$order->calculate_totals( false );
+			$order->set_status( 'pending' );
+			$order->save();
+			global $wpdb;
+			$wpdb->update( $wpdb->prefix . 'ek_invoices', array( 'order_id' => $order->get_id() ), array( 'id' => $inv->id ) );
+		}
+		return $order->get_checkout_payment_url();
+	}
+
 	private static function booking_for( $order_id ) {
 		$order = wc_get_order( $order_id );
 		return $order ? (int) $order->get_meta( self::META ) : 0;
 	}
 
 	public static function paid( $order_id ) {
+		$order      = wc_get_order( $order_id );
+		$invoice_id = $order ? (int) $order->get_meta( self::META_INVOICE ) : 0;
+		if ( $invoice_id && $order->is_paid() ) {
+			$inv = Invoices::get( $invoice_id );
+			// Only mark paid if the amount matches the invoice.
+			if ( $inv && (int) round( (float) $order->get_total() * 100 ) >= (int) $inv->amount_kobo ) {
+				Invoices::mark_paid( $invoice_id, 'gateway', 'wc-' . $order_id );
+			}
+			return;
+		}
 		$booking_id = self::booking_for( $order_id );
 		if ( ! $booking_id ) {
 			return;
 		}
-		$order = wc_get_order( $order_id );
 		if ( ! $order->is_paid() ) {
 			return;
 		}
@@ -93,11 +133,16 @@ final class Payments_Woo {
 
 	/** Booking payments need no shipping/processing: mark them completed. */
 	public static function complete_status( $status, $order_id, $order ) {
-		return ( $order && $order->get_meta( self::META ) ) ? 'completed' : $status;
+		return ( $order && ( $order->get_meta( self::META ) || $order->get_meta( self::META_INVOICE ) ) ) ? 'completed' : $status;
 	}
 
 	/** After paying, show our booking confirmation instead of the shop's thank-you page. */
 	public static function thank_you_url( $url, $order ) {
+		$invoice_id = $order ? (int) $order->get_meta( self::META_INVOICE ) : 0;
+		if ( $invoice_id ) {
+			$inv = Invoices::get( $invoice_id );
+			return $inv ? add_query_arg( 'paid', 1, Dashboard::url( 'invoices', (int) $inv->business_id ) ) : $url;
+		}
 		$booking_id = $order ? (int) $order->get_meta( self::META ) : 0;
 		if ( $booking_id ) {
 			$b = Booking::get( $booking_id );

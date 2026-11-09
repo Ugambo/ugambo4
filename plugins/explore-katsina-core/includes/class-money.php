@@ -1,8 +1,7 @@
 <?php
 /**
  * Money helpers for dashboards: balances from the ledger, payouts, invoices.
- * The full commission / hold / release engine is Phase 7; this phase shows the
- * figures and lets businesses request payouts from their available balance.
+ * Available = released earnings − commission − refunds − payouts made − invoices paid from balance.
  *
  * @package ExploreKatsina
  */
@@ -62,6 +61,9 @@ final class Money {
 				$s['paid_out'] += $amt;
 			}
 		}
+		$s['paid_out']        = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COALESCE(SUM(amount_kobo),0) FROM {$wpdb->prefix}ek_payouts WHERE business_id = %d AND status = 'paid'", $business_id )
+		);
 		$s['pending_payouts'] = (int) $wpdb->get_var(
 			$wpdb->prepare( "SELECT COALESCE(SUM(amount_kobo),0) FROM {$wpdb->prefix}ek_payouts WHERE business_id = %d AND status IN ('requested','approved')", $business_id )
 		);

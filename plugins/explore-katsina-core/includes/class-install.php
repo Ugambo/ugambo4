@@ -176,6 +176,9 @@ final class Install {
 			due_at datetime NOT NULL,
 			paid_at datetime NULL,
 			order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			method varchar(20) NOT NULL DEFAULT '',
+			reference varchar(100) NOT NULL DEFAULT '',
+			reminded tinyint(3) unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY number (number),
@@ -309,6 +312,36 @@ final class Install {
 			object_id bigint(20) unsigned NOT NULL,
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (user_id,object_id)
+		) $c;";
+
+		/* Phase 7: which bookings each commission invoice covers (a booking is never invoiced twice). */
+		$sql[] = "CREATE TABLE {$p}invoice_lines (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			invoice_id bigint(20) unsigned NOT NULL,
+			booking_id bigint(20) unsigned NOT NULL,
+			amount_kobo bigint(20) NOT NULL,
+			description varchar(255) NOT NULL DEFAULT '',
+			PRIMARY KEY  (id),
+			UNIQUE KEY booking (booking_id),
+			KEY invoice (invoice_id)
+		) $c;";
+
+		/* Phase 7: guest complaints raised while the business's money is still on hold. */
+		$sql[] = "CREATE TABLE {$p}complaints (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			booking_id bigint(20) unsigned NOT NULL,
+			business_id bigint(20) unsigned NOT NULL,
+			message text NOT NULL,
+			status varchar(20) NOT NULL,
+			resolution varchar(20) NOT NULL DEFAULT '',
+			resolution_note text NULL,
+			refund_kobo bigint(20) NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL,
+			resolved_at datetime NULL,
+			resolved_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			PRIMARY KEY  (id),
+			KEY booking (booking_id),
+			KEY status (status)
 		) $c;";
 
 		foreach ( $sql as $statement ) {

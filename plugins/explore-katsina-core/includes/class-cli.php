@@ -41,6 +41,37 @@ final class CLI {
 	/**
 	 * Show counts of businesses by status.
 	 */
+	/**
+	 * Run the hourly money job now: release held money, issue last month's invoices
+	 * (on/after the 1st), send invoice reminders, pause listings with overdue invoices.
+	 *
+	 * ## EXAMPLES
+	 *     wp ek money-tick
+	 *
+	 * @subcommand money-tick
+	 */
+	public function money_tick() {
+		$r = Money_Jobs::run();
+		\WP_CLI::success( sprintf( 'Released money for %d business(es); created %d invoice(s).', count( $r['released'] ), count( $r['invoices'] ) ) );
+	}
+
+	/**
+	 * Create commission invoices for one month (safe to repeat).
+	 *
+	 * <month>
+	 * : Month as YYYY-MM.
+	 *
+	 * ## EXAMPLES
+	 *     wp ek invoices 2026-10
+	 */
+	public function invoices( $args ) {
+		if ( ! preg_match( '/^\d{4}-\d{2}$/', $args[0] ?? '' ) ) {
+			\WP_CLI::error( 'Give the month as YYYY-MM.' );
+		}
+		$made = Invoices::generate( $args[0] );
+		\WP_CLI::success( sprintf( 'Created %d invoice(s).', count( $made ) ) );
+	}
+
 	public function status() {
 		$c = wp_count_posts( Post_Types::BUSINESS );
 		foreach ( array( 'pending', 'publish', Post_Types::STATUS_PAUSED, Post_Types::STATUS_REJECTED ) as $s ) {
@@ -88,7 +119,8 @@ final class CLI {
 			foreach ( Menu::items( $id ) as $it ) {
 				Menu::delete_item( $it->id, $id );
 			}
-			foreach ( array( 'ek_menu_categories', 'ek_slots', 'ek_bookings', 'ek_ledger', 'ek_payouts', 'ek_invoices', 'ek_reviews', 'ek_rankings', 'ek_analytics_daily', 'ek_refunds' ) as $t ) {
+			$wpdb->query( $wpdb->prepare( "DELETE l FROM {$wpdb->prefix}ek_invoice_lines l JOIN {$wpdb->prefix}ek_invoices i ON i.id = l.invoice_id WHERE i.business_id = %d", $id ) );
+			foreach ( array( 'ek_menu_categories', 'ek_slots', 'ek_bookings', 'ek_ledger', 'ek_payouts', 'ek_invoices', 'ek_reviews', 'ek_rankings', 'ek_analytics_daily', 'ek_refunds', 'ek_complaints' ) as $t ) {
 				$wpdb->delete( $wpdb->prefix . $t, array( 'business_id' => $id ) );
 			}
 			$wpdb->delete( $wpdb->prefix . 'ek_favourites', array( 'object_id' => $id ) );

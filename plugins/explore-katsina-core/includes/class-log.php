@@ -66,6 +66,16 @@ final class Log {
 			'refund_paid'        => __( 'Refund paid', 'explore-katsina' ),
 			'refund_gateway_failed' => __( 'Automatic refund failed (pay by hand)', 'explore-katsina' ),
 			'review_posted'      => __( 'Verified review posted', 'explore-katsina' ),
+			'complaint_opened'   => __( 'Guest reported a problem (money frozen)', 'explore-katsina' ),
+			'complaint_resolved' => __( 'Complaint resolved', 'explore-katsina' ),
+			'invoice_issued'     => __( 'Commission invoice issued', 'explore-katsina' ),
+			'invoice_paid'       => __( 'Commission invoice paid', 'explore-katsina' ),
+			'invoice_void'       => __( 'Commission invoice written off', 'explore-katsina' ),
+			'payout_approved'    => __( 'Payout approved', 'explore-katsina' ),
+			'payout_paid'        => __( 'Payout sent', 'explore-katsina' ),
+			'payout_rejected'    => __( 'Payout rejected', 'explore-katsina' ),
+			'bank_viewed'        => __( 'Bank details viewed by admin', 'explore-katsina' ),
+			'commission_changed' => __( 'Commission rate changed', 'explore-katsina' ),
 			'review_replied'     => __( 'Owner replied to a review', 'explore-katsina' ),
 		);
 		return $labels[ $action ] ?? $action;

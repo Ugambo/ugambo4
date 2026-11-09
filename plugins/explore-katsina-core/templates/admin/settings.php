@@ -23,7 +23,13 @@ defined( 'ABSPATH' ) || exit;
 	<h2><?php esc_html_e( 'Money', 'explore-katsina' ); ?></h2>
 	<table class="form-table" role="presentation">
 		<tr><th><label for="min_payout"><?php esc_html_e( 'Minimum payout (₦)', 'explore-katsina' ); ?></label></th><td><input type="text" id="min_payout" name="min_payout" value="<?php echo esc_attr( (string) ( $s['min_payout_kobo'] / 100 ) ); ?>"></td></tr>
-		<tr><th><?php esc_html_e( 'Commission rates', 'explore-katsina' ); ?></th><td><p class="description"><?php esc_html_e( 'Commission settings arrive in Phase 7 (placeholders: hotels 10%, event centres 10%, tour operators 15%, restaurant reservations 0%, food orders 10%).', 'explore-katsina' ); ?></p></td></tr>
+		<tr><th><?php esc_html_e( 'Commission rates', 'explore-katsina' ); ?></th><td>
+			<?php foreach ( \EK\Commission::labels() as $k => $label ) : ?>
+				<p style="margin:0 0 8px"><label><input type="text" inputmode="decimal" size="5" name="commission[<?php echo esc_attr( $k ); ?>]" value="<?php echo esc_attr( (string) ( ( (int) ( $s['commission_bp'][ $k ] ?? 0 ) ) / 100 ) ); ?>"> % · <?php echo esc_html( $label ); ?></label></p>
+			<?php endforeach; ?>
+			<p class="description"><?php esc_html_e( 'PLACEHOLDER rates (hotels 10%, event centres 10%, tour operators 15%, table reservations 0%, food orders 10%): set your real rates before launch. Changes apply to new bookings only; each booking keeps the rate it was made at. You can give one business a different rate on its own page.', 'explore-katsina' ); ?></p>
+		</td></tr>
+		<tr><th><label for="invoice_due_days"><?php esc_html_e( 'Invoice payment time (days)', 'explore-katsina' ); ?></label></th><td><input type="number" min="7" max="90" id="invoice_due_days" name="invoice_due_days" value="<?php echo (int) $s['invoice_due_days']; ?>"><p class="description"><?php esc_html_e( 'Monthly commission invoices (for pay-at-hotel bookings) are due this many days after they are issued. If unpaid by then, the listing is paused automatically until paid. Your brief: 30 days.', 'explore-katsina' ); ?></p></td></tr>
 	</table>
 	<h2><?php esc_html_e( 'Rankings', 'explore-katsina' ); ?></h2>
 	<table class="form-table" role="presentation">

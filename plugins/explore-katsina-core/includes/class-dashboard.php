@@ -145,6 +145,20 @@ final class Dashboard {
 				}
 				$redirect = self::url( 'payouts', $business_id );
 				break;
+			case 'dash_invoice_pay':
+			case 'dash_invoice_balance':
+				$inv_id = absint( $in['invoice_id'] ?? 0 );
+				$res    = 'dash_invoice_balance' === $action ? Invoices::pay_from_balance( $inv_id, $business_id, $uid ) : Invoices::pay_online( $inv_id, $business_id );
+				if ( is_wp_error( $res ) ) {
+					View::flash( 'error', $res->get_error_message(), $uid );
+				} elseif ( is_string( $res ) ) {
+					wp_redirect( $res ); // phpcs:ignore WordPress.Security.SafeRedirect -- payment page.
+					exit;
+				} else {
+					View::flash( 'ok', __( 'Invoice paid. Thank you! A receipt is on its way by email.', 'explore-katsina' ), $uid );
+				}
+				$redirect = self::url( 'invoices', $business_id );
+				break;
 			case 'dash_reply':
 				$res = Reviews::reply( absint( $in['review_id'] ?? 0 ), $business_id, $in['reply'] ?? '' );
 				View::flash( is_wp_error( $res ) ? 'error' : 'ok', is_wp_error( $res ) ? $res->get_error_message() : __( 'Your reply is published.', 'explore-katsina' ), $uid );

@@ -1,8 +1,12 @@
 <?php
 /**
  * The money ledger: every online payment is split into the business's earning and
- * Explore Katsina's commission. Earnings stay "on hold" until 3 days after check-out
- * (the daily release job and payouts screen for admin arrive in Phase 7).
+ * Explore Katsina's commission. Earnings stay "on hold" until their release date
+ * (3 days after check-out / the event / a completed reservation or order), then an hourly
+ * job makes them "available" for payout, unless the guest has reported a problem.
+ *
+ * Entry types: earning (+), commission (−), refund (−), payout (−, when we transfer money),
+ * invoice (−, a commission invoice paid from the balance), adjustment (±).
  *
  * @package ExploreKatsina
  */
@@ -66,5 +70,41 @@ final class Ledger {
 		$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}ek_ledger SET status = 'frozen', release_at = NULL WHERE booking_id = %d AND status = 'on_hold'", $b->id ) );
 		Log::add( 'refund_review', 'booking', $b->id, $why );
 		Emails::refund_review( $b, $why );
+	}
+
+	/**
+	 * Make held money available once its release date has passed (skipping bookings with an
+	 * open complaint). Emails each business how much became available.
+	 *
+	 * @return array<int,int> business_id => amount released (kobo).
+	 */
+	public static function release_due( $now = null ) {
+		global $wpdb;
+		$now = $now ?? current_time( 'mysql', true );
+		$t   = $wpdb->prefix . 'ek_ledger';
+		$c   = $wpdb->prefix . 'ek_complaints';
+		if ( ! $wpdb->get_var( "SELECT GET_LOCK('ek_release', 10)" ) ) {
+			return array();
+		}
+		try {
+			$where = $wpdb->prepare( "status = 'on_hold' AND release_at IS NOT NULL AND release_at <= %s AND booking_id NOT IN (SELECT booking_id FROM {$c} WHERE status = 'open')", $now ); // phpcs:ignore
+			$rows  = $wpdb->get_results( "SELECT business_id, SUM(amount_kobo) AS amt FROM {$t} WHERE {$where} GROUP BY business_id" ); // phpcs:ignore
+			$wpdb->query( "UPDATE {$t} SET status = 'available' WHERE {$where}" ); // phpcs:ignore
+		} finally {
+			$wpdb->query( "SELECT RELEASE_LOCK('ek_release')" );
+		}
+		$out = array();
+		foreach ( $rows as $r ) {
+			$out[ (int) $r->business_id ] = (int) $r->amt;
+			if ( (int) $r->amt > 0 ) {
+				Emails_Money::funds_released( (int) $r->business_id, (int) $r->amt );
+			}
+		}
+		return $out;
+	}
+
+	/** A money line that isn't tied to a booking (payouts, invoices paid from the balance). */
+	public static function add_line( $business_id, $type, $amount, $status, $note ) {
+		self::add( $business_id, 0, $type, $amount, $status, $note );
 	}
 }

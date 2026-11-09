@@ -1,11 +1,13 @@
 <?php
 /**
- * Guest tools on the booking page: add to calendar, cancel (with the refund shown first), review.
+ * Guest tools on the booking page: add to calendar, cancel (with the refund shown first),
+ * report a problem (freezes the business's payment until we decide), review.
  *
  * @var object $b
  */
 use EK\Booking_Page;
 use EK\Calendar;
+use EK\Complaints;
 use EK\Money;
 use EK\Refunds;
 use EK\Reviews;
@@ -20,6 +22,8 @@ $rev_ok  = Reviews::can_review( $b );
 $review  = Reviews::for_booking( $b->id );
 $values  = Booking_Page::$review_values;
 $refunds = Refunds::for_booking( $b->id );
+$problem = Complaints::for_booking( $b->id );
+$can_rep = true === Complaints::can_report( $b );
 $nonce   = static fn( $a ) => wp_nonce_field( 'ek_' . $a . '_' . $b->code, '_ek_nonce', true, false ) . '<input type="hidden" name="code" value="' . esc_attr( $b->code ) . '"><input type="hidden" name="key" value="' . esc_attr( $b->access_key ) . '"><input type="hidden" name="ek_action" value="' . esc_attr( $a ) . '">';
 ?>
 <?php if ( Booking_Page::$notice ) : ?><div class="ek-notice ek-notice--error" role="alert"><?php echo esc_html( Booking_Page::$notice ); ?></div><?php endif; ?>
@@ -31,6 +35,33 @@ $nonce   = static fn( $a ) => wp_nonce_field( 'ek_' . $a . '_' . $b->code, '_ek_
 		<?php foreach ( $refunds as $r ) : ?>
 			<p style="margin:0"><strong><?php echo esc_html( Money::format( $r->amount_kobo ) ); ?></strong> · <?php echo 'refunded' === $r->status ? esc_html__( 'sent back to you', 'explore-katsina' ) . ' (' . esc_html( View::date( $r->processed_at ) ) . ')' : esc_html__( 'being processed', 'explore-katsina' ); ?></p>
 		<?php endforeach; ?>
+	</section>
+<?php endif; ?>
+
+<?php if ( $problem || $can_rep ) : ?>
+	<section class="ek-card ek-stack" id="problem" aria-labelledby="pb-h">
+		<?php if ( $problem ) : ?>
+			<?php if ( ! empty( $_GET['reported'] ) ) : // phpcs:ignore ?><div class="ek-notice ek-notice--ok" role="status"><?php esc_html_e( 'Thank you. We have received your report and emailed you a copy.', 'explore-katsina' ); ?></div><?php endif; ?>
+			<h2 id="pb-h" style="margin:0"><?php esc_html_e( 'Your report', 'explore-katsina' ); ?></h2>
+			<p style="margin:0" class="ek-small ek-muted"><?php echo esc_html( View::date( $problem->created_at, true ) ); ?></p>
+			<p style="margin:0"><?php echo esc_html( $problem->message ); ?></p>
+			<?php if ( 'open' === $problem->status ) : ?>
+				<p style="margin:0"><span class="ek-pill"><?php esc_html_e( 'Being looked into', 'explore-katsina' ); ?></span> <?php esc_html_e( 'Our team usually replies within 2 working days.', 'explore-katsina' ); ?></p>
+			<?php else : ?>
+				<p style="margin:0"><span class="ek-pill"><?php esc_html_e( 'Resolved', 'explore-katsina' ); ?></span> <?php echo (int) $problem->refund_kobo ? esc_html( sprintf( /* translators: %s: amount */ __( 'Refund of %s agreed.', 'explore-katsina' ), Money::format( $problem->refund_kobo ) ) ) : esc_html__( 'No refund was given.', 'explore-katsina' ); ?> <?php echo esc_html( (string) $problem->resolution_note ); ?></p>
+			<?php endif; ?>
+		<?php else : ?>
+			<h2 id="pb-h" style="margin:0"><?php esc_html_e( 'Problem with your booking?', 'explore-katsina' ); ?></h2>
+			<p style="margin:0" class="ek-small"><?php /* translators: %s: date */ printf( esc_html__( 'Tell us by %s. We hold the business’s payment until we have looked into it.', 'explore-katsina' ), esc_html( wp_date( 'j M Y', Complaints::deadline( $b ) ) ) ); ?></p>
+			<details<?php echo isset( $values['complaint'] ) ? ' open' : ''; ?>>
+				<summary class="ek-link-btn"><?php esc_html_e( 'Report a problem', 'explore-katsina' ); ?></summary>
+				<form method="post" class="ek-stack" style="margin-top:10px">
+					<?php echo $nonce( 'guest_complaint' ); // phpcs:ignore ?>
+					<div class="ek-field"><label for="pb-msg"><?php esc_html_e( 'What went wrong?', 'explore-katsina' ); ?></label><textarea id="pb-msg" name="complaint" rows="4" maxlength="3000" required><?php echo esc_textarea( $values['complaint'] ?? '' ); ?></textarea><span class="ek-hint"><?php esc_html_e( 'For example: the room was not as shown, the hall was given to someone else, or you were wrongly marked as a no-show.', 'explore-katsina' ); ?></span></div>
+					<div><button class="ek-btn ek-btn--sm" type="submit"><?php esc_html_e( 'Send report', 'explore-katsina' ); ?></button></div>
+				</form>
+			</details>
+		<?php endif; ?>
 	</section>
 <?php endif; ?>
 

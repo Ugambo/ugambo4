@@ -17,11 +17,12 @@ $types = array(
 	'commission' => __( 'Commission', 'explore-katsina' ),
 	'refund'     => __( 'Refund', 'explore-katsina' ),
 	'payout'     => __( 'Payout', 'explore-katsina' ),
+	'invoice'    => __( 'Invoice paid from balance', 'explore-katsina' ),
 	'adjustment' => __( 'Adjustment', 'explore-katsina' ),
 );
 $status = array(
 	'on_hold'   => __( 'On hold', 'explore-katsina' ),
-	'frozen'    => __( 'On hold (refund review)', 'explore-katsina' ),
+	'frozen'    => __( 'On hold (guest complaint)', 'explore-katsina' ),
 	'available' => __( 'Available', 'explore-katsina' ),
 	'paid_out'  => __( 'Paid out', 'explore-katsina' ),
 	'cancelled' => __( 'Cancelled', 'explore-katsina' ),
@@ -34,7 +35,15 @@ $status = array(
 	<div class="ek-stat ek-stat--accent"><small><?php esc_html_e( 'Available to pay out', 'explore-katsina' ); ?></small><b><?php echo esc_html( Money::format( $s['requestable'] ) ); ?></b></div>
 </div>
 <div class="ek-notice ek-notice--info ek-small">
-	<?php esc_html_e( 'How holds work: hotel earnings are released 3 days after check-out, and event centre earnings 3 days after the event, if there is no complaint. Then you can request a payout.', 'explore-katsina' ); ?>
+	<?php esc_html_e( 'How holds work: guests pay Explore Katsina online. Hotel earnings are released 3 days after check-out, event centre earnings 3 days after the event, and restaurant earnings 3 days after the reservation or order is completed, if the guest has not reported a problem. Then you can request a payout.', 'explore-katsina' ); ?>
+	<br><strong><?php esc_html_e( 'Your commission:', 'explore-katsina' ); ?></strong>
+	<?php
+	$ek_parts = array();
+	foreach ( \EK\Commission::for_business( $b['id'] ) as $k => $bp ) {
+		$ek_parts[] = \EK\Commission::labels()[ $k ] . ' ' . \EK\Commission::percent( $bp );
+	}
+	echo esc_html( implode( ' · ', $ek_parts ) );
+	?>
 </div>
 <section class="ek-card" aria-labelledby="ern-h">
 	<h2 id="ern-h"><?php esc_html_e( 'Money movements', 'explore-katsina' ); ?></h2>

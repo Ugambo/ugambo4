@@ -25,7 +25,7 @@ final class Booking_Page {
 
 	public static function handle() {
 		$action = 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) ? sanitize_key( $_POST['ek_action'] ?? '' ) : ''; // phpcs:ignore
-		if ( in_array( $action, array( 'guest_cancel', 'guest_review' ), true ) ) {
+		if ( in_array( $action, array( 'guest_cancel', 'guest_review', 'guest_complaint' ), true ) ) {
 			self::handle_guest_action( $action );
 			return;
 		}
@@ -101,6 +101,16 @@ final class Booking_Page {
 				exit;
 			}
 			return;
+		}
+		if ( 'guest_complaint' === $action ) {
+			$r = Complaints::report( $b, $in['complaint'] ?? '' );
+			if ( is_wp_error( $r ) ) {
+				self::$notice                     = $r->get_error_message();
+				self::$review_values['complaint'] = $in['complaint'] ?? '';
+				return;
+			}
+			wp_safe_redirect( add_query_arg( 'reported', 1, Booking::link( $b ) ) . '#problem' );
+			exit;
 		}
 		$r = Reviews::submit( $b, $in );
 		if ( is_wp_error( $r ) ) {

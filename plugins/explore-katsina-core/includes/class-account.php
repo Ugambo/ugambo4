@@ -208,7 +208,7 @@ final class Account {
 			return array();
 		}
 		$orders = wc_get_orders( array( 'customer_id' => $uid, 'limit' => 50, 'orderby' => 'date', 'order' => 'DESC' ) );
-		return array_values( array_filter( $orders, static fn( $o ) => ! $o->get_meta( Payments_Woo::META ) ) );
+		return array_values( array_filter( $orders, static fn( $o ) => ! $o->get_meta( Payments_Woo::META ) && ! $o->get_meta( Payments_Woo::META_INVOICE ) ) );
 	}
 
 	/* ---------------- Render ---------------- */

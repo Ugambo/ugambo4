@@ -9,8 +9,9 @@ from exactly where the last one stopped.
 - **Phase 3 (Hotels): done and approved.**
 - **Phase 4 (Restaurants): done and approved.**
 - **Phase 5 (Event centres): done and approved.**
-- **Phase 6 (Customer accounts & reviews): done, waiting for the owner's go-ahead.**
-- Next: **Phase 7**.
+- **Phase 6 (Customer accounts & reviews): done and approved.**
+- **Phase 7 (Commissions, payouts & invoices): done, waiting for the owner's go-ahead.**
+- Next: **Phase 8 (Katsina Map & rankings)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -89,7 +90,7 @@ from exactly where the last one stopped.
   are emailed to refund or rebook.
 - **Money:** each online payment is recorded as the hotel's earning minus commission (10% placeholder),
   both **on hold**. When the hotel marks check-out, the 3-day release clock starts. (The job that
-  releases held money, and the admin payout screen, come in Phase 7.) If a paid booking is declined or
+  releases held money and the admin payout screen were added in Phase 7.) If a paid booking is declined or
   cancelled by the business, the guest is refunded in full automatically (Phase 6).
 - **Delete sample data:** `wp ek delete-sample --yes` removes every business whose name starts with
   "SAMPLE", plus their rooms, bookings, calendar, money records, photos and owner accounts.
@@ -134,7 +135,7 @@ from exactly where the last one stopped.
   deposit paid → completed (or declined / cancelled / expired).
 - **Instant booking:** the guest pays the deposit straight away (15-minute hold while paying).
 - **Money:** 10% commission (placeholder) on the deposit; the venue's share is **released 3 days after the
-  event date** (the release job and payouts screen come in Phase 7). The balance is paid to the venue directly.
+  event date** (see Phase 7). The balance is paid to the venue directly.
 - **Find an event centre** (`/event-centres/`): date, guests, seated/standing, LGA, Near me, max price,
   amenities; sort by distance, rank, rating or price; list or map.
 - **Venue page:** amenities, every hall with capacity, price for the chosen date, deposit, availability,
@@ -175,6 +176,39 @@ from exactly where the last one stopped.
   businesses); the menu no longer lists utility pages (Book, Cart, Checkout, WooCommerce's own
   "My account", Sample Page, the agreement, Business Dashboard). Business owners reach their dashboard
   through log-in or the button in My Account. A designed menu comes with the design work later.
+
+## What Phase 7 built (plain language)
+- **Commission rates you control:** wp-admin → Explore Katsina → **Settings** → Money. One rate per type
+  (PLACEHOLDERS: hotels 10%, event centre deposits 10%, tour operators 15%, table reservations 0%, food
+  orders 10%). On any business's admin page you can give it its own rate ("Commission & money" box);
+  every change is logged. Each booking keeps the rate it was made at.
+- **Money flow:** online payments come to Explore Katsina first. Each payment is split into the
+  business's share and our commission. The share is **on hold**, then released automatically:
+  - hotels: 3 days after check-out;
+  - event centres: 3 days after the event date;
+  - restaurants: 3 days after the reservation/order is completed.
+  An hourly job does the releasing and emails the business when money becomes available.
+- **"If there's no complaint":** on the booking page, a guest can **Report a problem** during the stay
+  and up to 3 days after it. The business's money for that booking is then **frozen**, and you decide in
+  **wp-admin → Explore Katsina → Complaints**: release it to the business, or refund the guest part or all of
+  what they paid online (the business keeps the rest, minus commission on the rest). Guest, business and
+  you are emailed at each step.
+- **Payouts:** a business requests a payout (minimum ₦5,000) from its available money. In
+  **wp-admin → Payouts** you see the request and the bank account saved with it (the full account number
+  is shown only when you click, and each view is logged), **Approve**, send the transfer from your bank,
+  then **Mark paid** with the transfer reference, or **Reject** with a reason. The business is emailed each time.
+- **Monthly invoices for "Pay at hotel" bookings:** on the 1st of each month, every completed booking
+  whose commission we didn't collect online (pay-at-hotel stays, cash food orders, or a deposit smaller than
+  the commission) goes onto that business's invoice (INV-YYYYMM-business). No-shows aren't charged.
+  The business sees it under **Invoices** with the bookings it covers, and pays **online (Paystack)** or
+  **from its earnings balance**; if it pays you by transfer, mark it paid in **wp-admin → Invoices** (or write
+  it off). Reminder 7 days before the due date; **unpaid 30 days after issue → listing paused automatically**,
+  and switched back on automatically when paid. (Listings you paused yourself are never switched on by this.)
+- **Reports** (wp-admin → Reports, any date range): bookings by type, money paid online, commission earned
+  (online + invoices), refunds, payouts, money on hold now, what you owe each business, unpaid invoices,
+  **hotel no-show rates** (flagged ⚠ at 25%+ with 5+ finished bookings, or more than twice the average:
+  a high no-show rate on pay-at-hotel bookings can hide commission). Download bookings as CSV.
+- **Command line:** `wp ek money-tick` runs the hourly job now; `wp ek invoices 2026-10` creates a month's invoices.
 
 ## Photos (royalty-free, with credits)
 - Source: **Wikimedia Commons**, only files that are public domain, CC0, CC BY or CC BY-SA. Each photo keeps
@@ -224,7 +258,7 @@ from exactly where the last one stopped.
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 400 automatic checks, server and browser (Phases 2–6)
+./tests/run.sh      # about 500 automatic checks, server and browser (Phases 2–7)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -239,6 +273,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase3/` | Screenshots of hotel search, hotel page, booking, confirmation, calendar, rooms |
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
+| `docs/screenshots/phase7/` | Screenshots of commission settings, complaints, payouts, invoices, reports, hotel earnings and invoice |
 | `docs/screenshots/phase6/` | Screenshots of My Account, confirmation with calendar/cancel, cancelled booking, review form, reviews on a page, favourites, admin Refunds |
 | `sample-data/media/` | Royalty-free sample photos + `credits.json` (author, licence, source) |
 | `scripts/` | Photo search/download tools for Wikimedia Commons |
@@ -251,7 +286,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase4-woo-bridge.php`, `e2e/phase2–6.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase4-woo-bridge.php`, `e2e/phase2–7.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -274,8 +309,8 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
   GitHub / install the Claude GitHub App; then run `git push -u origin claude/explore-katsina-architecture-wj2xli`.
 - In the cloud test browser, OpenStreetMap tiles don't load (network), so maps look grey in
   screenshots; pins, dragging and "Use my location" work. In a normal browser the map shows.
-- **Live host needs a real cron job** (every 5 minutes) so unpaid holds are freed on time even when the
-  site is quiet: `*/5 * * * * wget -q -O - https://explorekatsina.com.ng/wp-cron.php?doing_wp_cron >/dev/null 2>&1`
+- **Live host needs a real cron job** (every 5 minutes) so unpaid holds are freed, held money is released and
+  monthly invoices go out on time even when the site is quiet: `*/5 * * * * wget -q -O - https://explorekatsina.com.ng/wp-cron.php?doing_wp_cron >/dev/null 2>&1`
   and add `define( 'DISABLE_WP_CRON', true );` to wp-config.php. Phase 15 covers this.
 - WordPress gotcha: never name a form field `name` (it's a reserved WordPress word and turns the page
   into "Page not found"). The business name field is `business_name`.
@@ -300,3 +335,6 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Sample photos are illustrative (Wikimedia Commons, credited); real businesses upload their own
 - Refund rules above (24h / 5 days / 7 days, restaurant 24h) and the 180-day review window: check with your lawyer
 - WhatsApp/SMS notifications: off until you choose a provider (e.g. Termii, Twilio). Costs per message
+- Phase 7 business rules to confirm: 3-day hold and complaint window, invoice due after 30 days, no-show
+  flag at 25%, minimum payout ₦5,000 (all changeable)
+- Bank transfer details for businesses paying invoices by transfer (shown as "contact us" for now)

@@ -31,6 +31,7 @@ final class Plugin {
 		Account::init();
 		Favourites::init();
 		Nav::init();
+		Money_Jobs::init();
 		Access::init();
 		Assets::init();
 		Signup::init();

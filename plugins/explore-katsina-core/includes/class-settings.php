@@ -22,6 +22,7 @@ final class Settings {
 			'max_photos_basic'      => 8,
 			'max_photo_mb'          => 5,
 			'food_ordering_enabled' => 0, // Phase 4: built but OFF.
+			'invoice_due_days'      => 30, // Phase 7: unpaid invoices pause the listing after this many days.
 			// Commission placeholders (Phase 7). Basis points: 1000 = 10%.
 			'commission_bp'         => array(
 				'hotel'             => 1000,

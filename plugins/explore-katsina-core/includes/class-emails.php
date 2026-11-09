@@ -48,7 +48,7 @@ final class Emails {
 	}
 
 	/** WhatsApp number if given, otherwise the main phone (for the optional WhatsApp/SMS hook). */
-	private static function business_phone( $business_id ) {
+	public static function business_phone( $business_id ) {
 		$p = Business::profile( $business_id );
 		return $p['whatsapp'] ? $p['whatsapp'] : $p['phone'];
 	}
@@ -186,14 +186,14 @@ final class Emails {
 			__( 'A business has requested a payout', 'explore-katsina' ),
 			/* translators: 1: business, 2: amount */
 			array( sprintf( __( '%1$s requested a payout of %2$s.', 'explore-katsina' ), $p['name'], Money::format( $amount_kobo ) ) ),
-			array( 'label' => __( 'Review payouts', 'explore-katsina' ), 'url' => admin_url( 'admin.php?page=ek-approvals' ) ),
+			array( 'label' => __( 'Review payouts', 'explore-katsina' ), 'url' => admin_url( 'admin.php?page=ek-payouts' ) ),
 			array( 'event' => 'admin_payout_requested' )
 		);
 	}
 
 	/* ---- Bookings ---- */
 
-	private static function business_recipients( $business_id ) {
+	public static function business_recipients( $business_id ) {
 		$to    = array();
 		$p     = Business::profile( $business_id );
 		$owner = get_userdata( Business::owner_id( $business_id ) );
