@@ -72,6 +72,29 @@ final class CLI {
 		\WP_CLI::success( sprintf( 'Created %d invoice(s).', count( $made ) ) );
 	}
 
+	/**
+	 * Recalculate today's rankings now (normally runs every night) and refresh the map.
+	 *
+	 * ## EXAMPLES
+	 *     wp ek rank
+	 */
+	public function rank() {
+		$n = Ranking::run();
+		foreach ( $n as $type => $count ) {
+			\WP_CLI::line( sprintf( '%s: %d scored', $type, $count ) );
+		}
+		\WP_CLI::success( 'Rankings updated.' );
+	}
+
+	/**
+	 * Rebuild the map index (every pin on the Katsina Map).
+	 *
+	 * @subcommand map-index
+	 */
+	public function map_index() {
+		\WP_CLI::success( sprintf( 'Map index rebuilt: %d pins.', Map_Index::rebuild() ) );
+	}
+
 	public function status() {
 		$c = wp_count_posts( Post_Types::BUSINESS );
 		foreach ( array( 'pending', 'publish', Post_Types::STATUS_PAUSED, Post_Types::STATUS_REJECTED ) as $s ) {
@@ -124,6 +147,7 @@ final class CLI {
 				$wpdb->delete( $wpdb->prefix . $t, array( 'business_id' => $id ) );
 			}
 			$wpdb->delete( $wpdb->prefix . 'ek_favourites', array( 'object_id' => $id ) );
+			$wpdb->delete( $wpdb->prefix . 'ek_map_index', array( 'object_id' => $id ) );
 			$priv = Business::private_details( $id );
 			if ( ! empty( $priv['id_doc_file'] ) ) {
 				Private_Files::delete( $priv['id_doc_file'] );

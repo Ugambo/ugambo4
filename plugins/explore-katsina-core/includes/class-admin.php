@@ -35,6 +35,7 @@ final class Admin {
 		$badge_n = static fn( $n ) => $n ? ' <span class="awaiting-mod"><span class="pending-count">' . (int) $n . '</span></span>' : '';
 		add_submenu_page( 'ek-approvals', __( 'Payouts', 'explore-katsina' ), __( 'Payouts', 'explore-katsina' ) . $badge_n( count( Payouts::waiting() ) ), self::CAP, 'ek-payouts', array( __CLASS__, 'page' ) );
 		add_submenu_page( 'ek-approvals', __( 'Complaints', 'explore-katsina' ), __( 'Complaints', 'explore-katsina' ) . $badge_n( count( Complaints::open_list() ) ), self::CAP, 'ek-complaints', array( __CLASS__, 'page' ) );
+		add_submenu_page( 'ek-approvals', __( 'Reviews', 'explore-katsina' ), __( 'Reviews', 'explore-katsina' ), self::CAP, 'ek-reviews', array( __CLASS__, 'page' ) );
 		add_submenu_page( 'ek-approvals', __( 'Invoices', 'explore-katsina' ), __( 'Invoices', 'explore-katsina' ), self::CAP, 'ek-invoices', array( __CLASS__, 'page' ) );
 		add_submenu_page( 'ek-approvals', __( 'Reports', 'explore-katsina' ), __( 'Reports', 'explore-katsina' ), self::CAP, 'ek-reports', array( __CLASS__, 'page' ) );
 		$pending = count( Refunds::pending() );
@@ -231,6 +232,21 @@ final class Admin {
 				$ok = 'invoice_paid' === $action ? Invoices::mark_paid( $id, 'transfer', $ref, $uid ) : Invoices::void( $id, $ref, $uid );
 				$go( 'ek-invoices', $ok ? $done : __( 'That invoice is not unpaid any more.', 'explore-katsina' ), array( 'ek_ok' => $ok ? 1 : 0 ) );
 				break;
+			case 'review_hide':
+			case 'review_restore':
+				$id = absint( $_POST['review_id'] ?? 0 );
+				check_admin_referer( 'ek_admin_' . $action . '_' . $id );
+				$r = 'review_hide' === $action ? Reviews::hide( $id, wp_unslash( $_POST['reason'] ?? '' ), $uid ) : Reviews::restore( $id, $uid );
+				$go( 'ek-reviews', is_wp_error( $r ) ? $r->get_error_message() : __( 'Done. Rankings update tonight, or press "Recalculate rankings now".', 'explore-katsina' ), array( 'ek_ok' => is_wp_error( $r ) ? 0 : 1 ) );
+				break;
+			case 'rankings_run':
+				check_admin_referer( 'ek_admin_rankings_run' );
+				$n = Ranking::run();
+				Log::add( 'rankings_run', 'settings', 0, '', array( 'scored' => $n ) );
+				$back = sanitize_key( $_POST['back'] ?? 'ek-settings' );
+				/* translators: %d: count */
+				$go( in_array( $back, array( 'ek-settings', 'ek-reviews' ), true ) ? $back : 'ek-settings', sprintf( __( 'Rankings recalculated for %d businesses.', 'explore-katsina' ), array_sum( $n ) ), array( 'ek_ok' => 1 ) );
+				break;
 			case 'invoices_generate':
 				check_admin_referer( 'ek_admin_invoices_generate' );
 				$month = preg_match( '/^\d{4}-\d{2}$/', (string) ( $_POST['month'] ?? '' ) ) ? (string) $_POST['month'] : '';
@@ -275,6 +291,14 @@ final class Admin {
 				'max_photo_mb'         => max( 1, min( 20, absint( $in['max_photo_mb'] ?? 5 ) ) ),
 				'food_ordering_enabled'=> ! empty( $in['food_ordering_enabled'] ) ? 1 : 0,
 				'commission_bp'        => $rates,
+				'rank_prior_reviews'    => max( 0, min( 100, absint( $in['rank_prior_reviews'] ?? 10 ) ) ),
+				'rank_half_life_months' => max( 1, min( 60, absint( $in['rank_half_life_months'] ?? 12 ) ) ),
+				'rank_weight_rating'    => max( 0, min( 100, absint( $in['rank_weight_rating'] ?? 70 ) ) ),
+				'rank_weight_bookings'  => max( 0, min( 100, absint( $in['rank_weight_bookings'] ?? 15 ) ) ),
+				'rank_weight_response'  => max( 0, min( 100, absint( $in['rank_weight_response'] ?? 15 ) ) ),
+				'rank_bookings_full'    => max( 1, min( 10000, absint( $in['rank_bookings_full'] ?? 50 ) ) ),
+				'rank_top_percent'      => max( 1, min( 50, absint( $in['rank_top_percent'] ?? 10 ) ) ),
+				'rank_rising_points'    => max( 1, min( 50, absint( $in['rank_rising_points'] ?? 5 ) ) ),
 				'invoice_due_days'     => max( 7, min( 90, absint( $in['invoice_due_days'] ?? 30 ) ) ),
 			)
 		);
@@ -311,7 +335,7 @@ final class Admin {
 			return;
 		}
 		$page = str_replace( 'ek-', '', sanitize_key( $_GET['page'] ?? '' ) ); // phpcs:ignore
-		if ( in_array( $page, array( 'payouts', 'complaints', 'invoices', 'reports' ), true ) ) {
+		if ( in_array( $page, array( 'payouts', 'complaints', 'invoices', 'reports', 'reviews' ), true ) ) {
 			echo '<div class="wrap ek-admin">' . View::render( 'admin/' . $page ) . '</div>'; // phpcs:ignore
 		}
 	}

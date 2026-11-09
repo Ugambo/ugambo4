@@ -13,8 +13,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'EK_VERSION', '0.7.0' );
-define( 'EK_DB_VERSION', '6' );
+define( 'EK_VERSION', '0.8.0' );
+define( 'EK_DB_VERSION', '7' );
 define( 'EK_FILE', __FILE__ );
 define( 'EK_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EK_URL', plugin_dir_url( __FILE__ ) );

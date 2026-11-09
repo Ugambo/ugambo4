@@ -18,7 +18,7 @@ final class Assets {
 		add_action( 'wp_head', array( __CLASS__, 'js_flag' ), 1 );
 	}
 
-	private static function ver( $rel ) {
+	public static function ver( $rel ) {
 		$file = EK_DIR . $rel;
 		return file_exists( $file ) ? EK_VERSION . '.' . filemtime( $file ) : EK_VERSION;
 	}

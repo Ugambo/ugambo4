@@ -76,6 +76,9 @@ final class Log {
 			'payout_rejected'    => __( 'Payout rejected', 'explore-katsina' ),
 			'bank_viewed'        => __( 'Bank details viewed by admin', 'explore-katsina' ),
 			'commission_changed' => __( 'Commission rate changed', 'explore-katsina' ),
+			'review_hidden'      => __( 'Review hidden by admin', 'explore-katsina' ),
+			'review_restored'    => __( 'Review shown again by admin', 'explore-katsina' ),
+			'rankings_run'       => __( 'Rankings recalculated', 'explore-katsina' ),
 			'review_replied'     => __( 'Owner replied to a review', 'explore-katsina' ),
 		);
 		return $labels[ $action ] ?? $action;

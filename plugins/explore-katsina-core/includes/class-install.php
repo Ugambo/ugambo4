@@ -33,6 +33,7 @@ final class Install {
 		Post_Types::register();
 		Rooms::register();
 		Halls::register();
+		Attractions::register();
 		self::add_terms();
 		self::add_pages();
 		Private_Files::protect_directory();
@@ -202,6 +203,9 @@ final class Install {
 			status varchar(20) NOT NULL DEFAULT 'published',
 			owner_reply text NULL,
 			owner_reply_at datetime NULL,
+			hidden_reason varchar(255) NOT NULL DEFAULT '',
+			hidden_at datetime NULL,
+			hidden_by bigint(20) unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY booking (booking_id),
@@ -221,6 +225,10 @@ final class Install {
 			rank_lga int(10) unsigned NULL,
 			total_lga int(10) unsigned NOT NULL DEFAULT 0,
 			badges varchar(100) NOT NULL DEFAULT '',
+			rating_part decimal(6,4) NOT NULL DEFAULT 0,
+			bookings_part decimal(6,4) NOT NULL DEFAULT 0,
+			response_part decimal(6,4) NOT NULL DEFAULT 0,
+			completed_bookings int(10) unsigned NOT NULL DEFAULT 0,
 			PRIMARY KEY  (business_id,day),
 			KEY type_day (business_type,day)
 		) $c;";
@@ -344,6 +352,40 @@ final class Install {
 			KEY status (status)
 		) $c;";
 
+		/*
+		 * Phase 8: map index. One row per pin (approved business or attraction) with what the map
+		 * and its cards need, so the map can fetch only the pins inside the visible area quickly.
+		 */
+		$sql[] = "CREATE TABLE {$p}map_index (
+			object_id bigint(20) unsigned NOT NULL,
+			kind varchar(20) NOT NULL,
+			type varchar(30) NOT NULL,
+			lga_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			lat decimal(9,6) NOT NULL,
+			lng decimal(9,6) NOT NULL,
+			title varchar(190) NOT NULL DEFAULT '',
+			photo_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			price_from bigint(20) NOT NULL DEFAULT 0,
+			price_unit varchar(20) NOT NULL DEFAULT '',
+			price_band tinyint(3) unsigned NOT NULL DEFAULT 0,
+			price_text varchar(120) NOT NULL DEFAULT '',
+			rating decimal(3,2) NOT NULL DEFAULT 0,
+			reviews int(10) unsigned NOT NULL DEFAULT 0,
+			rank_state int(10) unsigned NULL,
+			total_state int(10) unsigned NOT NULL DEFAULT 0,
+			rank_lga int(10) unsigned NULL,
+			total_lga int(10) unsigned NOT NULL DEFAULT 0,
+			badges varchar(100) NOT NULL DEFAULT '',
+			featured tinyint(1) unsigned NOT NULL DEFAULT 0,
+			verified tinyint(1) unsigned NOT NULL DEFAULT 0,
+			amenities varchar(255) NOT NULL DEFAULT '',
+			whatsapp varchar(30) NOT NULL DEFAULT '',
+			updated_at datetime NOT NULL,
+			PRIMARY KEY  (object_id),
+			KEY latlng (lat,lng),
+			KEY type_lga (type,lga_id)
+		) $c;";
+
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}
@@ -368,6 +410,11 @@ final class Install {
 		foreach ( self::lgas() as $name ) {
 			if ( ! term_exists( $name, Post_Types::TAX_LGA ) ) {
 				wp_insert_term( $name, Post_Types::TAX_LGA );
+			}
+		}
+		foreach ( Attractions::default_categories() as $slug => $label ) {
+			if ( ! term_exists( $slug, Attractions::TAX ) ) {
+				wp_insert_term( $label, Attractions::TAX, array( 'slug' => $slug ) );
 			}
 		}
 	}
@@ -413,6 +460,26 @@ final class Install {
 				'title'   => __( 'Event Centres', 'explore-katsina' ),
 				'slug'    => 'event-centres',
 				'content' => '<!-- wp:shortcode -->[ek_venue_search]<!-- /wp:shortcode -->',
+			),
+			'map'               => array(
+				'title'   => __( 'Katsina Map', 'explore-katsina' ),
+				'slug'    => 'map',
+				'content' => '<!-- wp:shortcode -->[ek_map]<!-- /wp:shortcode -->',
+			),
+			'top_hotels'        => array(
+				'title'   => __( 'Top Hotels in Katsina', 'explore-katsina' ),
+				'slug'    => 'top-hotels',
+				'content' => '<!-- wp:shortcode -->[ek_top type="hotel"]<!-- /wp:shortcode -->',
+			),
+			'top_restaurants'   => array(
+				'title'   => __( 'Top Restaurants in Katsina', 'explore-katsina' ),
+				'slug'    => 'top-restaurants',
+				'content' => '<!-- wp:shortcode -->[ek_top type="restaurant"]<!-- /wp:shortcode -->',
+			),
+			'top_event_centres' => array(
+				'title'   => __( 'Top Event Centres in Katsina', 'explore-katsina' ),
+				'slug'    => 'top-event-centres',
+				'content' => '<!-- wp:shortcode -->[ek_top type="event-centre"]<!-- /wp:shortcode -->',
 			),
 			'account'       => array(
 				'title'   => __( 'My Account', 'explore-katsina' ),

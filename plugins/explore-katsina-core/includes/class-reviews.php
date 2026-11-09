@@ -1,7 +1,7 @@
 <?php
 /**
- * Verified reviews (read + owner replies). Writing reviews arrives in Phase 6,
- * hiding/moderation in Phase 8.
+ * Verified reviews: reading, writing (after a completed booking), owner replies, and admin
+ * moderation (hide fake or abusive reviews, with the reason logged).
  *
  * @package ExploreKatsina
  */
@@ -66,6 +66,67 @@ final class Reviews {
 			array( 'id' => (int) $review_id )
 		);
 		Log::add( 'review_replied', 'business', $business_id, '', array( 'review_id' => (int) $review_id ) );
+		return true;
+	}
+
+	public static function get( $id ) {
+		global $wpdb;
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ek_reviews WHERE id = %d", $id ) );
+	}
+
+	/** Admin list: newest first, optionally one status / one business / a search word. */
+	public static function admin_list( $status = '', $search = '', $limit = 50 ) {
+		global $wpdb;
+		$x     = $wpdb->prefix;
+		$where = array( '1=1' );
+		$args  = array();
+		if ( in_array( $status, array( 'published', 'hidden' ), true ) ) {
+			$where[] = 'r.status = %s';
+			$args[]  = $status;
+		}
+		if ( '' !== $search ) {
+			$like    = '%' . $wpdb->esc_like( $search ) . '%';
+			$where[] = '(r.body LIKE %s OR r.title LIKE %s OR r.author_name LIKE %s OR p.post_title LIKE %s)';
+			array_push( $args, $like, $like, $like, $like );
+		}
+		$args[] = $limit;
+		return $wpdb->get_results( $wpdb->prepare( "SELECT r.*, p.post_title AS business FROM {$x}ek_reviews r LEFT JOIN {$wpdb->posts} p ON p.ID = r.business_id WHERE " . implode( ' AND ', $where ) . ' ORDER BY r.id DESC LIMIT %d', $args ) ); // phpcs:ignore
+	}
+
+	/**
+	 * Hide a review (fake, abusive, off-topic…). It stops counting for ratings and rankings.
+	 * The reason and a copy of what was hidden go to the moderation log.
+	 *
+	 * @return true|\WP_Error
+	 */
+	public static function hide( $id, $reason, $admin_id ) {
+		global $wpdb;
+		$reason = trim( sanitize_text_field( (string) $reason ) );
+		if ( '' === $reason ) {
+			return new \WP_Error( 'reason', __( 'Give a reason for hiding this review. It is kept in the moderation log.', 'explore-katsina' ) );
+		}
+		$r = self::get( $id );
+		if ( ! $r || 'published' !== $r->status ) {
+			return new \WP_Error( 'status', __( 'This review is not visible.', 'explore-katsina' ) );
+		}
+		$wpdb->update( $wpdb->prefix . 'ek_reviews', array( 'status' => 'hidden', 'hidden_reason' => mb_substr( $reason, 0, 250 ), 'hidden_at' => current_time( 'mysql', true ), 'hidden_by' => (int) $admin_id ), array( 'id' => (int) $id ) );
+		/* translators: 1: review id, 2: reason */
+		Log::add( 'review_hidden', 'business', $r->business_id, sprintf( __( 'Review #%1$d hidden: %2$s', 'explore-katsina' ), $id, $reason ), array( 'review_id' => (int) $id, 'rating' => (int) $r->rating_overall, 'author' => $r->author_name, 'excerpt' => mb_substr( (string) $r->body, 0, 200 ) ) );
+		do_action( 'ek_review_changed', (int) $r->business_id );
+		return true;
+	}
+
+	/** @return true|\WP_Error */
+	public static function restore( $id, $admin_id ) {
+		global $wpdb;
+		$r = self::get( $id );
+		if ( ! $r || 'hidden' !== $r->status ) {
+			return new \WP_Error( 'status', __( 'This review is not hidden.', 'explore-katsina' ) );
+		}
+		$wpdb->update( $wpdb->prefix . 'ek_reviews', array( 'status' => 'published', 'hidden_reason' => '', 'hidden_at' => null, 'hidden_by' => 0 ), array( 'id' => (int) $id ) );
+		/* translators: %d: review id */
+		Log::add( 'review_restored', 'business', $r->business_id, sprintf( __( 'Review #%d shown again', 'explore-katsina' ), $id ), array( 'review_id' => (int) $id, 'by' => (int) $admin_id ) );
+		do_action( 'ek_review_changed', (int) $r->business_id );
 		return true;
 	}
 
@@ -147,6 +208,7 @@ final class Reviews {
 		$review = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ek_reviews WHERE id = %d", $wpdb->insert_id ) );
 		Log::add( 'review_posted', 'business', $b->business_id, '', array( 'review_id' => (int) $review->id, 'booking' => $b->code ) );
 		Emails::review_received( $review, $b );
+		do_action( 'ek_review_changed', (int) $b->business_id );
 		return $review;
 	}
 }

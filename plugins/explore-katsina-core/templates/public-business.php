@@ -44,6 +44,22 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 					<?php if ( $b['verified'] ) : ?><span class="ek-badge ek-badge--verified">✓ <?php esc_html_e( 'Verified', 'explore-katsina' ); ?></span><?php endif; ?>
 					<?php echo \EK\Favourites::button( $b['id'] ); // phpcs:ignore ?>
 				</div>
+				<?php
+				$ek_rank = isset( \EK\Ranking::ranked_types()[ $b['type'] ] ) ? \EK\Ranking::current( $b['id'] ) : null;
+				$ek_lbls = \EK\Ranking::badge_labels();
+				if ( isset( \EK\Ranking::ranked_types()[ $b['type'] ] ) ) :
+					?>
+					<p class="ek-rankline">
+						<?php if ( $ek_rank && $ek_rank->rank_state ) : ?>
+							<a class="ek-rank" href="<?php echo esc_url( \EK\Top::url( $b['type'] ) ); ?>"><?php echo esc_html( \EK\Ranking::label( $ek_rank, $b['type'] ) ); ?></a>
+							<?php if ( $ek_rank->rank_lga && $ek_rank->total_lga > 1 ) : $ek_lga = \EK\Business::lga_of( $b['id'] ); ?><a class="ek-rank" href="<?php echo esc_url( \EK\Top::url( $b['type'], $ek_lga ? $ek_lga->slug : '' ) ); ?>"><?php echo esc_html( \EK\Ranking::label( $ek_rank, $b['type'], 'lga', $b['lga'] ) ); ?></a><?php endif; ?>
+						<?php else : ?>
+							<span class="ek-rank"><?php esc_html_e( 'New, not yet ranked', 'explore-katsina' ); ?></span>
+						<?php endif; ?>
+						<?php foreach ( array_diff( \EK\Ranking::badges( $ek_rank ), array( 'verified' ) ) as $bd ) : ?><span class="ek-badge ek-badge--<?php echo esc_attr( $bd ); ?>"><?php echo esc_html( $ek_lbls[ $bd ] ?? $bd ); ?></span><?php endforeach; ?>
+						<?php if ( \EK\Map_Index::is_featured( $b['id'] ) ) : ?><span class="ek-badge ek-badge--featured"><?php esc_html_e( 'Featured', 'explore-katsina' ); ?></span><?php endif; ?>
+					</p>
+				<?php endif; ?>
 			</div>
 			<div class="ek-description"><?php echo wpautop( wp_kses_post( $b['description'] ) ); // phpcs:ignore ?></div>
 			<?php
@@ -59,7 +75,8 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 			<section aria-labelledby="pub-loc">
 				<h2 id="pub-loc"><?php esc_html_e( 'Location', 'explore-katsina' ); ?></h2>
 				<p><?php echo esc_html( $b['address'] ); ?></p>
-				<div class="ek-mini-map" data-ek-mini-map data-lat="<?php echo esc_attr( $b['lat'] ); ?>" data-lng="<?php echo esc_attr( $b['lng'] ); ?>" data-colour="<?php echo esc_attr( $colour ); ?>" role="img" aria-label="<?php esc_attr_e( 'Map showing the location', 'explore-katsina' ); ?>"></div>
+				<?php $ek_near = \EK\Map_Index::near( $b['lat'], $b['lng'], 5, 12, $b['id'] ); ?>
+				<div class="ek-mini-map" data-ek-mini-map data-lat="<?php echo esc_attr( $b['lat'] ); ?>" data-lng="<?php echo esc_attr( $b['lng'] ); ?>" data-colour="<?php echo esc_attr( $colour ); ?>" data-near="<?php echo esc_attr( wp_json_encode( \EK\Map_Index::mini( $ek_near ) ) ); ?>" role="img" aria-label="<?php esc_attr_e( 'Map showing the location and nearby places', 'explore-katsina' ); ?>"></div>
 			</section>
 			<?php include EK_DIR . 'templates/public/reviews.php'; ?>
 			<?php include EK_DIR . 'templates/public/nearby.php'; ?>

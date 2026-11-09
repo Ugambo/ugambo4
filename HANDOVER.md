@@ -10,8 +10,9 @@ from exactly where the last one stopped.
 - **Phase 4 (Restaurants): done and approved.**
 - **Phase 5 (Event centres): done and approved.**
 - **Phase 6 (Customer accounts & reviews): done and approved.**
-- **Phase 7 (Commissions, payouts & invoices): done, waiting for the owner's go-ahead.**
-- Next: **Phase 8 (Katsina Map & rankings)**.
+- **Phase 7 (Commissions, payouts & invoices): done and approved.**
+- **Phase 8 (Katsina Map & rankings): done, waiting for the owner's go-ahead.**
+- Next: **Phase 9 (Revenue features)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -210,6 +211,45 @@ from exactly where the last one stopped.
   a high no-show rate on pay-at-hotel bookings can hide commission). Download bookings as CSV.
 - **Command line:** `wp ek money-tick` runs the hourly job now; `wp ek invoices 2026-10` creates a month's invoices.
 
+## What Phase 8 built (plain language)
+- **Katsina Map** (`/map/`, in the menu): a full-screen map of every approved hotel, restaurant and event
+  centre, plus attractions. Leaflet + OpenStreetMap (free); one setting (`EK\Assets::map_config()`) switches
+  to Google Maps later.
+  - Opens on the whole of Katsina State. Colour-coded pins with an icon per type and a legend.
+  - Pins group into numbered clusters when zoomed out. **Only the pins in view are downloaded** (fast on 3G/4G).
+  - Switch each type on/off. More filters: LGA, minimum rating, price (₦ to ₦₦₦₦), open now, "must have"
+    (WiFi, parking, 24-hour power, AC, pool, halal, prayer room, wheelchair access, security).
+  - **Use my location** (asks permission) with 1 / 5 / 10 / 25 km circles. Distances are worked out for
+    that request only. **Locations are never stored or cached.**
+  - Tapping a pin opens a card: photo, name, type, stars and review count, rank ("#3 of 42 hotels in
+    Katsina"), price (from ₦X/night, price range, cheapest hall, or entry fee), distance, open now, and
+    View / Book or Reserve / Directions (Apple Maps on iPhone, Google Maps otherwise) / WhatsApp.
+  - A list beside the map (a bottom sheet you pull up on phones) stays in sync, sortable by distance,
+    rank, rating or price.
+  - `/map/?focus=123` opens the map on one place (used by "Show on Katsina Map" buttons).
+- **Small maps** on business and attraction pages now show nearby places as dots, and the "Nearby" list
+  includes attractions.
+- **Attractions** (wp-admin → Attractions): name, description, photo, LGA, category, map pin (drag it),
+  entry fee, opening hours, how to get there, and a **"details not yet verified"** tick that shows a notice
+  to visitors. No real attractions were added: researched content comes in Phase 10.
+- **Honest rankings**, recalculated every night at about 02:15 (and with "Recalculate rankings now"):
+  - Score out of 100 = **70% rating** (Bayesian average: every place starts with 10 "pretend" reviews at its
+    type's average; a review counts half after 12 months) + **15% completed bookings** (sliding scale, 50 a
+    year = full marks) + **15% response** (bookings answered within 48 hours, reviews replied to).
+  - Compared only within the same type, statewide and per LGA. **3 verified reviews needed** for a number.
+  - Badges: **Top Rated** (top 10% of its type), **Rising** (+5 points in 90 days), **Verified**.
+  - **Paid plans never change the score or rank.** Featured places get a gold-ringed pin and a "Featured"
+    label only (plans themselves arrive in Phase 9).
+  - All the numbers are in wp-admin → Settings → Rankings, explained in plain language there.
+  - Shown on business pages (statewide + LGA rank and badges), search results, map cards, and in a new
+    score breakdown in each business's dashboard (Ranking section).
+- **Top 10 pages:** `/top-hotels/`, `/top-restaurants/`, `/top-event-centres/`, and per LGA, e.g.
+  `/top-hotels/daura/`. They're linked from business pages and the map, and kept out of the main menu.
+- **Hiding fake or abusive reviews:** wp-admin → **Reviews**. Pick a reason and hide; it stops counting for
+  ratings and rankings. The **moderation log** on the same page keeps the reason and a copy of what was
+  hidden. "Show again" undoes it.
+- **Command line:** `wp ek rank` (recalculate now), `wp ek map-index` (rebuild every pin).
+
 ## Photos (royalty-free, with credits)
 - Source: **Wikimedia Commons**, only files that are public domain, CC0, CC BY or CC BY-SA. Each photo keeps
   its author, licence, licence link and source page, and business pages show a **"Photo credits"** list.
@@ -258,7 +298,7 @@ from exactly where the last one stopped.
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 500 automatic checks, server and browser (Phases 2–7)
+./tests/run.sh      # about 580 automatic checks, server and browser (Phases 2–8)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -273,6 +313,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase3/` | Screenshots of hotel search, hotel page, booking, confirmation, calendar, rooms |
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
+| `docs/screenshots/phase8/` | Screenshots of the Katsina Map (computer and phone), map cards, Top 10 page, rank on a hotel page, attraction page, review moderation |
 | `docs/screenshots/phase7/` | Screenshots of commission settings, complaints, payouts, invoices, reports, hotel earnings and invoice |
 | `docs/screenshots/phase6/` | Screenshots of My Account, confirmation with calendar/cancel, cancelled booking, review form, reviews on a page, favourites, admin Refunds |
 | `sample-data/media/` | Royalty-free sample photos + `credits.json` (author, licence, source) |
@@ -285,8 +326,9 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  templates/` | Screens (sign-up, dashboard sections, admin pages, public page) |
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
+| `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase4-woo-bridge.php`, `e2e/phase2–7.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase4-woo-bridge.php`, `e2e/phase2–8.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -338,3 +380,8 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Phase 7 business rules to confirm: 3-day hold and complaint window, invoice due after 30 days, no-show
   flag at 25%, minimum payout ₦5,000 (all changeable)
 - Bank transfer details for businesses paying invoices by transfer (shown as "contact us" for now)
+- Map price bands (hotels under ₦15k / ₦35k / ₦70k per night; event centres under ₦200k / ₦500k / ₦1m) in
+  `includes/class-map-index.php`, and the ranking settings (all placeholders, easy to change)
+- Real attractions: to be researched and added in Phase 10 (with sources); none are invented
+- OpenStreetMap tiles: free with a fair-use limit. If the map gets very busy, switch the tile provider
+  (one setting)

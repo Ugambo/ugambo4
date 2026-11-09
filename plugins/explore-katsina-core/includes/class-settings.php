@@ -22,7 +22,16 @@ final class Settings {
 			'max_photos_basic'      => 8,
 			'max_photo_mb'          => 5,
 			'food_ordering_enabled' => 0, // Phase 4: built but OFF.
-			'invoice_due_days'      => 30, // Phase 7: unpaid invoices pause the listing after this many days.
+			'invoice_due_days'      => 30,
+			// Phase 8 ranking settings (explained in plain language on the Settings screen).
+			'rank_prior_reviews'    => 10,  // "Pretend average reviews" every business starts with.
+			'rank_half_life_months' => 12,  // A review counts half as much after this many months.
+			'rank_weight_rating'    => 70,
+			'rank_weight_bookings'  => 15,
+			'rank_weight_response'  => 15,
+			'rank_bookings_full'    => 50,  // Completed bookings a year that earn full marks for activity.
+			'rank_top_percent'      => 10,  // "Top Rated" badge: top 10% of its type.
+			'rank_rising_points'    => 5,   // "Rising": score up at least this many points (of 100) in 90 days. // Phase 7: unpaid invoices pause the listing after this many days.
 			// Commission placeholders (Phase 7). Basis points: 1000 = 10%.
 			'commission_bp'         => array(
 				'hotel'             => 1000,

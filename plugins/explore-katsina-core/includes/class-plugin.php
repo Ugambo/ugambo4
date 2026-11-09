@@ -32,6 +32,11 @@ final class Plugin {
 		Favourites::init();
 		Nav::init();
 		Money_Jobs::init();
+		Ranking::init();
+		Attractions::init();
+		Map_Index::init();
+		Map_Page::init();
+		Top::init();
 		Access::init();
 		Assets::init();
 		Signup::init();

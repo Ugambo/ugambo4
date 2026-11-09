@@ -1,27 +1,15 @@
 <?php
 /**
- * Nearby places (other approved businesses within 5 km). Attractions are added in Phase 10.
+ * Nearby places (approved businesses and attractions within 5 km), from the map index.
  *
- * @var array $b
+ * @var array $ek_near Pins from Map_Index::near() (set by the page before the small map).
  */
-use EK\Business;
 use EK\Hotel_Search;
-use EK\Post_Types;
+use EK\Install;
 
 defined( 'ABSPATH' ) || exit;
 
-$near = array();
-foreach ( get_posts( array( 'post_type' => Post_Types::BUSINESS, 'post_status' => 'publish', 'posts_per_page' => 300, 'exclude' => array( $b['id'] ), 'no_found_rows' => true ) ) as $post ) {
-	$lat = (float) get_post_meta( $post->ID, '_ek_lat', true );
-	$lng = (float) get_post_meta( $post->ID, '_ek_lng', true );
-	$km  = Hotel_Search::distance( $b['lat'], $b['lng'], $lat, $lng );
-	if ( $km <= 5 ) {
-		$near[] = array( 'post' => $post, 'km' => $km );
-	}
-}
-usort( $near, static fn( $x, $y ) => $x['km'] <=> $y['km'] );
-$near  = array_slice( $near, 0, 6 );
-$types = Business::types();
+$near = array_slice( $ek_near ?? array(), 0, 6 );
 if ( ! $near ) {
 	return;
 }
@@ -29,8 +17,9 @@ if ( ! $near ) {
 <section aria-labelledby="near-h">
 	<h2 id="near-h"><?php esc_html_e( 'Nearby', 'explore-katsina' ); ?></h2>
 	<ul class="ek-nearby">
-		<?php foreach ( $near as $n ) : $near_type = Business::type_of( $n['post']->ID ); ?>
-			<li><a href="<?php echo esc_url( get_permalink( $n['post'] ) ); ?>"><?php echo esc_html( $n['post']->post_title ); ?></a><span class="ek-small ek-muted"><?php echo esc_html( ( $types[ $near_type ]['label'] ?? '' ) . ' · ' . Hotel_Search::format_distance( $n['km'] ) ); ?></span></li>
+		<?php foreach ( $near as $n ) : ?>
+			<li><a href="<?php echo esc_url( $n['url'] ); ?>"><?php echo esc_html( $n['title'] ); ?></a><span class="ek-small ek-muted"><?php echo esc_html( $n['typeLabel'] . ' · ' . Hotel_Search::format_distance( $n['distance'] / 1000 ) ); ?></span></li>
 		<?php endforeach; ?>
 	</ul>
+	<p class="ek-small" style="margin:8px 0 0"><a href="<?php echo esc_url( Install::page_url( 'map' ) ); ?>"><?php esc_html_e( 'See everything on the Katsina Map →', 'explore-katsina' ); ?></a></p>
 </section>

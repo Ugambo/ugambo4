@@ -10,6 +10,7 @@ defined( 'ABSPATH' ) || exit;
 ?>
 <h1><?php esc_html_e( 'Explore Katsina settings', 'explore-katsina' ); ?></h1>
 <?php if ( ! empty( $_GET['saved'] ) ) : // phpcs:ignore ?><div class="notice notice-success"><p><?php esc_html_e( 'Settings saved.', 'explore-katsina' ); ?></p></div><?php endif; ?>
+<?php include __DIR__ . '/_msg.php'; ?>
 <form method="post">
 	<?php wp_nonce_field( 'ek_admin_settings' ); ?>
 	<input type="hidden" name="ek_admin_action" value="settings">
@@ -33,7 +34,21 @@ defined( 'ABSPATH' ) || exit;
 	</table>
 	<h2><?php esc_html_e( 'Rankings', 'explore-katsina' ); ?></h2>
 	<table class="form-table" role="presentation">
-		<tr><th><label for="min_reviews_for_rank"><?php esc_html_e( 'Verified reviews needed for a rank number', 'explore-katsina' ); ?></label></th><td><input type="number" min="1" max="50" id="min_reviews_for_rank" name="min_reviews_for_rank" value="<?php echo (int) $s['min_reviews_for_rank']; ?>"><p class="description"><?php esc_html_e( 'The full ranking weights are added in Phase 8.', 'explore-katsina' ); ?></p></td></tr>
+		<tr><th><label for="min_reviews_for_rank"><?php esc_html_e( 'Verified reviews needed for a rank number', 'explore-katsina' ); ?></label></th><td><input type="number" min="1" max="50" id="min_reviews_for_rank" name="min_reviews_for_rank" value="<?php echo (int) $s['min_reviews_for_rank']; ?>"></td></tr>
+		<tr><th><?php esc_html_e( 'How the score is made (out of 100)', 'explore-katsina' ); ?></th><td>
+			<p><label><input type="number" min="0" max="100" name="rank_weight_rating" value="<?php echo (int) $s['rank_weight_rating']; ?>" style="width:5em"> % <?php esc_html_e( 'rating from verified reviews', 'explore-katsina' ); ?></label></p>
+			<p><label><input type="number" min="0" max="100" name="rank_weight_bookings" value="<?php echo (int) $s['rank_weight_bookings']; ?>" style="width:5em"> % <?php esc_html_e( 'completed bookings (last 12 months)', 'explore-katsina' ); ?></label></p>
+			<p><label><input type="number" min="0" max="100" name="rank_weight_response" value="<?php echo (int) $s['rank_weight_response']; ?>" style="width:5em"> % <?php esc_html_e( 'response (answering bookings within 48 hours, replying to reviews)', 'explore-katsina' ); ?></label></p>
+			<p class="description"><?php esc_html_e( 'If they do not add up to 100, they are scaled so they do.', 'explore-katsina' ); ?></p>
+		</td></tr>
+		<tr><th><label for="rank_prior_reviews"><?php esc_html_e( '"Pretend" average reviews', 'explore-katsina' ); ?></label></th><td><input type="number" min="0" max="100" id="rank_prior_reviews" name="rank_prior_reviews" value="<?php echo (int) $s['rank_prior_reviews']; ?>"><p class="description"><?php esc_html_e( 'Every business starts as if it already had this many reviews at the average rating for its type, so one 5★ review cannot beat fifty 4.6★ reviews. Example with 10: one 5★ review → (1×5 + 10×4.2) ÷ 11 ≈ 4.27; fifty 4.6★ reviews → (50×4.6 + 10×4.2) ÷ 60 ≈ 4.53, which ranks higher.', 'explore-katsina' ); ?></p></td></tr>
+		<tr><th><label for="rank_half_life_months"><?php esc_html_e( 'Recent reviews count more', 'explore-katsina' ); ?></label></th><td><input type="number" min="1" max="60" id="rank_half_life_months" name="rank_half_life_months" value="<?php echo (int) $s['rank_half_life_months']; ?>"> <?php esc_html_e( 'months: after this long a review counts half as much', 'explore-katsina' ); ?></td></tr>
+		<tr><th><label for="rank_bookings_full"><?php esc_html_e( 'Completed bookings for full marks', 'explore-katsina' ); ?></label></th><td><input type="number" min="1" id="rank_bookings_full" name="rank_bookings_full" value="<?php echo (int) $s['rank_bookings_full']; ?>"> <?php esc_html_e( 'per year (sliding scale: the 10th booking matters more than the 1,000th)', 'explore-katsina' ); ?></td></tr>
+		<tr><th><?php esc_html_e( 'Badges', 'explore-katsina' ); ?></th><td>
+			<p><label><?php esc_html_e( 'Top Rated = top', 'explore-katsina' ); ?> <input type="number" min="1" max="50" name="rank_top_percent" value="<?php echo (int) $s['rank_top_percent']; ?>" style="width:5em"> % <?php esc_html_e( 'of its type', 'explore-katsina' ); ?></label></p>
+			<p><label><?php esc_html_e( 'Rising = score up at least', 'explore-katsina' ); ?> <input type="number" min="1" max="50" name="rank_rising_points" value="<?php echo (int) $s['rank_rising_points']; ?>" style="width:5em"> <?php esc_html_e( 'points in 90 days', 'explore-katsina' ); ?></label></p>
+			<p class="description"><?php esc_html_e( 'Verified = you gave the Verified badge. Featured (a paid plan) is a separate label and is never part of the score.', 'explore-katsina' ); ?></p>
+		</td></tr>
 	</table>
 	<h2><?php esc_html_e( 'Restaurants', 'explore-katsina' ); ?></h2>
 	<table class="form-table" role="presentation">
@@ -42,4 +57,8 @@ defined( 'ABSPATH' ) || exit;
 	<h2><?php esc_html_e( 'Security', 'explore-katsina' ); ?></h2>
 	<p><?php echo Crypto::has_dedicated_key() ? '✅ ' . esc_html__( 'Bank details are encrypted with your own key (EK_ENCRYPTION_KEY). Keep a safe offline copy of wp-config.php.', 'explore-katsina' ) : '⚠️ ' . esc_html__( 'No EK_ENCRYPTION_KEY found in wp-config.php.', 'explore-katsina' ); ?></p>
 	<?php submit_button(); ?>
+</form>
+<form method="post">
+	<?php wp_nonce_field( 'ek_admin_rankings_run' ); ?><input type="hidden" name="ek_admin_action" value="rankings_run"><input type="hidden" name="back" value="ek-settings">
+	<p><button class="button"><?php esc_html_e( 'Recalculate rankings now', 'explore-katsina' ); ?></button> <span class="description"><?php /* translators: %s: date */ printf( esc_html__( 'Rankings update automatically every night. Last calculated: %s', 'explore-katsina' ), esc_html( get_option( 'ek_rank_last' ) ? \EK\View::date( get_option( 'ek_rank_last' ), true ) : __( 'never', 'explore-katsina' ) ) ); ?></span></p>
 </form>

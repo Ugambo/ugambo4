@@ -21,7 +21,7 @@ final class Nav {
 	}
 
 	public static function hidden_ids() {
-		$ids = array( Install::page_id( 'book' ), Install::page_id( 'agreement' ), Install::page_id( 'dashboard' ) );
+		$ids = array( Install::page_id( 'book' ), Install::page_id( 'agreement' ), Install::page_id( 'dashboard' ), Install::page_id( 'top_hotels' ), Install::page_id( 'top_restaurants' ), Install::page_id( 'top_event_centres' ) );
 		foreach ( array( 'woocommerce_myaccount_page_id', 'woocommerce_cart_page_id', 'woocommerce_checkout_page_id' ) as $opt ) {
 			$ids[] = (int) get_option( $opt );
 		}
