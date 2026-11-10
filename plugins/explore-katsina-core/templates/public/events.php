@@ -26,6 +26,7 @@ $compact = ! empty( $compact );
 				<a href="<?php echo esc_url( get_permalink( $id ) ); ?>" class="ek-event-img" tabindex="-1" aria-hidden="true"><?php echo get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy' ) ); // phpcs:ignore ?></a>
 				<div class="ek-stack" style="gap:4px;min-width:0">
 					<?php if ( Events::is_promoted( $id ) ) : ?><span class="ek-badge ek-badge--featured" style="align-self:flex-start"><?php esc_html_e( 'Promoted', 'explore-katsina' ); ?></span><?php endif; ?>
+					<?php if ( $d['type'] ) : ?><span class="ek-small ek-muted" style="text-transform:uppercase;letter-spacing:.04em"><?php echo esc_html( $d['type'] ); ?></span><?php endif; ?>
 					<h3 style="margin:0"><a href="<?php echo esc_url( get_permalink( $id ) ); ?>"><?php echo esc_html( get_the_title( $id ) ); ?></a></h3>
 					<p class="ek-small" style="margin:0"><strong><?php echo esc_html( Events::when( $d ) ); ?></strong></p>
 					<p class="ek-small ek-muted" style="margin:0"><?php echo esc_html( trim( $d['venue'] . ( $d['lga'] ? ', ' . $d['lga'] : '' ), ', ' ) ); ?></p>

@@ -10,3 +10,4 @@ node_modules/
 vendor/
 tests/e2e/screenshots/
 .cache/
+__pycache__/

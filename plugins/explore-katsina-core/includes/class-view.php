@@ -150,9 +150,14 @@ final class View {
 				'fields'         => 'ids',
 			)
 		);
+		return self::credits_for( $atts, __( 'Illustrative photos from Wikimedia Commons, used under the licences shown.', 'explore-katsina' ) );
+	}
+
+	/** Photo credits for a list of attachments (only those that carry licence details). */
+	public static function credits_for( array $ids, $note = '' ) {
 		$items = array();
-		foreach ( $atts as $id ) {
-			$c = get_post_meta( $id, '_ek_credit', true );
+		foreach ( $ids as $id ) {
+			$c = get_post_meta( (int) $id, '_ek_credit', true );
 			if ( ! is_array( $c ) || empty( $c['license'] ) ) {
 				continue;
 			}
@@ -164,6 +169,6 @@ final class View {
 		if ( ! $items ) {
 			return '';
 		}
-		return '<details class="ek-credits"><summary>' . esc_html__( 'Photo credits', 'explore-katsina' ) . '</summary><ul>' . implode( '', $items ) . '</ul><p class="ek-small ek-muted">' . esc_html__( 'Illustrative photos from Wikimedia Commons, used under the licences shown.', 'explore-katsina' ) . '</p></details>';
+		return '<details class="ek-credits"><summary>' . esc_html__( 'Photo credits', 'explore-katsina' ) . '</summary><ul>' . implode( '', $items ) . '</ul><p class="ek-small ek-muted">' . esc_html( $note ? $note : __( 'Photos from Wikimedia Commons, used under the licences shown.', 'explore-katsina' ) ) . '</p></details>';
 	}
 }

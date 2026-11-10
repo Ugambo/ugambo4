@@ -12,8 +12,9 @@ from exactly where the last one stopped.
 - **Phase 6 (Customer accounts & reviews): done and approved.**
 - **Phase 7 (Commissions, payouts & invoices): done and approved.**
 - **Phase 8 (Katsina Map & rankings): done and approved.**
-- **Phase 9 (Revenue features): done, waiting for the owner's go-ahead.**
-- Next: **Phase 10 (Tourism guide)**.
+- **Phase 9 (Revenue features): done and approved.**
+- **Phase 10 (Tourism guide): done, waiting for the owner's go-ahead.**
+- Next: **Phase 11 (Brand & theme)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -95,7 +96,8 @@ from exactly where the last one stopped.
   releases held money and the admin payout screen were added in Phase 7.) If a paid booking is declined or
   cancelled by the business, the guest is refunded in full automatically (Phase 6).
 - **Delete sample data:** `wp ek delete-sample --yes` removes every business whose name starts with
-  "SAMPLE", plus their rooms, bookings, calendar, money records, photos and owner accounts.
+  "SAMPLE", plus their rooms, bookings, calendar, money records, photos and owner accounts (and, since
+  Phase 10, attractions and events named "SAMPLE …").
 
 ## What Phase 4 built (plain language)
 - **Restaurant dashboard, new sections:**
@@ -304,6 +306,71 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 - Free libraries added: qrcode-generator 1.4.4 (MIT) for ticket QR codes, jsQR 1.4.0 (Apache 2.0) for the camera
   scanner (only loaded on /check-in/).
 
+## What Phase 10 built (plain language)
+**Research first.** Every fact on the guide pages comes from a published source, listed under "Sources" on the
+page itself. The full notes, with confidence levels and every place where sources disagree, are in
+`docs/research/phase10-sources.md`. Nothing was invented:
+- **Opening hours and fees were not confirmed for any place**, so pages say "Not yet confirmed. Please check
+  locally before you go".
+- Every attraction has **"Facts not yet verified on the ground"** ticked, which shows visitors a notice. Untick
+  it only after someone has checked the place locally.
+- Where sources disagree (Gobarau's date, the palace's founding date, which gate is "original", Zobe Dam's
+  size, Ajiwa Dam's LGA), the page says so instead of picking one.
+- Legends (Bayajidda and Kusugu Well; Gobarau as a watchtower) are written as "according to the legend" or
+  "tradition says".
+
+1. **Attractions** (wp-admin → Attractions, simple one-page editor):
+   - Fields: name, LGA, category, description, history, opening hours, entry fee, best time to visit, how to get
+     there, map pin (+ a note such as "approximate location"), photo gallery and sources.
+   - Categories: Historic site, Religious site, Nature & dams, Markets, Museums, Palaces, Crafts.
+   - Each page automatically lists the **3 nearest hotels, restaurants and event centres with distances**, and
+     other attractions nearby, from the Katsina Map.
+2. **10 researched attractions**:
+   - The 8 you asked for: Gobarau Minaret, Emir of Katsina's Palace, the ancient city walls and gates, Kusugu
+     Well (Daura), Emir of Daura's Palace, Zobe Dam, Ajiwa Dam, Katsina Central Market.
+   - **2 suggested extras I could verify:** Durbi Takusheyi (burial mounds of early Katsina rulers, a national
+     monument since 1959) and the National Museum, Katsina (its exact location is unconfirmed, so it has no map
+     pin yet).
+3. **Things to do** page (`/things-to-do/`): photo cards with a category filter.
+4. **Festivals & events:**
+   - Events now have a type (Festival, Culture & heritage, Religious, Music & entertainment, Sports, Business &
+     conferences, Community), a photo gallery and sources.
+   - **Sallah Durbar, Katsina** added with **"Date to be confirmed"**. Eid dates follow the moon sighting; set the
+     date in wp-admin → Events once it is announced.
+   - The page mentions that durbars were suspended in some years (e.g. 2021).
+   - It makes no UNESCO claim: the 2024 UNESCO listing is for the Durbar in **Kano** only.
+5. **Plan your trip** (`/plan-your-trip/`) with 6 pages: Getting there (Katsina airport, code DKA, and by road),
+   Getting around, Etiquette and dress, Best time to visit, Itineraries (1 day and 3 days) and Safety and travel tips.
+6. **Safety and travel tips:**
+   - Sends visitors to the **official travel advice** of the UK, US, Canada and Australia, and to Katsina State
+     Government announcements.
+   - It **does not say which areas are safe**, and gives no emergency numbers (it says "ask your hotel").
+7. **Stories (the blog)** (wp-admin → Stories, page `/stories/`):
+   - Categories: History, Culture, Food, Crafts, Travel guides. Each story can list its sources.
+   - **3 draft stories** are waiting for your review (not public): a short history of Katsina, the Sallah Durbar
+     explained, and crafts (weaving and dyeing). No food story yet: I found no sources good enough to write one.
+8. **Photos of the real places** from Wikimedia Commons (licence-checked, credited under each gallery):
+   - Gobarau Minaret, the Katsina palace gate, Kofar Sauri and Kofar Kwaya, Kusugu Well and Kofar Bayajidda,
+     the Daura palace, Ajiwa Dam, the National Museum entrance, the Durbar (including a 1959 public-domain photo)
+     and Daura cap weaving and dyeing.
+   - There are no free photos yet of Zobe Dam, Durbi Takusheyi or the Central Market.
+- **One command imports it all:** `wp ek import-guide` (run by `setup.sh`). It is safe to re-run: it only adds
+  what is missing and never overwrites your wp-admin edits (`--update` replaces them, after asking). The text lives
+  in `plugins/explore-katsina-core/content/guide/` so it also ships with the plugin to the live site.
+- `wp ek delete-sample --yes` now also deletes test attractions and events named "SAMPLE …".
+- Fixed: the small map on attraction pages was invisible (no height) since Phase 8.
+
+**Please check before launch (flags):**
+- Opening hours, fees and access for every attraction, especially palaces (working royal residences) and the
+  dams (water infrastructure, access may be restricted).
+- The National Museum's location, hours and exhibitions.
+- Approximate pins: Kusugu Well and the Daura palace.
+- The Ajiwa Dam LGA.
+- The current Emir of Daura (Wikipedia says Umar Faruk Umar since 2007).
+- Airline routes from Katsina airport.
+- Etiquette page: general advice, worth a read by someone local.
+- Hausa versions of the guide pages: these need a fluent Hausa writer. I did not machine-translate them.
+
 ## Photos (royalty-free, with credits)
 - Source: **Wikimedia Commons**, only files that are public domain, CC0, CC BY or CC BY-SA. Each photo keeps
   its author, licence, licence link and source page, and business pages show a **"Photo credits"** list.
@@ -352,7 +419,7 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 700 automatic checks, server and browser (Phases 2–9)
+./tests/run.sh      # about 800 automatic checks, server and browser (Phases 2–10)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -368,6 +435,8 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
 | `docs/screenshots/phase9/` | Screenshots of the plan page, search with Featured + banner ad, tickets with QR codes, check-in, tour, events, advertise, admin sales and revenue |
+| `docs/research/phase10-sources.md` | Phase 10 research: every fact, its source, confidence, and conflicts between sources |
+| `docs/screenshots/phase10/` | Screenshots of Things to do, attraction pages (computer and phone), Sallah Durbar, Plan your trip, safety page, the attraction editor |
 | `docs/screenshots/phase8/` | Screenshots of the Katsina Map (computer and phone), map cards, Top 10 page, rank on a hotel page, attraction page, review moderation |
 | `docs/screenshots/phase7/` | Screenshots of commission settings, complaints, payouts, invoices, reports, hotel earnings and invoice |
 | `docs/screenshots/phase6/` | Screenshots of My Account, confirmation with calendar/cancel, cancelled booking, review form, reviews on a page, favourites, admin Refunds |
@@ -381,10 +450,11 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  templates/` | Screens (sign-up, dashboard sections, admin pages, public page) |
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
+| `  content/guide/` | Researched guide content: attractions, festivals, Plan your trip pages, draft stories (`wp ek import-guide`) |
 | `  assets/vendor/qrcode/`, `jsqr/` | QR code drawing (MIT) and camera scanning (Apache 2.0) for tickets |
 | `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase4-woo-bridge.php`, `e2e/phase2–9.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase4-woo-bridge.php`, `e2e/phase2–10.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -438,7 +508,8 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Bank transfer details for businesses paying invoices by transfer (shown as "contact us" for now)
 - Map price bands (hotels under ₦15k / ₦35k / ₦70k per night; event centres under ₦200k / ₦500k / ₦1m) in
   `includes/class-map-index.php`, and the ranking settings (all placeholders, easy to change)
-- Real attractions: to be researched and added in Phase 10 (with sources); none are invented
+- Guide content (Phase 10): confirm hours, fees, access and approximate pins locally, then untick "not yet
+  verified" per attraction; review and publish the 3 draft stories; Hausa translations by a fluent writer
 - **All Phase 9 prices** (plans, Verified, setup, promotion), delivery fees, tour cancellation window (48 h),
   banner ad prices ("on request"), the media kit PDF, AdSense code (off), partner agreements
 - Your own tours (city tour, Durbar package, Daura day trip): you write the descriptions, prices and dates

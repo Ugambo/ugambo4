@@ -363,4 +363,15 @@ final class Map_Index {
 		usort( $out, static fn( $a, $b ) => $a['distance'] <=> $b['distance'] );
 		return array_slice( $out, 0, $limit );
 	}
+
+	/**
+	 * The nearest few places of one type (hotel, restaurant, event-centre, attraction), any distance
+	 * up to $km, closest first. Used on attraction pages ("Where to stay, eat and celebrate nearby").
+	 */
+	public static function nearest( $lat, $lng, $type, $limit = 3, $km = 80, $exclude = 0 ) {
+		$res = self::query( array( 'lat' => $lat, 'lng' => $lng, 'radius_km' => $km, 'types' => array( $type ), 'limit' => 600 ) );
+		$out = array_values( array_filter( $res['pins'], static fn( $p ) => $p['id'] !== (int) $exclude ) );
+		usort( $out, static fn( $a, $b ) => $a['distance'] <=> $b['distance'] );
+		return array_slice( $out, 0, $limit );
+	}
 }

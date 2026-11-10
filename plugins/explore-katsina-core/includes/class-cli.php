@@ -95,6 +95,32 @@ final class CLI {
 		\WP_CLI::success( sprintf( 'Map index rebuilt: %d pins.', Map_Index::rebuild() ) );
 	}
 
+	/**
+	 * Import the researched guide content: attractions, festivals, "Plan your trip" pages and
+	 * draft stories (from the plugin's content/guide folder), with Commons photos and credits.
+	 * Re-run safe: only adds what is missing, unless --update.
+	 *
+	 * ## OPTIONS
+	 * [--media=<dir>]
+	 * : Folder with downloaded Commons photos and credits.json. Default: ek-sample-data/media in the site root.
+	 *
+	 * [--update]
+	 * : Overwrite guide items with the text in content/guide (your wp-admin edits to them are replaced).
+	 *
+	 * ## EXAMPLES
+	 *     wp ek import-guide
+	 *
+	 * @subcommand import-guide
+	 */
+	public function import_guide( $args, $assoc ) {
+		$media = $assoc['media'] ?? ABSPATH . 'ek-sample-data/media';
+		if ( ! empty( $assoc['update'] ) ) {
+			\WP_CLI::confirm( 'Replace the text of guide items with the versions in content/guide? Edits made in wp-admin to those items will be lost.', $assoc );
+		}
+		$r = ( new Guide_Import( is_dir( $media ) ? $media : '', ! empty( $assoc['update'] ) ) )->run();
+		\WP_CLI::success( sprintf( 'Guide content: %d created, %d updated, %d already there, %d photos added.', $r['created'], $r['updated'], $r['skipped'], $r['photos'] ) );
+	}
+
 	public function status() {
 		$c = wp_count_posts( Post_Types::BUSINESS );
 		foreach ( array( 'pending', 'publish', Post_Types::STATUS_PAUSED, Post_Types::STATUS_REJECTED ) as $s ) {
@@ -106,7 +132,7 @@ final class CLI {
 	/**
 	 * Delete all SAMPLE data: businesses whose name starts with "SAMPLE", their rooms,
 	 * photos, bookings, calendar, ledger and log rows, and owner accounts that only
-	 * owned SAMPLE businesses.
+	 * owned SAMPLE businesses; also attractions and events whose name starts with "SAMPLE".
 	 *
 	 * ## OPTIONS
 	 * [--yes]
@@ -119,7 +145,22 @@ final class CLI {
 	 */
 	public function delete_sample( $args, $assoc ) {
 		global $wpdb;
-		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_title LIKE %s", Post_Types::BUSINESS, 'SAMPLE%' ) );
+		$ids   = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_title LIKE %s", Post_Types::BUSINESS, 'SAMPLE%' ) );
+		$other = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN (%s, %s) AND post_title LIKE %s", Attractions::CPT, Events::CPT, 'SAMPLE%' ) );
+		if ( $other ) {
+			\WP_CLI::confirm( sprintf( 'Delete %d SAMPLE attractions and events?', count( $other ) ), $assoc );
+			foreach ( $other as $id ) {
+				$wpdb->delete( $wpdb->prefix . 'ek_favourites', array( 'object_id' => $id ) );
+				$wpdb->delete( $wpdb->prefix . 'ek_map_index', array( 'object_id' => $id ) );
+				foreach ( Tickets::types( $id ) as $t ) {
+					if ( ! (int) $t->sold ) {
+						$wpdb->delete( $wpdb->prefix . 'ek_ticket_types', array( 'id' => $t->id ) );
+					}
+				}
+				wp_delete_post( $id, true );
+			}
+			\WP_CLI::success( sprintf( 'Deleted %d SAMPLE attractions and events.', count( $other ) ) );
+		}
 		if ( ! $ids ) {
 			\WP_CLI::success( 'No SAMPLE businesses found.' );
 			return;

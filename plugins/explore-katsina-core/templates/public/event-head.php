@@ -14,7 +14,8 @@ defined( 'ABSPATH' ) || exit;
 <div class="ek ek-event-head ek-stack">
 	<?php if ( Events::is_promoted( $id ) ) : ?><span class="ek-badge ek-badge--featured" style="align-self:flex-start"><?php esc_html_e( 'Promoted', 'explore-katsina' ); ?></span><?php endif; ?>
 	<dl class="ek-dl">
-		<dt><?php esc_html_e( 'When', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Events::when( $d ) ); ?></dd>
+		<?php if ( $d['type'] ) : ?><dt><?php esc_html_e( 'Type', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( $d['type'] ); ?></dd><?php endif; ?>
+		<dt><?php esc_html_e( 'When', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( Events::when( $d ) ); ?><?php if ( $d['tbc'] ) : ?><br><span class="ek-small ek-muted"><?php esc_html_e( 'We will publish the date as soon as it is officially announced.', 'explore-katsina' ); ?></span><?php endif; ?></dd>
 		<?php if ( $d['venue'] ) : ?><dt><?php esc_html_e( 'Where', 'explore-katsina' ); ?></dt><dd><?php echo esc_html( $d['venue'] . ( $d['lga'] ? ', ' . $d['lga'] : '' ) ); ?></dd><?php endif; ?>
 	</dl>
 	<div class="ek-row">

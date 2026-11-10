@@ -17,6 +17,19 @@ defined( 'ABSPATH' ) || exit;
 final class Events {
 
 	const CPT = 'ek_event';
+	const TAX = 'ek_event_type';
+
+	public static function default_types() {
+		return array(
+			'festival'      => __( 'Festival', 'explore-katsina' ),
+			'cultural'      => __( 'Culture & heritage', 'explore-katsina' ),
+			'religious'     => __( 'Religious', 'explore-katsina' ),
+			'music'         => __( 'Music & entertainment', 'explore-katsina' ),
+			'sports'        => __( 'Sports', 'explore-katsina' ),
+			'business'      => __( 'Business & conferences', 'explore-katsina' ),
+			'community'     => __( 'Community', 'explore-katsina' ),
+		);
+	}
 
 	private static $errors = array();
 	private static $values = array();
@@ -56,15 +69,33 @@ final class Events {
 				'rewrite'      => array( 'slug' => 'events' ),
 				'menu_icon'    => 'dashicons-tickets-alt',
 				'supports'     => array( 'title', 'editor', 'thumbnail', 'excerpt' ),
-				'taxonomies'   => array( Post_Types::TAX_LGA ),
+				'taxonomies'   => array( Post_Types::TAX_LGA, self::TAX ),
 			)
 		);
 		register_taxonomy_for_object_type( Post_Types::TAX_LGA, self::CPT );
+		register_taxonomy(
+			self::TAX,
+			self::CPT,
+			array(
+				'labels'            => array(
+					'name'          => __( 'Event types', 'explore-katsina' ),
+					'singular_name' => __( 'Event type', 'explore-katsina' ),
+				),
+				'public'            => true,
+				'show_in_rest'      => true,
+				'show_admin_column' => true,
+				'hierarchical'      => true,
+				'rewrite'           => array( 'slug' => 'event-type' ),
+			)
+		);
 	}
 
 	public static function data( $id ) {
-		$lga = get_the_terms( (int) $id, Post_Types::TAX_LGA );
+		$lga  = get_the_terms( (int) $id, Post_Types::TAX_LGA );
+		$type = get_the_terms( (int) $id, self::TAX );
 		return array(
+			'type'     => $type && ! is_wp_error( $type ) ? implode( ', ', array_map( static fn( $t ) => wp_specialchars_decode( $t->name ), $type ) ) : '',
+			'sources'  => (string) get_post_meta( $id, '_ek_sources', true ),
 			'start'    => (string) get_post_meta( $id, '_ek_start', true ), // "Y-m-d H:i" Lagos.
 			'end'      => (string) get_post_meta( $id, '_ek_end', true ),
 			'tbc'      => (bool) get_post_meta( $id, '_ek_date_tbc', true ),
@@ -131,6 +162,7 @@ final class Events {
 			wp_enqueue_script( 'leaflet', EK_URL . 'assets/vendor/leaflet/leaflet.js', array(), '1.9.4', true );
 			wp_enqueue_script( 'ek-map-picker-admin', EK_URL . 'assets/js/map-picker.js', array( 'leaflet' ), EK_VERSION, true );
 			wp_localize_script( 'ek-map-picker-admin', 'ekMap', Assets::map_config() );
+			Gallery::admin_assets();
 			wp_add_inline_style( 'leaflet', '#ek-event .ek-map-picker{height:260px;border-radius:8px;margin:6px 0}#ek-event label{font-weight:600}#ek-event .ek-row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}#ek-event table input{width:100%}' );
 		}
 	}
@@ -155,6 +187,8 @@ final class Events {
 			<p><button type="button" class="button" data-ek-locate><?php esc_html_e( 'Use my location', 'explore-katsina' ); ?></button> <span data-ek-coords class="description"></span>
 			<input type="hidden" id="ek-ev-lat" name="ek_lat" value="<?php echo esc_attr( $d['lat'] ); ?>"><input type="hidden" id="ek-ev-lng" name="ek_lng" value="<?php echo esc_attr( $d['lng'] ); ?>"></p>
 		</div>
+		<?php Gallery::field( $post->ID ); ?>
+		<p><label for="ek-ev-sources"><?php esc_html_e( 'Sources (optional, one per line: Title | https://link)', 'explore-katsina' ); ?></label><br><textarea id="ek-ev-sources" name="ek_sources" rows="3" class="large-text"><?php echo esc_textarea( $d['sources'] ); ?></textarea></p>
 		<h3><?php esc_html_e( 'Tickets', 'explore-katsina' ); ?></h3>
 		<p class="description"><?php esc_html_e( 'Leave empty if the event has no tickets. Ticket money comes to Explore Katsina. A type cannot be removed once tickets are sold; set its quantity to the number sold to stop sales.', 'explore-katsina' ); ?></p>
 		<table class="widefat striped" style="max-width:820px">
@@ -198,6 +232,8 @@ final class Events {
 		}
 		$promo = sanitize_text_field( $in['ek_promoted_until'] ?? '' );
 		update_post_meta( $id, '_ek_promoted_until', Availability::valid_date( $promo ) ? ( new \DateTimeImmutable( $promo . ' 23:59:59', Availability::tz() ) )->getTimestamp() : 0 );
+		update_post_meta( $id, '_ek_sources', sanitize_textarea_field( $in['ek_sources'] ?? '' ) );
+		Gallery::save_field( $id, $in );
 		Tickets::save_types( $id, (array) ( $in['ek_tt'] ?? array() ) );
 	}
 
@@ -208,7 +244,8 @@ final class Events {
 			return $content;
 		}
 		$id = get_the_ID();
-		return View::render( 'public/event-head', array( 'id' => $id, 'd' => self::data( $id ) ) ) . $content . View::render( 'public/event-tickets', array( 'id' => $id, 'd' => self::data( $id ), 'error' => Tickets::$error, 'v' => Tickets::$values ) );
+		$g  = Gallery::render( Gallery::ids( $id ), get_the_title( $id ) );
+		return ( $g ? '<div class="ek ek-public">' . $g . '</div>' : '' ) . View::render( 'public/event-head', array( 'id' => $id, 'd' => self::data( $id ) ) ) . $content . View::render( 'public/event-tickets', array( 'id' => $id, 'd' => self::data( $id ), 'error' => Tickets::$error, 'v' => Tickets::$values ) ) . View::render( 'public/sources', array( 'sources' => Attractions::parse_sources( self::data( $id )['sources'] ) ) );
 	}
 
 	public static function list_page() {

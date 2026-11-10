@@ -121,7 +121,7 @@ const check = ( c, m ) => { console.log( ( c ? '  ✔ ' : '  ✘ ' ) + m ); if (
 	await p.screenshot( { path: path.join( SHOTS, 'p8-top-hotels-1280.png' ), fullPage: true } );
 	await p.goto( f8.attraction_url );
 	const at = await p.locator( '.ek-attraction' ).textContent();
-	check( at.includes( 'not been verified' ) && at.includes( 'SAMPLE fee' ) && await p.locator( 'a:has-text("Show on Katsina Map")' ).count() === 1, 'Attraction page: details, "not verified" notice, "Show on Katsina Map"' );
+	check( at.includes( 'not yet been checked' ) && at.includes( 'SAMPLE fee' ) && await p.locator( 'a:has-text("Show on Katsina Map")' ).count() === 1, 'Attraction page: details, "not verified" notice, "Show on Katsina Map"' );
 	await p.screenshot( { path: path.join( SHOTS, 'p8-attraction-1280.png' ), fullPage: true } );
 
 	/* 5. Admin hides a review */
@@ -161,6 +161,7 @@ const check = ( c, m ) => { console.log( ( c ? '  ✔ ' : '  ✘ ' ) + m ); if (
 	}
 	check( 0 === wide.length, 'No sideways scrolling' + ( wide.length ? ' → ' + wide.join( ', ' ) : '' ) );
 	check( 0 === jsErrors.length, 'No JavaScript errors' + ( jsErrors.length ? ': ' + jsErrors.join( ' | ' ) : '' ) );
+	wp( `post delete ${ f8.attraction } --force` ); // Keep "Things to do" free of test attractions.
 	await browser.close();
 	console.log( failures ? `\n${ failures } check(s) FAILED` : '\nAll map & ranking browser checks passed' );
 	process.exit( failures ? 1 : 0 );

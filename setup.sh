@@ -162,6 +162,9 @@ else
   warn "Bookings use the local TEST payment screen until WooCommerce is installed."
 fi
 ok "explore-katsina-core active"
+# Researched guide content (attractions, Sallah Durbar, Plan your trip, draft stories). Re-run safe:
+# only adds what is missing and never overwrites edits made in wp-admin.
+wp ek import-guide && ok "Guide content imported"
 
 # -----------------------------------------------------------------------------
 say "7/7 Done"

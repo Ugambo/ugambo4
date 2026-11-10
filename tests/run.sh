@@ -17,6 +17,7 @@ wp eval-file ek-tests/phase6-accounts.php
 wp eval-file ek-tests/phase7-money.php
 wp eval-file ek-tests/phase8-rank-map.php
 wp eval-file ek-tests/phase9-revenue.php
+wp eval-file ek-tests/phase10-guide.php
 if wp plugin is-active woocommerce 2>/dev/null; then wp eval-file ek-tests/phase4-woo-bridge.php; fi
 echo "▶ Browser journeys (screenshots in tests/e2e/screenshots/)"
 node tests/e2e/phase2.js
@@ -27,3 +28,4 @@ node tests/e2e/phase6.js
 node tests/e2e/phase7.js
 node tests/e2e/phase8.js
 node tests/e2e/phase9.js
+node tests/e2e/phase10.js

@@ -214,10 +214,10 @@ WP_CLI::line( 'Nearby, attractions, favourites' );
 $nb = Map_Index::near( $lat0, $lng0, 5, 12, $hotel );
 ek8( $nb && $rest === $nb[0]['id'] && in_array( $attr, wp_list_pluck( $nb, 'id' ), true ) && ! in_array( $hotel, wp_list_pluck( $nb, 'id' ), true ), 'Nearby on the hotel page: closest first, includes the attraction, not itself' );
 $html = View::render( 'public/attraction', array( 'id' => $attr, 'a' => Attractions::data( $attr ) ) );
-ek8( false !== strpos( $html, 'not been verified' ) && false !== strpos( $html, 'Free' ) && false !== strpos( $html, 'focus=' . $attr ), 'Attraction page: details, "not verified" notice, link to its pin on the Katsina Map' );
+ek8( false !== strpos( $html, 'not yet been checked' ) && false !== strpos( $html, 'Free' ) && false !== strpos( $html, 'focus=' . $attr ), 'Attraction page: details, "not verified" notice, link to its pin on the Katsina Map' );
 $cust = wp_insert_user( array( 'user_login' => "ek8c_{$stamp}", 'user_email' => "ek8c_{$stamp}@example.test", 'user_pass' => 'x' . $stamp, 'role' => 'subscriber' ) );
 ek8( true === Favourites::toggle( $cust, $attr ), 'Attractions can be saved to Favourites' );
-ek8( (bool) term_exists( 'heritage', Attractions::TAX ), 'Attraction categories created' );
+ek8( (bool) term_exists( 'historic', Attractions::TAX ), 'Attraction categories created' );
 
 WP_CLI::line( 'Pages' );
 foreach ( array( 'map', 'top_hotels', 'top_restaurants', 'top_event_centres' ) as $k ) {

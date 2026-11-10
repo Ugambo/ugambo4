@@ -566,11 +566,13 @@ final class Install {
 				wp_insert_term( $name, Post_Types::TAX_LGA );
 			}
 		}
-		foreach ( Attractions::default_categories() as $slug => $label ) {
-			if ( ! term_exists( $slug, Attractions::TAX ) ) {
-				wp_insert_term( $label, Attractions::TAX, array( 'slug' => $slug ) );
+		Attractions::add_categories();
+		foreach ( Events::default_types() as $slug => $label ) {
+			if ( ! term_exists( $slug, Events::TAX ) ) {
+				wp_insert_term( $label, Events::TAX, array( 'slug' => $slug ) );
 			}
 		}
+		Stories::add_categories();
 	}
 
 	/**
@@ -634,6 +636,16 @@ final class Install {
 				'title'   => __( 'Top Event Centres in Katsina', 'explore-katsina' ),
 				'slug'    => 'top-event-centres',
 				'content' => '<!-- wp:shortcode -->[ek_top type="event-centre"]<!-- /wp:shortcode -->',
+			),
+			'things_to_do'      => array(
+				'title'   => __( 'Things to do', 'explore-katsina' ),
+				'slug'    => 'things-to-do',
+				'content' => '<!-- wp:shortcode -->[ek_attractions]<!-- /wp:shortcode -->',
+			),
+			'stories'           => array(
+				'title'   => __( 'Stories', 'explore-katsina' ),
+				'slug'    => 'stories',
+				'content' => '<!-- wp:shortcode -->[ek_stories]<!-- /wp:shortcode -->',
 			),
 			'events'            => array(
 				'title'   => __( 'Events', 'explore-katsina' ),

@@ -34,6 +34,7 @@ final class Plugin {
 		Money_Jobs::init();
 		Ranking::init();
 		Attractions::init();
+		Stories::init();
 		Map_Index::init();
 		Map_Page::init();
 		Top::init();
