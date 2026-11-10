@@ -224,6 +224,8 @@ const rnd = ( a ) => ( a + Math.random() * 0.08 ).toFixed( 5 );
 	check( 0 === wide.length, 'No sideways scrolling' + ( wide.length ? ' → ' + wide.join( ', ' ) : '' ) );
 	check( 0 === jsErrors.length, 'No JavaScript errors' + ( jsErrors.length ? ': ' + jsErrors.join( ' | ' ) : '' ) );
 	await browser.close();
+	// Leave no Featured sample hotel behind (other tests expect plain search order).
+	wp( `eval 'delete_post_meta( ${ fx.id }, "_ek_featured_until" ); update_post_meta( ${ fx.id }, "_ek_plan", "basic" ); EK\\Map_Index::refresh( ${ fx.id } );'` );
 	console.log( failures ? `\n${ failures } check(s) FAILED` : '\nAll revenue-feature browser checks passed' );
 	process.exit( failures ? 1 : 0 );
 } )().catch( ( e ) => { console.error( e ); process.exit( 1 ); } );

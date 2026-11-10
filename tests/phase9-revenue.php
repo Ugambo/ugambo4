@@ -82,6 +82,7 @@ Sales::mark_paid( Plans::buy( $h2, 'premium', 'year', $owner )->id, 25000000, 'T
 ek9( 'premium' === Plans::current( $h2 )['plan'] && 40 === Business::max_photos( $h2 ), 'Premium (1 year): 40 photos' );
 ek9( false !== strpos( do_shortcode( '[ek_premium_spotlight]' ), "SAMPLE Plan Hotel 2 {$stamp}" ), 'Premium businesses appear in the homepage spot' );
 ek9( $h2 === Plans::promote( array( array( 'id' => $h1, 'rank' => 1 ), array( 'id' => $h2, 'rank' => 2 ) ) )[0]['id'], 'Premium shows before Featured at the top' );
+ek9( 999999991 === Plans::promote( array( array( 'id' => 999999991, 'distance' => 0.4 ), array( 'id' => $h2, 'distance' => 80.0 ) ) )[0]['id'], 'Near-me searches: a Featured place 80 km away does not jump above one 400 m away' );
 
 WP_CLI::line( 'Plan reminders and expiry' );
 update_post_meta( $h1, '_ek_plan_until', time() + 6 * DAY_IN_SECONDS );

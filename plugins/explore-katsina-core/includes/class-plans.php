@@ -19,6 +19,8 @@ defined( 'ABSPATH' ) || exit;
 final class Plans {
 
 	const TOP_SLOTS = 3;
+	/** When the visitor searches near a location, only Featured places this close get the top spots. */
+	const TOP_MAX_KM = 25;
 
 	public static function init() {
 		add_action( 'ek_sale_paid', array( __CLASS__, 'fulfil' ) );
@@ -158,15 +160,16 @@ final class Plans {
 	}
 
 	/**
-	 * Search results: up to 3 Featured/Premium places go to the top, marked "Featured".
-	 * Their rank numbers are unchanged.
+	 * Search results: up to 3 Featured/Premium places go to the top, marked "Featured" (when the visitor
+	 * searched near a location, only those within 25 km). Their rank numbers are unchanged.
 	 */
 	public static function promote( array $items ) {
 		$top  = array();
 		$rest = array();
 		foreach ( $items as $i ) {
 			$i['featured'] = Map_Index::is_featured( (int) $i['id'] );
-			if ( $i['featured'] && count( $top ) < self::TOP_SLOTS ) {
+			$near_enough   = ! isset( $i['distance'] ) || null === $i['distance'] || (float) $i['distance'] <= self::TOP_MAX_KM;
+			if ( $i['featured'] && $near_enough && count( $top ) < self::TOP_SLOTS ) {
 				$top[] = $i;
 			} else {
 				$rest[] = $i;
