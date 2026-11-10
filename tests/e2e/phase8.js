@@ -142,7 +142,7 @@ const check = ( c, m ) => { console.log( ( c ? '  ✔ ' : '  ✘ ' ) + m ); if (
 	await p.goto( `${ BASE }/?p=${ f8.lodge }` );
 	check( ( await p.locator( '.ek-rankline' ).first().textContent() ).includes( 'New, not yet ranked' ), 'After recalculating, the lodge (2 visible reviews left) is "New, not yet ranked"' );
 	await a.goto( `${ BASE }/wp-admin/admin.php?page=ek-settings` );
-	check( await a.locator( 'input[name=rank_weight_rating]' ).inputValue() === '70' && ( await a.locator( '.form-table' ).nth( 2 ).textContent() ).includes( '4.53' ), 'Settings explain the formula in plain language, with adjustable weights' );
+	check( await a.locator( 'input[name=rank_weight_rating]' ).inputValue() === '70' && ( await a.locator( '.form-table', { hasText: 'Pretend' } ).textContent() ).includes( '4.53' ), 'Settings explain the formula in plain language, with adjustable weights' );
 
 	/* 6. Layout */
 	console.log( '5. Layout at 360 / 768 / 1280' );
