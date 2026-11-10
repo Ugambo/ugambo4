@@ -1,4 +1,32 @@
 {
+ "ajiwa-1": {
+  "author": "Maimaje",
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File%3AAjiwa_dam.jpg",
+  "title": "File:Ajiwa dam.jpg"
+ },
+ "daura-palace-2": {
+  "author": "Gwanki",
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File%3AEmir_Palace_Daura_1.jpg",
+  "title": "File:Emir Palace Daura 1.jpg"
+ },
+ "durbar-katsina-1": {
+  "author": "Uncle Bash007",
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File%3ADurbar_at_Katsina.jpg",
+  "title": "File:Durbar at Katsina.jpg"
+ },
+ "durbar-katsina-1959": {
+  "author": "Eliot Elisofon",
+  "license": "Public domain",
+  "license_url": "",
+  "source": "https://commons.wikimedia.org/wiki/File%3AArmed_guards_of_the_Emir_of_Katsina.jpg",
+  "title": "File:Armed guards of the Emir of Katsina.jpg"
+ },
  "event-hall-2": {
   "author": "Kenogenic",
   "license": "CC BY-SA 4.0",
@@ -48,13 +76,6 @@
   "source": "https://commons.wikimedia.org/wiki/File%3AGobarau_Minaret_Katsina.JPG",
   "title": "File:Gobarau Minaret Katsina.JPG"
  },
- "gobarau-2": {
-  "author": "WeirdmaskmanNG",
-  "license": "CC BY-SA 4.0",
-  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-  "source": "https://commons.wikimedia.org/wiki/File%3AGobarau_Minaret%2C_Katsina.jpg",
-  "title": "File:Gobarau Minaret, Katsina.jpg"
- },
  "gobarau-3": {
   "author": "WeirdmaskmanNG",
   "license": "CC BY-SA 4.0",
@@ -90,11 +111,32 @@
   "source": "https://commons.wikimedia.org/wiki/File%3ABed_in_hotel_room_2.jpg",
   "title": "File:Bed in hotel room 2.jpg"
  },
+ "katsina-gate-kwaya": {
+  "author": "Musa Vacho77",
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File%3AKofar_Kwaya_katsina_state_01.jpg",
+  "title": "File:Kofar Kwaya katsina state 01.jpg"
+ },
  "katsina-gate-sauri": {
   "author": "Musa Vacho77",
   "license": "CC BY-SA 4.0",
   "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "https://commons.wikimedia.org/wiki/File%3AKofar_Sauri_Katsina_State_01.jpg",
   "title": "File:Kofar Sauri Katsina State 01.jpg"
+ },
+ "kusugu-1": {
+  "author": "Gwanki",
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File%3ARijiyar_Kusugu.jpg",
+  "title": "File:Rijiyar Kusugu.jpg"
+ },
+ "museum-katsina-1": {
+  "author": "Adebola Falade",
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File%3AKeke_in_Katsina.jpg",
+  "title": "File:Keke in Katsina.jpg"
  }
 }

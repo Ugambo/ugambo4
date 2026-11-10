@@ -351,9 +351,12 @@ page itself. The full notes, with confidence levels and every place where source
      explained, and crafts (weaving and dyeing). No food story yet: I found no sources good enough to write one.
 8. **Photos of the real places** from Wikimedia Commons (licence-checked, credited under each gallery):
    - Gobarau Minaret, the Katsina palace gate, Kofar Sauri and Kofar Kwaya, Kusugu Well and Kofar Bayajidda,
-     the Daura palace, Ajiwa Dam, the National Museum entrance, the Durbar (including a 1959 public-domain photo)
-     and Daura cap weaving and dyeing.
+     the Daura palace, Ajiwa Dam, the National Museum entrance and the Durbar (including a 1959 public-domain
+     photo). Each one was checked by eye.
+   - Left out: a date-stamped Gobarau close-up, and two Daura crafts photos where a person is the main subject.
    - There are no free photos yet of Zobe Dam, Durbi Takusheyi or the Central Market.
+   - If a photo is missing (Wikimedia sometimes refuses downloads for a while), run `scripts/fetch_commons.py
+     sample-data/media/guide-manifest.json sample-data/media` again, then `wp ek import-guide`.
 - **One command imports it all:** `wp ek import-guide` (run by `setup.sh`). It is safe to re-run: it only adds
   what is missing and never overwrites your wp-admin edits (`--update` replaces them, after asking). The text lives
   in `plugins/explore-katsina-core/content/guide/` so it also ships with the plugin to the live site.

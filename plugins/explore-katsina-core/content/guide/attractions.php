@@ -36,10 +36,9 @@ return array(
 Trust Radio: Gobarau, story of the 664-year-old minaret | https://trustradio.com.ng/en/gobarau-story-of-the-664-year-old-minaret
 BusinessDay (archived): Gobarau Minaret, the living past of Katsina | https://web.archive.org/web/20120215222000/http://www.businessdayonline.com/Businesslife/index.php?option=com_content&view=article&id=135:gobarau-minaret-the-living-past-of-katsina&catid=5:where2spendit&Itemid=7
 World History Encyclopedia: Gobarau Minaret, Katsina | https://www.worldhistory.org/image/10546/gobarau-minaret-katsina/",
-		'photos'     => array( 'gobarau-1', 'gobarau-2', 'gobarau-3' ),
+		'photos'     => array( 'gobarau-1', 'gobarau-3' ),
 		'captions'   => array(
 			'gobarau-1' => 'The Gobarau Minaret, Katsina',
-			'gobarau-2' => 'The Gobarau Minaret, Katsina',
 			'gobarau-3' => 'The view from the top of the Gobarau Minaret',
 		),
 	),

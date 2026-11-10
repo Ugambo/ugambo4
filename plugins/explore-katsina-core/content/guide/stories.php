@@ -28,7 +28,7 @@ return array(
 		'sources'  => "Wikipedia: Katsina | https://en.wikipedia.org/wiki/Katsina
 Wikipedia: Gobarau Minaret | https://en.wikipedia.org/wiki/Gobarau_Minaret
 Britannica: Katsina | https://www.britannica.com/place/Katsina",
-		'photo'    => 'gobarau-2',
+		'photo'    => 'gobarau-1',
 	),
 	array(
 		'title'    => 'The Sallah Durbar, explained',
@@ -64,11 +64,5 @@ Wikipedia: Daura Emirate | https://en.wikipedia.org/wiki/Daura_Emirate",
 		'sources'  => "Britannica: Katsina | https://www.britannica.com/place/Katsina
 Wikimedia Commons: Cap weaving in Daura (photo) | https://commons.wikimedia.org/wiki/File:Cap_Weaving.jpg
 Wikimedia Commons: Clothes dyeing in Daura (photo) | https://commons.wikimedia.org/wiki/File:Clothes_Dyeing.jpg",
-		'photo'    => 'crafts-cap-weaving',
-		'gallery'  => array( 'crafts-cap-weaving', 'crafts-dyeing' ),
-		'captions' => array(
-			'crafts-cap-weaving' => 'Cap weavers in Daura',
-			'crafts-dyeing'      => 'Clothes dyeing in Daura',
-		),
 	),
 );

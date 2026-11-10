@@ -107,6 +107,9 @@ final class CLI {
 	 * [--update]
 	 * : Overwrite guide items with the text in content/guide (your wp-admin edits to them are replaced).
 	 *
+	 * [--yes]
+	 * : Skip the confirmation question for --update.
+	 *
 	 * ## EXAMPLES
 	 *     wp ek import-guide
 	 *
