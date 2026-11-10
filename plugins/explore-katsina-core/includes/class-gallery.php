@@ -33,6 +33,18 @@ final class Gallery {
 		return $ids;
 	}
 
+	public static function init() {
+		add_filter( 'post_thumbnail_html', array( __CLASS__, 'no_double_photo' ), 10, 2 );
+	}
+
+	/** Attraction and event pages show the gallery, so the theme's featured image would repeat the first photo. */
+	public static function no_double_photo( $html, $post_id ) {
+		if ( is_singular( array( Attractions::CPT, Events::CPT ) ) && (int) $post_id === get_queried_object_id() && self::ids( $post_id ) ) {
+			return '';
+		}
+		return $html;
+	}
+
 	/* ---------------- wp-admin ---------------- */
 
 	public static function admin_assets() {

@@ -132,7 +132,7 @@ final class CLI {
 	/**
 	 * Delete all SAMPLE data: businesses whose name starts with "SAMPLE", their rooms,
 	 * photos, bookings, calendar, ledger and log rows, and owner accounts that only
-	 * owned SAMPLE businesses; also attractions and events whose name starts with "SAMPLE".
+	 * owned SAMPLE businesses; also attractions, events and stories whose name starts with "SAMPLE".
 	 *
 	 * ## OPTIONS
 	 * [--yes]
@@ -146,9 +146,9 @@ final class CLI {
 	public function delete_sample( $args, $assoc ) {
 		global $wpdb;
 		$ids   = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_title LIKE %s", Post_Types::BUSINESS, 'SAMPLE%' ) );
-		$other = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN (%s, %s) AND post_title LIKE %s", Attractions::CPT, Events::CPT, 'SAMPLE%' ) );
+		$other = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN (%s, %s, 'post') AND post_title LIKE %s", Attractions::CPT, Events::CPT, 'SAMPLE%' ) );
 		if ( $other ) {
-			\WP_CLI::confirm( sprintf( 'Delete %d SAMPLE attractions and events?', count( $other ) ), $assoc );
+			\WP_CLI::confirm( sprintf( 'Delete %d SAMPLE attractions, events and stories?', count( $other ) ), $assoc );
 			foreach ( $other as $id ) {
 				$wpdb->delete( $wpdb->prefix . 'ek_favourites', array( 'object_id' => $id ) );
 				$wpdb->delete( $wpdb->prefix . 'ek_map_index', array( 'object_id' => $id ) );
@@ -159,7 +159,7 @@ final class CLI {
 				}
 				wp_delete_post( $id, true );
 			}
-			\WP_CLI::success( sprintf( 'Deleted %d SAMPLE attractions and events.', count( $other ) ) );
+			\WP_CLI::success( sprintf( 'Deleted %d SAMPLE attractions, events and stories.', count( $other ) ) );
 		}
 		if ( ! $ids ) {
 			\WP_CLI::success( 'No SAMPLE businesses found.' );

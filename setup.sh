@@ -165,6 +165,11 @@ ok "explore-katsina-core active"
 # Researched guide content (attractions, Sallah Durbar, Plan your trip, draft stories). Re-run safe:
 # only adds what is missing and never overwrites edits made in wp-admin.
 wp ek import-guide && ok "Guide content imported"
+# WordPress's own demo post and page would otherwise appear among the Stories and in menus.
+for demo in "post:hello-world" "page:sample-page"; do
+  id=$(wp post list --post_type="${demo%%:*}" --name="${demo#*:}" --field=ID 2>/dev/null | tail -n1)
+  [ -n "$id" ] && wp post delete "$id" --force --quiet 2>/dev/null || true
+done
 
 # -----------------------------------------------------------------------------
 say "7/7 Done"

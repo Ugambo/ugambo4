@@ -35,6 +35,7 @@ final class Plugin {
 		Ranking::init();
 		Attractions::init();
 		Stories::init();
+		Gallery::init();
 		Map_Index::init();
 		Map_Page::init();
 		Top::init();

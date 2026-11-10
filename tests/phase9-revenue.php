@@ -234,7 +234,7 @@ ek9( false !== strpos( Ads::zone( 'home' ), 'adsbygoogle' ), 'AdSense switched o
 Settings::update( array( 'adsense_client' => 'nonsense' ) );
 ek9( '' === Ads::zone( 'home' ), 'An invalid AdSense code keeps it off' );
 Settings::update( array( 'adsense_enabled' => 0, 'adsense_client' => '', 'adsense_slots' => array() ) );
-$post = wp_insert_post( array( 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => "SAMPLE Sponsored {$stamp}", 'post_content' => '<p>Visit <a href="https://example.com/x">our partner</a>.</p>' ) );
+$post = wp_insert_post( array( 'post_type' => 'post', 'post_status' => 'draft', 'post_title' => "SAMPLE Sponsored {$stamp}", 'post_content' => '<p>Visit <a href="https://example.com/x">our partner</a>.</p>' ) );
 update_post_meta( $post, '_ek_sponsored', 1 );
 update_post_meta( $post, '_ek_sponsor', 'SAMPLE Sponsor' );
 $GLOBALS['post'] = get_post( $post );
