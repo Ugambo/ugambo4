@@ -617,7 +617,7 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek-ad-label { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ek-muted, #5B5965); margin-bottom: 4px; }
 .ek-spot-list, .ek .ek-event-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .ek .ek-spot { margin: 0; display: flex; flex-direction: column; gap: 6px; }
-.ek .ek-spot-img img, .ek .ek-event-img img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; display: block; background: var(--ek-sand); }
+.ek .ek-spot-img img, .ek .ek-event-img img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; display: block; background: var(--ek-sand); }
 .ek .ek-spot h3, .ek .ek-spot p { margin: 0; }
 .ek .ek-event-card { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .ek .ek-event-card.is-promoted { border: 2px solid var(--ek-brass); }
@@ -647,7 +647,7 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek .ek-chip.is-active { background: var(--ek-emerald); border-color: var(--ek-emerald); color: #fff; }
 .ek .ek-attr-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); }
 .ek .ek-attr-card { margin: 0; display: flex; flex-direction: column; gap: 10px; }
-.ek .ek-attr-img img, .ek .ek-attr-noimg { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; display: block; background: var(--ek-sand); }
+.ek .ek-attr-img img, .ek .ek-attr-noimg { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; display: block; background: var(--ek-sand); }
 .ek .ek-attr-noimg { display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; font-family: var(--ek-font-display, inherit); color: var(--ek-night); background: linear-gradient(135deg, var(--ek-sand), #fff); }
 .ek .ek-attr-card h3 a { color: var(--ek-night); text-decoration: none; }
 .ek .ek-near-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }

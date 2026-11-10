@@ -121,6 +121,11 @@ final class Attractions {
 	public static function data( $id ) {
 		$lga = get_the_terms( (int) $id, Post_Types::TAX_LGA );
 		$cat = get_the_terms( (int) $id, self::TAX );
+		if ( $cat && ! is_wp_error( $cat ) ) {
+			// Main category first: the more specific ones (Palaces, Markets…) before "Historic site".
+			$order = array_flip( array( 'palace', 'market', 'museum', 'nature', 'religious', 'crafts', 'historic' ) );
+			usort( $cat, static fn( $a, $b ) => ( $order[ $a->slug ] ?? 99 ) <=> ( $order[ $b->slug ] ?? 99 ) );
+		}
 		return array(
 			'lat'        => get_post_meta( $id, '_ek_lat', true ),
 			'lng'        => get_post_meta( $id, '_ek_lng', true ),
