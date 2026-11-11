@@ -139,6 +139,30 @@ final class CLI {
 		\WP_CLI::success( sprintf( 'Languages: %d added, %d Hausa pages created (marked "Needs Hausa translation"), %d Hausa menus.', $r['languages'], $r['copies'], $r['menus'] ) );
 	}
 
+	/**
+	 * Set up the free helper plugins (SEO, security, backups, cache, images, WhatsApp, forms, newsletter,
+	 * email). Each is set up once; changes you make later in wp-admin are kept.
+	 *
+	 * @subcommand plugins-setup
+	 */
+	public function plugins_setup() {
+		foreach ( Integrations::setup() as $plugin => $what ) {
+			\WP_CLI::line( str_pad( $plugin, 12 ) . $what );
+		}
+		\WP_CLI::success( 'Plugins set up.' );
+	}
+
+	/**
+	 * Save the sizes of existing photos as WebP (smaller files). New uploads are WebP already.
+	 *
+	 * ## OPTIONS
+	 * [--force]
+	 * : Redo photos that are WebP already (e.g. after changing the quality).
+	 */
+	public function webp( $args, $assoc ) {
+		\WP_CLI::success( sprintf( '%d photos converted to WebP.', Integrations::convert_library( 0, ! empty( $assoc['force'] ) ) ) );
+	}
+
 	public function status() {
 		$c = wp_count_posts( Post_Types::BUSINESS );
 		foreach ( array( 'pending', 'publish', Post_Types::STATUS_PAUSED, Post_Types::STATUS_REJECTED ) as $s ) {

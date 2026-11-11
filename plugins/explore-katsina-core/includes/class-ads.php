@@ -107,6 +107,7 @@ final class Ads {
 		if ( $ads ) {
 			$ad             = $ads[ array_rand( $ads ) ];
 			self::$shown[]  = (int) $ad->id;
+			do_action( 'ek_ad_shown', (int) $ad->id ); // Not cached, so each view is counted.
 			$is_bot         = (bool) preg_match( '/bot|crawl|spider|slurp|headless/i', (string) ( $_SERVER['HTTP_USER_AGENT'] ?? '' ) ); // phpcs:ignore
 			if ( ! $is_bot ) {
 				self::bump( $ad->id, 'views' );

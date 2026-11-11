@@ -111,10 +111,10 @@ add_filter(
 		// Footer: three columns on night indigo, then the copyright line.
 		$d['footer_items']            = array(
 			'top'    => array( 'top_1' => array(), 'top_2' => array(), 'top_3' => array(), 'top_4' => array(), 'top_5' => array() ),
-			'middle' => array( 'middle_1' => array( 'footer-widget1' ), 'middle_2' => array( 'footer-navigation' ), 'middle_3' => array( 'footer-widget2' ), 'middle_4' => array(), 'middle_5' => array() ),
+			'middle' => array( 'middle_1' => array( 'footer-widget1' ), 'middle_2' => array( 'footer-navigation' ), 'middle_3' => array( 'footer-widget2' ), 'middle_4' => array( 'footer-widget3' ), 'middle_5' => array() ),
 			'bottom' => array( 'bottom_1' => array( 'footer-html' ), 'bottom_2' => array(), 'bottom_3' => array(), 'bottom_4' => array(), 'bottom_5' => array() ),
 		);
-		$d['footer_middle_columns']   = '3';
+		$d['footer_middle_columns']   = '4';
 		$d['footer_wrap_background']  = array( 'desktop' => array( 'color' => 'palette3' ) );
 		$d['footer_middle_background'] = array( 'desktop' => array( 'color' => 'palette3' ) );
 		$d['footer_bottom_background'] = array( 'desktop' => array( 'color' => '#0E1430' ) );

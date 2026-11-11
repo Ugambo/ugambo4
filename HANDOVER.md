@@ -14,8 +14,9 @@ from exactly where the last one stopped.
 - **Phase 8 (Katsina Map & rankings): done and approved.**
 - **Phase 9 (Revenue features): done and approved.**
 - **Phase 10 (Tourism guide): done and approved.**
-- **Phase 11 (Brand & theme): done, waiting for the owner's go-ahead.**
-- Next: **Phase 12 (Other plugins, free versions)**.
+- **Phase 11 (Brand & theme): done and approved.**
+- **Phase 12 (Other plugins, free versions): done, waiting for the owner's go-ahead.**
+- Next: **Phase 13 (Pages & sample data)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -35,8 +36,13 @@ from exactly where the last one stopped.
    WooCommerce" (about €99/year alone or €139/year in the Business Pack, per search results; check
    polylang.pro before buying). It can be added later without redoing anything.
 
+9. **Images: Smush (free) + WordPress's own WebP** (owner, 11 Nov 2026). Smush's WebP is paid (Pro); ShortPixel
+   needs an account. WordPress saves new uploads as WebP itself (quality 80, ~40% smaller than JPEG).
+10. **Cache: WP Super Cache** until a host is chosen (owner, 11 Nov 2026). If the host runs LiteSpeed, switch to
+    LiteSpeed Cache (deactivate WP Super Cache first; never run two page caches).
+
 ## Still to decide later
-- Nothing open from Phase 11.
+- Hosting company (decides the cache plugin, real SMTP email and the backup storage).
 
 ## What Phase 2 built (plain language)
 - **"List your business" page** (`/list-your-business/`): a 5-step, phone-friendly form for
@@ -311,6 +317,32 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 - Free libraries added: qrcode-generator 1.4.4 (MIT) for ticket QR codes, jsQR 1.4.0 (Apache 2.0) for the camera
   scanner (only loaded on /check-in/).
 
+## What Phase 12 built (plain language)
+All free versions, one plugin per job (no duplicates), set up by `wp ek plugins-setup` (run by `setup.sh`;
+each plugin is set up once, and changes you make later in wp-admin are kept). Every phase's tests still pass
+with all of them switched on.
+
+| Plugin (free) | What it does here | Still for you to do |
+|---|---|---|
+| **Rank Math SEO** | Page titles, sitemap (`/sitemap_index.xml`: businesses, attractions, events, tours, stories, pages), redirects, 404 log. Booking/account/dashboard/check-in/cart/checkout and untranslated Hausa pages are hidden from search engines and the sitemap. Modules needing outside accounts (Analytics, Content AI…) are off. No generic "Article" markup on listings: proper Hotel/Restaurant/Event markup comes in Phase 14. | Optional: connect a free Rank Math account and Google Search Console after launch. |
+| **Wordfence** | Firewall and malware scans; alerts to the admin email. Hides usernames. Its own login lockouts are **off** so they don't double up with… | Optional: switch on two-factor login for admins (Wordfence → Login Security). |
+| **Limit Login Attempts Reloaded** | 4 wrong passwords → 20-minute lockout, on wp-login and our "My Account" login. (On the local test site only, your own machine is never locked out, so the tests can run.) | — |
+| **UpdraftPlus** | Database backup every day (14 kept), files every week (4 kept). Tested: a backup was made, and the backup folder can't be downloaded from the web. | **Connect remote storage** (Google Drive or Dropbox: free) in Settings → UpdraftPlus. Keep a copy of `EK_ENCRYPTION_KEY` somewhere safe and separate: without it, a restored site can't read bank details. On an Nginx host, ask the host to block `/wp-content/updraft/`. |
+| **WP Super Cache** | Visitors who aren't logged in get a ready-made copy of each page (kept 1 hour). **Never cached:** booking, account, dashboard, check-in, cart, checkout, sign-up, any page with one of our forms, pages showing a booked banner (so ad views are counted), shoppers with items in their cart, and anyone logged in. Lists, maps and Top 10 refresh at once when a listing, review or ranking changes. | If your host runs LiteSpeed, switch to LiteSpeed Cache. |
+| **Smush** + WordPress WebP | Photos compressed on upload, camera/location data removed, max 2560 px; sizes saved as **WebP** (quality 80: about 40% smaller than JPEG). All existing photos converted (`wp ek webp`). | — |
+| **Join.chat** | Green WhatsApp button, placed above the phone bottom bar; hidden on the map, dashboards, check-in, booking and checkout pages. No pop-up, no tracking. | **Set your real WhatsApp number** (Join.chat settings). It is the PLACEHOLDER +234 800 000 0000 now. |
+| **Fluent Forms** | New **Contact us** page (`/contact/`, plus a Hausa copy): name, email, phone, topic (booking help, listing, advertising, report a problem…), message, consent (Nigeria Data Protection Act 2023). Messages saved in wp-admin → Fluent Forms → Entries and emailed to you. Advertising enquiries stay in our own form. | — |
+| **MailPoet** | Newsletter list "Explore Katsina news", **double opt-in** (nobody is added without clicking the email link), sign-up box in the footer of every page. | Sender address is the PLACEHOLDER info@explorekatsina.com.ng. When ready, choose a sending method (MailPoet's own sending service has a free starter plan, so check its current limits; or your host's email). |
+| **FluentSMTP** | Will send all site email (bookings, receipts, newsletters' confirmations) through a proper mail service so it doesn't land in spam. Email log kept 14 days. | **Add a mail service** at launch (your host's mailbox, or a mail service with a free plan, such as Brevo; check its current daily limit). Until then email goes the normal WordPress way. |
+
+Fixes found while testing:
+- The contact form jumped when error messages disappeared, so a tap could miss the tick box. Error messages now
+  sit in reserved space.
+- Caching must skip only logged-in people, not everyone with a cookie (Polylang and WooCommerce set cookies for
+  all visitors).
+- Rank Math's redirect tables are created during set-up (they were missing and showed database errors).
+- The "Save" button no longer carries a security code for guests, so attraction pages can be cached.
+
 ## What Phase 11 built (plain language)
 1. **Theme:** Kadence (free) + our child theme **"Explore Katsina"** (`themes/explore-katsina/`).
    - The brand is set as Kadence's *defaults*, so nothing is locked: you can still change colours,
@@ -371,7 +403,7 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 
 **For you to do later:**
 - Ask a fluent Hausa writer to translate the Hausa pages, then untick "Needs Hausa translation" on each.
-- Plugin and theme words (buttons, labels) can be translated in a `.po` file. Phase 12 or 13 can set
+- Plugin and theme words (buttons, labels) can be translated in a `.po` file. Phase 13 or later can set
   that up with Loco Translate (free).
 - Replace the placeholder contact details in Appearance → Widgets (footer) when ready.
 
@@ -491,7 +523,7 @@ page itself. The full notes, with confidence levels and every place where source
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 900 automatic checks, server and browser (Phases 2–11)
+./tests/run.sh      # about 1,000 automatic checks, server and browser (Phases 2–12)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -507,6 +539,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
 | `docs/screenshots/phase9/` | Screenshots of the plan page, search with Featured + banner ad, tickets with QR codes, check-in, tour, events, advertise, admin sales and revenue |
+| `docs/screenshots/phase12/` | Screenshots of the contact form, newsletter sign-up, WhatsApp button on a phone, Fluent Forms in wp-admin |
 | `docs/screenshots/phase11/` | Screenshots of the homepage (computer and phone), Explore, My Account, Hausa page, login and wp-admin |
 | `themes/explore-katsina/` | Child theme of Kadence: brand defaults (`inc/defaults.php`), homepage (`front-page.php`, `inc/home.php`), styles, bottom bar, language switcher |
 | `docs/research/phase10-sources.md` | Phase 10 research: every fact, its source, confidence, and conflicts between sources |
@@ -528,7 +561,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/vendor/qrcode/`, `jsqr/` | QR code drawing (MIT) and camera scanning (Apache 2.0) for tickets |
 | `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase4-woo-bridge.php`, `e2e/phase2–11.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase12-plugins.php`, `phase4-woo-bridge.php`, `e2e/phase2–12.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -559,7 +592,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 
 ## Placeholders to replace before launch (running list)
 - Contact email `info@explorekatsina.com.ng` (PLACEHOLDER), used in the dashboard footer and emails
-- Phone `+234 800 000 0000` (PLACEHOLDER), used in the agreement
+- Phone `+234 800 000 0000` (PLACEHOLDER), used in the agreement, the Contact page and the WhatsApp button (Join.chat)
 - Social handles `@explorekatsina` (PLACEHOLDER)
 - Listing & Partner Agreement: every `[square bracket]` item + lawyer review
 - Commission rates (placeholders: hotels 10%, event centres 10%, tour operators 15%, restaurant reservations 0%, food orders 10%)

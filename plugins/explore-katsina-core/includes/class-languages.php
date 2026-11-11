@@ -25,7 +25,7 @@ final class Languages {
 	const META = '_ek_needs_translation';
 
 	/** Pages that get a Hausa copy (keys from Install's page list; plan_trip includes its sub-pages). */
-	const PAGES = array( 'explore', 'hotels', 'restaurants', 'event_centres', 'things_to_do', 'events', 'tours', 'map', 'stories', 'top_hotels', 'top_restaurants', 'top_event_centres', 'plan_trip', 'list_business', 'advertise' );
+	const PAGES = array( 'explore', 'hotels', 'restaurants', 'event_centres', 'things_to_do', 'events', 'tours', 'map', 'stories', 'top_hotels', 'top_restaurants', 'top_event_centres', 'plan_trip', 'list_business', 'advertise', 'contact' );
 
 	public static function active() {
 		return function_exists( 'pll_get_post' ) && function_exists( 'PLL' );

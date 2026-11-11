@@ -132,7 +132,10 @@ wp plugin delete hello --quiet 2>/dev/null || true
 # skipped (with a warning) when wordpress.org can't be reached.
 #   Phase 3: WooCommerce + Paystack + Flutterwave (payments only)
 #   Phase 11: Polylang (English / Hausa, free version)
-EXTRA_PLUGINS=(woocommerce woo-paystack rave-woocommerce-payment-gateway polylang)
+#   Phase 12: SEO, security, backups, cache, images, WhatsApp, forms, newsletter, email (all free)
+EXTRA_PLUGINS=(woocommerce woo-paystack rave-woocommerce-payment-gateway polylang
+  seo-by-rank-math wordfence limit-login-attempts-reloaded updraftplus wp-super-cache wp-smushit
+  creame-whatsapp-me fluentform mailpoet fluent-smtp)
 if curl -s -o /dev/null --max-time 8 https://downloads.wordpress.org/; then
   # Download on this computer, then install from the file. (WordPress inside Docker may not
   # be able to reach wordpress.org itself, e.g. behind a proxy.)
@@ -175,6 +178,9 @@ if wp theme is-installed kadence 2>/dev/null; then
 else
   warn "Kadence theme missing: the site uses WordPress's default theme until it can be installed."
 fi
+# Phase 12: set up the free helper plugins once (later wp-admin changes are kept) and WebP photos.
+wp ek plugins-setup && ok "Helper plugins set up"
+wp ek webp --quiet && ok "Photos saved as WebP"
 # Researched guide content (attractions, Sallah Durbar, Plan your trip, draft stories). Re-run safe:
 # only adds what is missing and never overwrites edits made in wp-admin.
 wp ek import-guide && ok "Guide content imported"

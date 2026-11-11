@@ -38,6 +38,7 @@ final class Plugin {
 		Gallery::init();
 		Explore::init();
 		Languages::init();
+		Integrations::init();
 		Map_Index::init();
 		Map_Page::init();
 		Top::init();

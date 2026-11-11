@@ -664,3 +664,21 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek .ek-explore-tile--restaurants, .ek .ek-explore-tile--plan { background-color: var(--ek-emerald); }
 .ek .ek-explore-title { font: 700 1rem/1.25 var(--ek-font-display); }
 .ek .ek-explore-count { font-size: .85rem; color: rgba(255, 255, 255, .85); }
+
+/* Phase 12: newsletter sign-up and contact form */
+.ek-newsletter { display: grid; gap: 10px; max-width: 420px; }
+.ek-newsletter-title { margin: 0; }
+.ek-newsletter-title span { font-size: .9rem; opacity: .85; }
+.ek-newsletter-row { display: flex; gap: 6px; }
+.ek-newsletter input[type="email"] { flex: 1 1 auto; min-width: 0; min-height: 44px; border-radius: 8px; border: 1.5px solid #3A4372; background: #fff; color: #1C1A22; padding: .4em .7em; font-size: 1rem; }
+.ek-newsletter button { min-height: 44px; border: 0; border-radius: 8px; background: #D2A03A; color: #141B3A; font-weight: 800; padding: 0 16px; cursor: pointer; }
+.ek-newsletter button:hover { background: #E7C27A; }
+.ek-newsletter-consent { font-size: .85rem; display: flex; gap: 8px; align-items: flex-start; }
+.ek-newsletter-msg { margin: 0; padding: 8px 10px; border-radius: 8px; background: rgba(210, 160, 58, .18); }
+.ek-hp { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
+.ek-contact-form .ff-btn-submit { min-height: 48px; border-radius: 8px !important; font-weight: 800 !important; }
+.ek-contact-form .ff-el-form-control { min-height: 46px; border-radius: 8px; }
+.ek-contact-form .ff-el-form-control:focus { border-color: #141B3A; box-shadow: 0 0 0 3px rgba(210, 160, 58, .5); }
+/* Error messages sit in reserved space, so the form doesn't jump when they disappear (a tap would miss). */
+.ek-contact-form .ff-el-group { position: relative; margin-bottom: 30px; }
+.ek-contact-form .ff-el-group .error.text-danger { position: absolute; left: 0; top: 100%; margin-top: 2px; font-size: .82rem; line-height: 1.3; }

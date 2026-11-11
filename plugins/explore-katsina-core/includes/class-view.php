@@ -19,7 +19,11 @@ final class View {
 		extract( $vars, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract
 		ob_start();
 		include $file;
-		return ob_get_clean();
+		$html = (string) ob_get_clean();
+		if ( ! is_admin() && preg_match( '/name="(_ek_nonce|_wpnonce|_ek_[a-z_]*nonce)"/', $html ) ) {
+			do_action( 'ek_rendered_form', $template ); // Pages with our forms carry security codes: never cache them.
+		}
+		return $html;
 	}
 
 	/** Error message under a field. */

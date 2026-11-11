@@ -652,6 +652,11 @@ final class Install {
 				'slug'    => 'stories',
 				'content' => '<!-- wp:shortcode -->[ek_stories]<!-- /wp:shortcode -->',
 			),
+			'contact'           => array(
+				'title'   => __( 'Contact us', 'explore-katsina' ),
+				'slug'    => 'contact',
+				'content' => '<!-- wp:paragraph --><p>' . __( 'Questions about a booking, listing your business or advertising? Send us a message and we will reply within 2 working days. For a booking, please include your booking code.', 'explore-katsina' ) . '</p><!-- /wp:paragraph --><!-- wp:shortcode -->[ek_contact_form]<!-- /wp:shortcode --><!-- wp:paragraph --><p>' . __( 'Email: info@explorekatsina.com.ng · Phone/WhatsApp: +234 800 000 0000 (PLACEHOLDERS)', 'explore-katsina' ) . '</p><!-- /wp:paragraph -->',
+			),
 			'events'            => array(
 				'title'   => __( 'Events', 'explore-katsina' ),
 				'slug'    => 'events',

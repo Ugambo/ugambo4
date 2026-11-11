@@ -80,6 +80,9 @@ final class Map_Index {
 		foreach ( $ids as $id ) {
 			self::refresh( $id );
 		}
+		if ( $ids ) {
+			do_action( 'ek_listings_changed', $ids ); // Lists, maps and Top 10 pages show fresh data.
+		}
 	}
 
 	public static function rebuild() {
@@ -89,6 +92,7 @@ final class Map_Index {
 		foreach ( $ids as $id ) {
 			self::refresh( $id );
 		}
+		do_action( 'ek_listings_changed', $ids );
 		return count( $ids );
 	}
 

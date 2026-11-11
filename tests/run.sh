@@ -21,6 +21,7 @@ run wp eval-file ek-tests/phase8-rank-map.php
 run wp eval-file ek-tests/phase9-revenue.php
 run wp eval-file ek-tests/phase10-guide.php
 run wp eval-file ek-tests/phase11-theme.php
+run wp eval-file ek-tests/phase12-plugins.php
 if wp plugin is-active woocommerce 2>/dev/null; then run wp eval-file ek-tests/phase4-woo-bridge.php; fi
 echo "▶ Browser journeys (screenshots in tests/e2e/screenshots/)"
 run node tests/e2e/phase2.js
@@ -33,6 +34,7 @@ run node tests/e2e/phase8.js
 run node tests/e2e/phase9.js
 run node tests/e2e/phase10.js
 run node tests/e2e/phase11.js
+run node tests/e2e/phase12.js
 if [ ${#FAILED[@]} -gt 0 ]; then
   printf "\n✘ Failed: %s\n" "${FAILED[@]}"
   exit 1

@@ -233,7 +233,7 @@ function ekt_setup_content() {
 		$menu = wp_get_nav_menu_object( 'Footer menu' );
 		$id   = $menu ? $menu->term_id : wp_create_nav_menu( 'Footer menu' );
 		if ( ! is_wp_error( $id ) && ! wp_get_nav_menu_items( $id ) ) {
-			foreach ( array( 'tours' => __( 'Tours', 'explore-katsina-theme' ), 'stories' => __( 'Stories', 'explore-katsina-theme' ), 'top_hotels' => __( 'Top 10 hotels', 'explore-katsina-theme' ), 'list_business' => __( 'List your business', 'explore-katsina-theme' ), 'advertise' => __( 'Advertise with us', 'explore-katsina-theme' ), 'agreement' => __( 'Listing & Partner Agreement', 'explore-katsina-theme' ) ) as $k => $t ) {
+			foreach ( array( 'contact' => __( 'Contact us', 'explore-katsina-theme' ), 'tours' => __( 'Tours', 'explore-katsina-theme' ), 'stories' => __( 'Stories', 'explore-katsina-theme' ), 'top_hotels' => __( 'Top 10 hotels', 'explore-katsina-theme' ), 'list_business' => __( 'List your business', 'explore-katsina-theme' ), 'advertise' => __( 'Advertise with us', 'explore-katsina-theme' ), 'agreement' => __( 'Listing & Partner Agreement', 'explore-katsina-theme' ) ) as $k => $t ) {
 				$add( $id, $t, $page( $k ) );
 			}
 		}
@@ -249,6 +249,7 @@ function ekt_setup_content() {
 	$fill     = array(
 		'footer1' => '<!-- wp:html --><p class="ekt-foot-brand">Explore Katsina</p><p>' . esc_html__( 'Hotels, restaurants, event centres, festivals and things to do across Katsina State, with honest rankings from verified guests.', 'explore-katsina-theme' ) . '</p><!-- /wp:html -->',
 		'footer2' => '<!-- wp:html --><p><strong>' . esc_html__( 'Contact (placeholder)', 'explore-katsina-theme' ) . '</strong></p><p><a href="mailto:info@explorekatsina.com.ng">info@explorekatsina.com.ng</a><br>+234 800 000 0000<br>@explorekatsina</p><!-- /wp:html -->',
+		'footer3' => '<!-- wp:shortcode -->[ek_newsletter]<!-- /wp:shortcode -->',
 	);
 	foreach ( $fill as $sidebar => $html ) {
 		if ( ! empty( $sidebars[ $sidebar ] ) ) {

@@ -65,7 +65,9 @@ final class Favourites {
 		$on   = self::has( $uid, $object_id );
 		$html = '<form method="post" class="ek-fav">';
 		$html .= '<input type="hidden" name="ek_action" value="fav_toggle"><input type="hidden" name="object_id" value="' . (int) $object_id . '">';
-		$html .= '<input type="hidden" name="_ek_nonce" value="' . esc_attr( wp_create_nonce( 'ek_fav_' . (int) $object_id ) ) . '">';
+		if ( $uid ) { // Guests are sent to log in first, so they need no security code (and their pages can be cached).
+			$html .= '<input type="hidden" name="_ek_nonce" value="' . esc_attr( wp_create_nonce( 'ek_fav_' . (int) $object_id ) ) . '">';
+		}
 		$html .= '<button type="submit" class="ek-fav-btn' . ( $on ? ' is-on' : '' ) . '" aria-pressed="' . ( $on ? 'true' : 'false' ) . '">' . ( $on ? '♥ ' . esc_html__( 'Saved', 'explore-katsina' ) : '♡ ' . esc_html__( 'Save', 'explore-katsina' ) ) . '</button></form>';
 		return $html;
 	}
