@@ -24,6 +24,7 @@ final class Top {
 		add_action( 'init', array( __CLASS__, 'rewrites' ) );
 		add_filter( 'query_vars', static fn( $v ) => array_merge( $v, array( 'ek_top_lga' ) ) );
 		add_filter( 'document_title_parts', array( __CLASS__, 'title' ) );
+		add_filter( 'rank_math/frontend/title', array( __CLASS__, 'seo_title' ) ); // Rank Math sets titles itself.
 		add_action( 'wp_enqueue_scripts', static function () {
 			$post = get_queried_object();
 			if ( $post instanceof \WP_Post && has_shortcode( $post->post_content, 'ek_top' ) ) {
@@ -65,6 +66,12 @@ final class Top {
 			$parts['title'] = ucfirst( self::heading( $m[1], self::current_lga() ) );
 		}
 		return $parts;
+	}
+
+	/** Same per-place title when Rank Math is in charge of titles: "Top 10 hotels in Katsina – Explore Katsina". */
+	public static function seo_title( $title ) {
+		$parts = self::title( array() );
+		return empty( $parts['title'] ) ? $title : $parts['title'] . ' – ' . get_bloginfo( 'name' );
 	}
 
 	public static function shortcode( $atts ) {

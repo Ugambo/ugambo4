@@ -342,6 +342,7 @@ Fixes found while testing:
   all visitors).
 - Rank Math's redirect tables are created during set-up (they were missing and showed database errors).
 - The "Save" button no longer carries a security code for guests, so attraction pages can be cached.
+- The Top 10 pages per LGA ("Top 10 hotels in Daura") keep their own page title now that Rank Math manages titles.
 
 ## What Phase 11 built (plain language)
 1. **Theme:** Kadence (free) + our child theme **"Explore Katsina"** (`themes/explore-katsina/`).
