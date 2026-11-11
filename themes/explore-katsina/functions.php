@@ -114,6 +114,15 @@ add_shortcode(
 	}
 );
 
+/** [ek_account_link]: "My account" (or "Log in") link with a person icon, for the computer header. */
+add_shortcode(
+	'ek_account_link',
+	static function () {
+		$label = is_user_logged_in() ? __( 'My account', 'explore-katsina-theme' ) : __( 'Log in', 'explore-katsina-theme' );
+		return '<nav class="ekt-account" aria-label="' . esc_attr__( 'Account', 'explore-katsina-theme' ) . '"><a href="' . esc_url( ekt_page_url( 'account' ) ) . '"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg><span>' . esc_html( $label ) . '</span></a></nav>';
+	}
+);
+
 /* ---------------- Mobile bottom navigation ---------------- */
 
 function ekt_bottom_nav_items() {

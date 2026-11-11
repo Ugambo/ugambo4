@@ -57,6 +57,10 @@ body.ekt { background: var(--ekt-ivory); color: var(--ekt-ink); font-family: var
 .ekt .popup-drawer .drawer-inner { background: var(--ekt-night); color: #F3EDE1; }
 .ekt .mobile-navigation ul li a { color: #F3EDE1; font-weight: 600; }
 
+/* Account link + language switcher (header). */
+.ekt .header-html-inner { display: flex; align-items: center; gap: 12px; }
+.ekt-account a { display: inline-flex; align-items: center; gap: 6px; color: #F3EDE1; font-weight: 700; font-size: .92rem; text-decoration: none; white-space: nowrap; }
+.ekt-account a:hover { color: var(--ekt-brass); }
 /* Language switcher (header and mobile menu). */
 .ekt-lang ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 3px; border: 1px solid #3A4372; border-radius: 999px; }
 .ekt-lang a { display: block; padding: 4px 10px; border-radius: 999px; color: #D5D8E8; font-size: .85rem; font-weight: 700; text-decoration: none; line-height: 1.4; }

@@ -44,6 +44,7 @@ const check = ( c, m ) => { console.log( ( c ? '  ✔ ' : '  ✘ ' ) + m ); if (
 	check( [ 'Hotels', 'Restaurants', 'Event centres', 'Things to do', 'Events', 'Map', 'Plan your trip' ].every( ( t ) => menu.some( ( m ) => m.trim().startsWith( t ) ) ), 'Main menu: Hotels … Plan your trip' );
 	check( ( await d.locator( '.header-button' ).getAttribute( 'href' ) || '' ).includes( '/list-your-business/' ), '"List your business" button' );
 	check( await d.locator( '#masthead .ekt-lang a' ).count() === 2, 'Language switcher: English | Hausa' );
+	check( ( await d.locator( '#masthead .ekt-account a' ).first().getAttribute( 'href' ) || '' ).includes( '/account/' ), '"Log in / My account" link in the computer header' );
 	const fonts = await d.evaluate( () => [ getComputedStyle( document.querySelector( '.ekt-hero h1' ) ).fontFamily, getComputedStyle( document.body ).fontFamily ] );
 	check( /Unbounded/.test( fonts[ 0 ] ) && /Overpass/.test( fonts[ 1 ] ), 'Brand fonts: Unbounded headings, Overpass text' );
 	check( await d.locator( '.ekt-arch img' ).count() === 1 && /public domain/.test( await d.locator( '.ekt-hero-photo figcaption' ).textContent() ), 'Arch-framed hero photo with credit' );

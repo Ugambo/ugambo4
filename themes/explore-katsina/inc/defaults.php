@@ -85,7 +85,7 @@ add_filter(
 		$d['header_main_height']          = array( 'size' => array( 'mobile' => 60, 'tablet' => 64, 'desktop' => 76 ), 'unit' => array( 'mobile' => 'px', 'tablet' => 'px', 'desktop' => 'px' ) );
 		$d['header_sticky']               = 'main';
 		$d['mobile_header_sticky']        = 'main';
-		$d['header_html_content']         = '[ek_lang_switch]';
+		$d['header_html_content']         = '[ek_account_link][ek_lang_switch]';
 		$d['mobile_html_content']         = '[ek_lang_switch]';
 		$d['header_html_wpautop']         = false;
 		$d['mobile_html_wpautop']         = false;
