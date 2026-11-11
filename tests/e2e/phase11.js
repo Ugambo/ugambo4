@@ -41,7 +41,7 @@ const check = ( c, m ) => { console.log( ( c ? '  ✔ ' : '  ✘ ' ) + m ); if (
 	check( 'rgb(20, 27, 58)' === headerBg, 'Header in night indigo' );
 	check( ( await d.locator( '.site-title' ).first().textContent() ).includes( 'Explore Katsina' ), 'Site name in the header' );
 	const menu = await d.locator( '#primary-menu > li > a' ).allTextContents();
-	check( [ 'Hotels', 'Restaurants', 'Event centres', 'Things to do', 'Events', 'Map', 'Plan your trip' ].every( ( t ) => menu.some( ( m ) => m.trim().startsWith( t ) ) ), 'Main menu: Hotels … Plan your trip' );
+	check( [ 'Hotels', 'Restaurants', 'Event centres', 'Things to do', 'Festivals & Events', 'Map', 'Plan your trip' ].every( ( t ) => menu.some( ( m ) => m.trim().startsWith( t ) ) ), 'Main menu: Hotels … Plan your trip' );
 	check( ( await d.locator( '.header-button' ).getAttribute( 'href' ) || '' ).includes( '/list-your-business/' ), '"List your business" button' );
 	check( await d.locator( '#masthead .ekt-lang a' ).count() === 2, 'Language switcher: English | Hausa' );
 	check( ( await d.locator( '#masthead .ekt-account a' ).first().getAttribute( 'href' ) || '' ).includes( '/account/' ), '"Log in / My account" link in the computer header' );

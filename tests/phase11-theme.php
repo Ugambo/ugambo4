@@ -68,8 +68,8 @@ ek11( false !== strpos( $css, 'prefers-reduced-motion: reduce' ) && false !== st
 
 WP_CLI::line( 'Menus and footer' );
 $loc = get_theme_mod( 'nav_menu_locations' );
-$items = wp_list_pluck( (array) wp_get_nav_menu_items( $loc['primary'] ?? 0 ), 'title' );
-foreach ( array( 'Hotels', 'Restaurants', 'Event centres', 'Things to do', 'Events', 'Map', 'Plan your trip' ) as $t ) {
+$items = array_map( 'wp_specialchars_decode', wp_list_pluck( (array) wp_get_nav_menu_items( $loc['primary'] ?? 0 ), 'title' ) );
+foreach ( array( 'Hotels', 'Restaurants', 'Event centres', 'Things to do', 'Festivals & Events', 'Map', 'Plan your trip' ) as $t ) {
 	ek11( in_array( $t, $items, true ), "Main menu: {$t}" );
 }
 ek11( ! empty( $loc['footer'] ) && ! empty( get_option( 'sidebars_widgets' )['footer1'] ), 'Footer menu and footer text set up' );

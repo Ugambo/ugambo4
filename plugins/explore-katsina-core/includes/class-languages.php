@@ -123,9 +123,13 @@ final class Languages {
 		}
 		$model->clean_languages_cache();
 		$opts = get_option( 'polylang' );
-		if ( 'en' !== ( $opts['default_lang'] ?? '' ) ) {
-			$opts['default_lang'] = 'en';
+		if ( 'en' !== ( $opts['default_lang'] ?? '' ) || empty( $opts['redirect_lang'] ) ) {
+			$opts['default_lang']  = 'en';
+			$opts['redirect_lang'] = 1; // The Hausa homepage is /ha/ (not /ha/home-ha/).
 			update_option( 'polylang', $opts );
+		}
+		if ( is_object( PLL()->options ) && method_exists( PLL()->options, 'set' ) ) {
+			PLL()->options->set( 'redirect_lang', true ); // Polylang keeps its own copy and saves it at the end.
 		}
 
 		// Everything that has no language yet is English.
@@ -151,6 +155,7 @@ final class Languages {
 			}
 		}
 		$out['menus'] = self::hausa_menus();
+		$model->clean_languages_cache(); // Each language's homepage and addresses are cached.
 		flush_rewrite_rules( false );
 		return $out;
 	}

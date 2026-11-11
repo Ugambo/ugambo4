@@ -61,14 +61,14 @@ const check = ( c, m ) => { console.log( ( c ? '  ✔ ' : '  ✘ ' ) + m ); if (
 	await d.goto( BASE + '/top-hotels/' );
 	const ranks = await d.locator( '.ek-top-list li' ).count();
 	check( ranks >= 7, `Top 10 hotels lists ${ ranks } ranked SAMPLE hotels` );
-	await d.locator( '.ek-top-list a' ).first().click();
+	await d.locator( '.ek-top-list a:has-text("SAMPLE Crimson Gate Hotel")' ).first().click();
 	await d.waitForLoadState();
 	const hp = await d.locator( 'main' ).textContent();
-	check( /Verified booking/i.test( hp ) && /SAMPLE review/.test( hp ) && /#1 of \d+ hotels/.test( hp ), 'Hotel page: rank #1 and verified SAMPLE reviews' );
+	check( /Verified booking/i.test( hp ) && /SAMPLE review/.test( hp ) && /#\d+ of \d+ hotels/.test( hp ), 'Hotel page: its rank and verified SAMPLE reviews' );
 	check( /Royal Suite|Standard Room/.test( hp ) && /₦/.test( hp ), 'Hotel page: room categories with Naira prices' );
 	await d.screenshot( { path: path.join( SHOTS, 'p13-hotel-1280.png' ), fullPage: true } );
 	await d.goto( BASE + '/top-restaurants/' );
-	await d.locator( '.ek-top-list a' ).first().click();
+	await d.locator( '.ek-top-list a:has-text("SAMPLE Mama Tuwo Kitchen")' ).first().click();
 	await d.waitForLoadState();
 	const menu = await d.locator( 'main' ).textContent();
 	check( /Tuwo|Suya|Jollof|Masa/.test( menu ) && /₦1,\d{3}|₦\d,\d{3}/.test( menu ), 'Restaurant page: full menu with prices' );

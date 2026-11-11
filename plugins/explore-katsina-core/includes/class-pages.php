@@ -97,6 +97,13 @@ final class Pages {
 			update_option( 'show_on_front', 'page' );
 			update_option( 'page_on_front', $home );
 		}
+		// Stories is our own page ([ek_stories]), not WordPress's blog page (that would replace it).
+		if ( (int) get_option( 'page_for_posts' ) && (int) get_option( 'page_for_posts' ) === Install::page_id( 'stories' ) ) {
+			update_option( 'page_for_posts', 0 );
+		}
+		if ( function_exists( 'PLL' ) && PLL()->model ) {
+			PLL()->model->clean_languages_cache();
+		}
 		if ( Install::page_id( 'privacy' ) ) {
 			update_option( 'wp_page_for_privacy_policy', Install::page_id( 'privacy' ) );
 		}

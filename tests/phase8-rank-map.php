@@ -80,7 +80,7 @@ ek8_reviews( $t2, array_merge( array_fill( 0, 30, 5 ), array_fill( 0, 20, 4 ) ) 
 ek8_reviews( $t3, array( 5, 5, 5 ) );
 ek8_reviews( $t4, array_fill( 0, 20, 3 ) );
 $n = Ranking::run();
-ek8( 4 === ( $n['tour-operator'] ?? 0 ), 'All 4 tour operators scored' );
+ek8( 4 <= ( $n['tour-operator'] ?? 0 ) && ek8_row( $t1 ) && ek8_row( $t2 ) && ek8_row( $t3 ) && ek8_row( $t4 ), 'All 4 tour operators scored (other SAMPLE operators may exist)' );
 $r1 = ek8_row( $t1 );
 $r2 = ek8_row( $t2 );
 $r3 = ek8_row( $t3 );

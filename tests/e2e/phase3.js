@@ -27,8 +27,8 @@ const day = ( n ) => { const d = new Date( base ); d.setUTCDate( d.getUTCDate() 
 ( async () => {
 	const stamp = Date.now().toString( 36 );
 	// Each run gets its own spot (SAMPLE hotels from earlier runs stay on the map).
-	const lat = ( 12.95 + Math.random() * 0.08 ).toFixed( 5 );
-	const lng = ( 7.56 + Math.random() * 0.08 ).toFixed( 5 );
+	const lat = ( 12.62 + Math.random() * 0.06 ).toFixed( 5 ); // Near Ingawa: over 25 km from the SAMPLE towns (and their Featured hotel).
+	const lng = ( 8.05 + Math.random() * 0.06 ).toFixed( 5 );
 	const fx = JSON.parse( wp( `eval-file ek-tests/e2e/fixture-hotel.php ${ stamp } ${ lat } ${ lng }` ).split( '\n' ).pop() );
 	console.log( `Fixture hotel ${ fx.id } (${ fx.url })` );
 

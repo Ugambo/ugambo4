@@ -190,7 +190,16 @@ function ekt_home_events() {
 	if ( ! class_exists( '\EK\Events' ) ) {
 		return;
 	}
-	$ids = \EK\Events::upcoming( 3 );
+	$all = \EK\Events::upcoming( 50 );
+	$ids = array_slice( $all, 0, 3 );
+	// Always show at least one festival (e.g. the Sallah Durbar, whose date is confirmed late).
+	$is_fest = static fn( $id ) => has_term( 'festival', \EK\Events::TAX, $id );
+	if ( $ids && ! array_filter( $ids, $is_fest ) ) {
+		$fest = array_values( array_filter( $all, $is_fest ) );
+		if ( $fest ) {
+			$ids[ count( $ids ) - 1 ] = $fest[0];
+		}
+	}
 	ekt_section_open( 'ekt-events', __( 'Upcoming festivals and events', 'explore-katsina-theme' ), __( 'Durbars, cultural festivals and gatherings. Festival dates that follow the moon are confirmed close to the day.', 'explore-katsina-theme' ), array( __( 'All events', 'explore-katsina-theme' ), ekt_page_url( 'events' ) ), 'ekt-sec--sand' );
 	if ( ! $ids ) {
 		echo '<p class="ekt-empty">' . esc_html__( 'No upcoming events yet. Check back soon.', 'explore-katsina-theme' ) . '</p>';
