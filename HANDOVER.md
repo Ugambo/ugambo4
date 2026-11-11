@@ -15,8 +15,9 @@ from exactly where the last one stopped.
 - **Phase 9 (Revenue features): done and approved.**
 - **Phase 10 (Tourism guide): done and approved.**
 - **Phase 11 (Brand & theme): done and approved.**
-- **Phase 12 (Other plugins, free versions): done, waiting for the owner's go-ahead.**
-- Next: **Phase 13 (Pages & sample data)**.
+- **Phase 12 (Other plugins, free versions): done and approved.**
+- **Phase 13 (Pages & sample data): done, waiting for the owner's go-ahead.**
+- Next: **Phase 14 (SEO, speed, security)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -317,6 +318,58 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 - Free libraries added: qrcode-generator 1.4.4 (MIT) for ticket QR codes, jsQR 1.4.0 (Apache 2.0) for the camera
   scanner (only loaded on /check-in/).
 
+## What Phase 13 built (plain language)
+**Every page in the brief now exists**, in English, each with a Hausa version marked "Needs Hausa translation":
+- Home (now the site's front page), Explore, Katsina Map, Hotels, Restaurants, Event Centres, Things to Do and
+  Tours.
+- Festivals & Events (renamed from "Events"), the three Top 10 pages, Shop, and **Guides** (digital guides
+  from the shop).
+- **Directory**: every listed business by category, with filters for category, LGA and name.
+- Plan Your Trip with Itineraries and Safety, Stories, List Your Business, and **Pricing** (Basic free, the
+  plans, commission rates, Verified, setup and promotion, all read from Settings and marked PLACEHOLDER).
+- Advertise, My Account, Business Dashboard and Contact.
+- **About**, **FAQ for travellers** and **FAQ for businesses**.
+- The legal pages, each with a red **"DRAFT – for legal review"** notice:
+  - **Booking & Cancellation Policy**
+  - **Refund Policy**
+  - **Review Guidelines**
+  - **Privacy Policy** (Nigeria Data Protection Act 2023: lawful bases, your rights, NDPC complaints,
+    retention, cross-border transfers; it replaces WordPress's own sample privacy page)
+  - **Terms of Use**
+  - the Listing & Partner Agreement
+- The policies describe **exactly the rules the site applies**: 15-minute holds, the four cancellation
+  policies, restaurant deposits 24 h, tours 48 h, tickets only refunded if the event is cancelled, problem
+  reports up to 3 days after, the 180-day review window, and paid plans never changing ranks. A test checks
+  that they still match.
+- Items only you or your lawyer can fill in are in [square brackets]: company name and RC number, address,
+  retention periods, liability, jurisdiction, and shop returns.
+- The footer now links to About, both FAQs, Pricing and all policies.
+
+**SAMPLE data** (`wp ek sample-data`, run by `setup.sh`). Delete all of it with `wp ek delete-sample --yes`.
+- All names start with "SAMPLE". The businesses are invented, use the placeholder phone number, and have generic,
+  credited Commons photos.
+- Map pins are within 1.5 km of real town centres in **7 LGAs**: Katsina, Daura, Funtua, Malumfashi, Dutsin-Ma,
+  Mani and Jibia.
+
+| What | How many |
+|---|---|
+| Hotels | 8, each with 3–4 room types (₦9,000–₦95,000 a night; weekend prices; 4 cancellation policies) |
+| Restaurants | 8 with full menus (60 dishes: tuwo, suya, masa, jollof, fura da nono…), one with group deposits |
+| Event centres | 5 with 8 halls (₦60,000–₦1,000,000; request-to-book and instant) |
+| Other categories | 3 each: tour operators, transport, crafts, shopping, health, banks |
+| Verified reviews | 79, each tied to a completed past booking; rankings computed (Palmview Lodge has 2 reviews, so it shows "new, not yet ranked") |
+| Bookings | over 100. Hotels: awaiting payment, new, confirmed, pay at hotel, checked in, checked out, cancelled by guest (refund by policy) and by hotel, declined, no-show, expired, payment issue. Restaurants: awaiting deposit, new, confirmed, seated, completed, cancelled, declined, no-show, expired. Event centres: requested, accepted (deposit due), deposit paid, completed, cancelled, declined, awaiting payment, expired |
+| Tours | 2 (Old City Walking Tour, Daura Day Trip) with 4 dates each and seats sold |
+| Ticketed event | 1 (Food & Culture Night, Regular/VIP) with tickets sold |
+| Shop | 5 products + 1 digital guide (a real PDF, downloadable after payment) |
+| Paid extras | 1 Featured hotel, 1 Premium restaurant, 1 Verified hotel (to show the labels) |
+
+- Future bookings were made through the real booking engine, so their payments, refunds and money records are
+  real.
+- Past and same-day bookings (history and reviews) are records only, with no money attached.
+- To log in as a sample owner, reset its password, e.g.
+  `wp user update sample_crimson-gate-hotel --user_pass=…`.
+
 ## What Phase 12 built (plain language)
 All free versions, one plugin per job (no duplicates), set up by `wp ek plugins-setup` (run by `setup.sh`;
 each plugin is set up once, and changes you make later in wp-admin are kept). Every phase's tests still pass
@@ -524,7 +577,7 @@ page itself. The full notes, with confidence levels and every place where source
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 1,000 automatic checks, server and browser (Phases 2–12)
+./tests/run.sh      # about 1,100 automatic checks, server and browser (Phases 2–13)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -540,6 +593,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
 | `docs/screenshots/phase9/` | Screenshots of the plan page, search with Featured + banner ad, tickets with QR codes, check-in, tour, events, advertise, admin sales and revenue |
+| `docs/screenshots/phase13/` | Screenshots of the homepage with sample data, a sample hotel, Directory, Pricing, Privacy draft, a sample owner's dashboard |
 | `docs/screenshots/phase12/` | Screenshots of the contact form, newsletter sign-up, WhatsApp button on a phone, Fluent Forms in wp-admin |
 | `docs/screenshots/phase11/` | Screenshots of the homepage (computer and phone), Explore, My Account, Hausa page, login and wp-admin |
 | `themes/explore-katsina/` | Child theme of Kadence: brand defaults (`inc/defaults.php`), homepage (`front-page.php`, `inc/home.php`), styles, bottom bar, language switcher |
@@ -558,11 +612,13 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  templates/` | Screens (sign-up, dashboard sections, admin pages, public page) |
 | `  assets/` | Brand CSS, fonts, JavaScript, Leaflet map library |
 | `  content/listing-partner-agreement.html` | Agreement draft (for legal review) |
+| `  content/pages/` | About, FAQs and the legal drafts (Phase 13) |
+| `  content/sample/data.php` | The SAMPLE data (names, prices, menus, halls, reviews) |
 | `  content/guide/` | Researched guide content: attractions, festivals, Plan your trip pages, draft stories (`wp ek import-guide`) |
 | `  assets/vendor/qrcode/`, `jsqr/` | QR code drawing (MIT) and camera scanning (Apache 2.0) for tickets |
 | `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase12-plugins.php`, `phase4-woo-bridge.php`, `e2e/phase2–12.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase12-plugins.php`, `phase13-pages-sample.php`, `phase4-woo-bridge.php`, `e2e/phase2–13.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -601,7 +657,12 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Paystack and Flutterwave live keys (test keys only until launch)
 - Admin notification email (Settings)
 - `EK_ENCRYPTION_KEY` and `EK_PRIVATE_DIR` on the live host's wp-config.php
-- Sample/test businesses created by the tests are named "SAMPLE …": delete with `wp ek delete-sample --yes`
+- **SAMPLE data** (Phase 13) and test businesses are all named "SAMPLE …": delete everything with
+  `wp ek delete-sample --yes` before launch (businesses, owners, bookings, reviews, tours, events, tickets,
+  shop products and the sample PDF guide)
+- **Legal drafts** (Phase 13): fill in every [square bracket] item and have a lawyer review the Booking &
+  Cancellation Policy, Refund Policy, Review Guidelines, Privacy Policy (NDPA 2023) and Terms of Use
+- About page: company name, RC number, address and a line about the founders
 - Hotel cancellation policy wording (4 presets in `includes/class-hotel.php`): check with your lawyer
 - Deposit default 30% and 15-minute payment hold (business decisions, easy to change)
 - Restaurant price-range bands (₦ under ₦3,000 … ₦₦₦₦ over ₦15,000 per person) in `includes/class-restaurant.php`

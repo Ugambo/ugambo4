@@ -118,7 +118,7 @@ add_filter(
 		$d['footer_wrap_background']  = array( 'desktop' => array( 'color' => 'palette3' ) );
 		$d['footer_middle_background'] = array( 'desktop' => array( 'color' => 'palette3' ) );
 		$d['footer_bottom_background'] = array( 'desktop' => array( 'color' => '#0E1430' ) );
-		$d['footer_html_content']     = '© {year} Explore Katsina · <a href="mailto:info@explorekatsina.com.ng">info@explorekatsina.com.ng</a> · @explorekatsina';
+		$d['footer_html_content']     = '[ek_legal_links]<br>© {year} Explore Katsina · <a href="mailto:info@explorekatsina.com.ng">info@explorekatsina.com.ng</a> · @explorekatsina';
 		$d['footer_navigation_color'] = array( 'color' => '#F3EDE1', 'hover' => 'palette10', 'active' => 'palette10' );
 		$d['footer_navigation_stretch'] = false;
 

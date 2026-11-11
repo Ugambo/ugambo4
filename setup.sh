@@ -181,6 +181,9 @@ fi
 # Phase 12: set up the free helper plugins once (later wp-admin changes are kept) and WebP photos.
 wp ek plugins-setup && ok "Helper plugins set up"
 wp ek webp --quiet && ok "Photos saved as WebP"
+# Phase 13: SAMPLE demonstration data (skipped if already there). Remove it all with:
+#   wp ek delete-sample --yes
+wp ek sample-data && ok "SAMPLE data ready (delete with: wp ek delete-sample --yes)"
 # Researched guide content (attractions, Sallah Durbar, Plan your trip, draft stories). Re-run safe:
 # only adds what is missing and never overwrites edits made in wp-admin.
 wp ek import-guide && ok "Guide content imported"

@@ -172,6 +172,29 @@ final class CLI {
 	}
 
 	/**
+	 * Create the SAMPLE demonstration data (businesses, rooms, menus, halls, reviews, bookings in every
+	 * status, tours, a ticketed event, shop products and a digital guide). Remove it with delete-sample.
+	 *
+	 * ## OPTIONS
+	 * [--media=<dir>]
+	 * : Folder with the royalty-free sample photos and credits.json. Default: ek-sample-data/media in the site root.
+	 *
+	 * @subcommand sample-data
+	 */
+	public function sample_data( $args, $assoc ) {
+		$media = $assoc['media'] ?? ABSPATH . 'ek-sample-data/media';
+		$r     = Sample_Data::generate( is_dir( $media ) ? $media : '' );
+		if ( is_wp_error( $r ) ) {
+			\WP_CLI::warning( $r->get_error_message() );
+			return;
+		}
+		foreach ( $r as $k => $n ) {
+			\WP_CLI::line( str_pad( $k, 12 ) . $n );
+		}
+		\WP_CLI::success( 'SAMPLE data created. Delete it any time with: wp ek delete-sample --yes' );
+	}
+
+	/**
 	 * Delete all SAMPLE data: businesses whose name starts with "SAMPLE", their rooms,
 	 * photos, bookings, calendar, ledger and log rows, and owner accounts that only
 	 * owned SAMPLE businesses; also attractions, events and stories whose name starts with "SAMPLE".
@@ -190,19 +213,41 @@ final class CLI {
 		$ids   = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_title LIKE %s", Post_Types::BUSINESS, 'SAMPLE%' ) );
 		$other = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN (%s, %s, %s, 'post') AND post_title LIKE %s", Attractions::CPT, Events::CPT, Tours::CPT, 'SAMPLE%' ) );
 		if ( $other ) {
-			\WP_CLI::confirm( sprintf( 'Delete %d SAMPLE attractions, events and stories?', count( $other ) ), $assoc );
+			\WP_CLI::confirm( sprintf( 'Delete %d SAMPLE attractions, events, tours and stories?', count( $other ) ), $assoc );
 			foreach ( $other as $id ) {
 				$wpdb->delete( $wpdb->prefix . 'ek_favourites', array( 'object_id' => $id ) );
 				$wpdb->delete( $wpdb->prefix . 'ek_map_index', array( 'object_id' => $id ) );
-				foreach ( Tickets::types( $id ) as $t ) {
-					if ( ! (int) $t->sold ) {
-						$wpdb->delete( $wpdb->prefix . 'ek_ticket_types', array( 'id' => $t->id ) );
-					}
-				}
+				// SAMPLE events and tours: their tickets, ticket types, dates and sales go too.
+				$wpdb->delete( $wpdb->prefix . 'ek_tickets', array( 'event_id' => $id ) );
+				$wpdb->delete( $wpdb->prefix . 'ek_ticket_types', array( 'event_id' => $id ) );
+				$wpdb->delete( $wpdb->prefix . 'ek_tour_departures', array( 'tour_id' => $id ) );
+				$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}ek_sales WHERE object_id = %d AND kind IN ('ticket','tickets','tour','promotion')", $id ) );
 				wp_delete_post( $id, true );
 			}
-			\WP_CLI::success( sprintf( 'Deleted %d SAMPLE attractions, events and stories.', count( $other ) ) );
+			\WP_CLI::success( sprintf( 'Deleted %d SAMPLE attractions, events, tours and stories.', count( $other ) ) );
 		}
+		$products = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'product' AND post_title LIKE %s", 'SAMPLE%' ) );
+		if ( $products && function_exists( 'wc_get_product' ) ) {
+			foreach ( $products as $pid ) {
+				$prod = wc_get_product( $pid );
+				if ( $prod ) {
+					$prod->delete( true );
+				}
+			}
+			$up = wp_upload_dir();
+			wp_delete_file( trailingslashit( $up['basedir'] ) . 'woocommerce_uploads/sample-katsina-pocket-guide.pdf' );
+			\WP_CLI::success( sprintf( 'Deleted %d SAMPLE shop products.', count( $products ) ) );
+		}
+		$guests = get_users( array( 'search' => 'sample-guest-*', 'search_columns' => array( 'user_email' ), 'fields' => 'ID' ) );
+		if ( $guests ) {
+			require_once ABSPATH . 'wp-admin/includes/user.php';
+			foreach ( $guests as $gid ) {
+				if ( ! user_can( (int) $gid, 'edit_posts' ) ) {
+					wp_delete_user( (int) $gid );
+				}
+			}
+		}
+		delete_option( Sample_Data::OPTION );
 		if ( ! $ids ) {
 			\WP_CLI::success( 'No SAMPLE businesses found.' );
 			return;

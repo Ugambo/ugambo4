@@ -39,6 +39,7 @@ final class Install {
 		Tickets::add_role();
 		self::add_terms();
 		self::add_pages();
+		Pages::after_install();
 		Private_Files::protect_directory();
 		Shop::setup();
 		update_option( 'ek_db_version', EK_DB_VERSION );
@@ -704,7 +705,8 @@ final class Install {
 			),
 		);
 
-		$ids = (array) get_option( 'ek_pages', array() );
+		$pages = array_merge( $pages, Pages::definitions() );
+		$ids   = (array) get_option( 'ek_pages', array() );
 		foreach ( $pages as $key => $page ) {
 			if ( ! empty( $ids[ $key ] ) && get_post( $ids[ $key ] ) && 'trash' !== get_post_status( $ids[ $key ] ) ) {
 				continue;

@@ -682,3 +682,22 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 /* Error messages sit in reserved space, so the form doesn't jump when they disappear (a tap would miss). */
 .ek-contact-form .ff-el-group { position: relative; margin-bottom: 30px; }
 .ek-contact-form .ff-el-group .error.text-danger { position: absolute; left: 0; top: 100%; margin-top: 2px; font-size: .82rem; line-height: 1.3; }
+
+/* Phase 13: directory, pricing, legal pages */
+.ek .ek-dir-filter { display: grid; gap: 10px; grid-template-columns: 1fr; margin: 0; }
+@media (min-width: 720px) { .ek .ek-dir-filter { grid-template-columns: 1.2fr 1fr 1fr auto; align-items: end; } }
+.ek .ek-dir-filter p { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.ek .ek-dir-filter label { font-weight: 700; font-size: .85rem; color: var(--ek-muted); }
+.ek .ek-dir-filter select, .ek .ek-dir-filter input { min-height: 46px; border: 1.5px solid var(--ek-line); border-radius: 8px; padding: .4em .6em; font: inherit; background: #fff; }
+.ek .ek-dir-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.ek .ek-dir-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--ek-line); }
+.ek .ek-dir-name { font-weight: 700; color: var(--ek-night); }
+.ek .ek-dir-list .ek-muted { grid-column: 1; }
+.ek .ek-dir-actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 12px; align-items: center; }
+.ek .ek-grid--3 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.ek .ek-price-card .ek-price { font-family: var(--ek-font-display); font-size: 1.4rem; margin: 0; color: var(--ek-crimson); }
+.ek .ek-price-card ul { margin: 0; padding-left: 1.1em; }
+.ek .ek-table { width: 100%; border-collapse: collapse; }
+.ek .ek-table th, .ek .ek-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--ek-line); }
+.ek-legal-draft { border-left: 4px solid #B3261E; background: #FBE9E7; padding: 10px 14px; border-radius: 0 8px 8px 0; color: #5E1410; }
+.ek-legal-links { font-size: .85rem; line-height: 1.9; }

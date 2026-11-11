@@ -39,6 +39,7 @@ final class Plugin {
 		Explore::init();
 		Languages::init();
 		Integrations::init();
+		Pages::init();
 		Map_Index::init();
 		Map_Page::init();
 		Top::init();
