@@ -58,8 +58,8 @@ const rnd = ( a ) => ( a + Math.random() * 0.08 ).toFixed( 5 );
 	check( ( await o.locator( '#vf-h' ).locator( '..' ).textContent() ).includes( 'Application being reviewed' ), 'Verified application paid: "being reviewed"' );
 	const pins = await ( await oc.request.get( `${ BASE }/wp-json/ek/v1/map?bbox=11,6,14,9&types=hotel` ) ).json();
 	check( pins.pins.some( ( p ) => p.id === fx.id && p.featured ), 'Map: the hotel now has a highlighted (Featured) pin' );
-	// Only 3 Featured places get the top spots: clear Featured from sample hotels left by earlier test runs.
-	wp( `eval 'foreach ( get_posts( array( "post_type" => "ek_business", "post_status" => "any", "fields" => "ids", "posts_per_page" => -1, "meta_key" => "_ek_featured_until" ) ) as $id ) { if ( ${ fx.id } !== $id && 0 === strpos( get_the_title( $id ), "SAMPLE" ) ) { delete_post_meta( $id, "_ek_featured_until" ); update_post_meta( $id, "_ek_plan", "basic" ); } }'` );
+	// Only 3 Featured places get the top spots: clear Featured from test hotels left by earlier runs (not the demo data).
+	wp( `eval 'foreach ( get_posts( array( "post_type" => "ek_business", "post_status" => "any", "fields" => "ids", "posts_per_page" => -1, "meta_key" => "_ek_featured_until" ) ) as $id ) { if ( ${ fx.id } !== $id && 0 === strpos( get_the_title( $id ), "SAMPLE" ) && ! get_post_meta( $id, "_ek_sample_set", true ) ) { delete_post_meta( $id, "_ek_featured_until" ); update_post_meta( $id, "_ek_plan", "basic" ); } }'` );
 	const hs = await ( await browser.newContext( { viewport: { width: 1280, height: 900 }, userAgent: UA } ) ).newPage();
 	watch( hs );
 	await hs.goto( BASE + '/hotels/' );
