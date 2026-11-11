@@ -655,3 +655,12 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek .ek-prose p { margin: 0 0 .9em; }
 .ek-sources ul { padding-left: 1.1em; display: grid; gap: 4px; }
 .ek-guide-note { border-left: 4px solid var(--ek-brass); background: #FBF1DC; padding: 10px 14px; border-radius: 0 8px 8px 0; }
+
+/* Phase 11: Explore hub */
+.ek .ek-explore-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); }
+.ek .ek-explore-tile { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; min-height: 110px; padding: 16px; border-radius: var(--ek-radius); background: var(--ek-night) var(--ek-pattern); background-size: 44px; background-blend-mode: soft-light; color: #fff; text-decoration: none; border-bottom: 4px solid var(--ek-brass); }
+.ek .ek-explore-tile:hover { background-color: var(--ek-night-2); color: #fff; }
+.ek .ek-explore-tile--hotels, .ek .ek-explore-tile--things_to_do, .ek .ek-explore-tile--map { background-color: var(--ek-crimson); }
+.ek .ek-explore-tile--restaurants, .ek .ek-explore-tile--plan { background-color: var(--ek-emerald); }
+.ek .ek-explore-title { font: 700 1rem/1.25 var(--ek-font-display); }
+.ek .ek-explore-count { font-size: .85rem; color: rgba(255, 255, 255, .85); }

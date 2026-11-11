@@ -46,6 +46,7 @@ services:
     volumes: &wpvolumes
       - wp:/var/www/html
       - ./plugins/explore-katsina-core:/var/www/html/wp-content/plugins/explore-katsina-core
+      - ./themes/explore-katsina:/var/www/html/wp-content/themes/explore-katsina
       - ./mu-plugins/ek-local-mail.php:/var/www/html/wp-content/mu-plugins/ek-local-mail.php:ro
       - ./tests:/var/www/html/ek-tests:ro
       - ./.cache/plugins:/var/www/html/ek-plugin-cache:ro

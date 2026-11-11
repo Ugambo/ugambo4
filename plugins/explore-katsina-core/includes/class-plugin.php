@@ -36,6 +36,8 @@ final class Plugin {
 		Attractions::init();
 		Stories::init();
 		Gallery::init();
+		Explore::init();
+		Languages::init();
 		Map_Index::init();
 		Map_Page::init();
 		Top::init();

@@ -1,0 +1,15 @@
+/*
+Theme Name: Explore Katsina
+Theme URI: https://explorekatsina.com.ng
+Description: Child theme of Kadence for Explore Katsina, in the "Durbar Regalia" brand (crimson, brass, night indigo, emerald and ivory; Unbounded + Overpass). Homepage, mobile bottom navigation and English/Hausa switcher. Works with the explore-katsina-core plugin.
+Author: Explore Katsina
+Template: kadence
+Version: 1.0.0
+Requires at least: 6.4
+Requires PHP: 8.0
+License: GNU General Public License v3.0 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: explore-katsina-theme
+*/
+
+/* All styles are in assets/css/theme.css (loaded by functions.php). */

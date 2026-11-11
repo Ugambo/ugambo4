@@ -1,0 +1,17 @@
+// Durbar Regalia admin colour scheme. Build (needs WordPress's wp-admin/css/colors folder next to it):
+//   copy wp-admin/css/colors/ to a work folder, put this file in colors/ek/colors.scss, then
+//   npx sass@1.83.0 --no-source-map --style=compressed colors/ek/colors.scss admin-colors.css
+@use "sass:color";
+
+$highlight-color: #8E1B2C;
+
+@use "../_admin.scss" with (
+	$scheme-name: "ek-durbar",
+	$base-color: #141B3A,
+	$highlight-color: #8E1B2C,
+	$notification-color: #D2A03A,
+	$menu-submenu-focus-text: #D2A03A,
+	$link: #8E1B2C,
+	$link-focus: color.adjust($highlight-color, $lightness: -10%),
+	$custom-welcome-panel: "false"
+);

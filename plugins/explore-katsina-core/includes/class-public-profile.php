@@ -18,11 +18,11 @@ final class Public_Profile {
 	}
 
 	/**
-	 * For block themes: a clean business page (no "Written by", no blog navigation).
-	 * Classic themes such as Kadence get their own template in Phase 11.
+	 * For block themes only: a clean business page (no "Written by", no blog navigation).
+	 * Classic themes such as Kadence (our child theme) use their own single-page layout.
 	 */
 	public static function block_template() {
-		if ( ! function_exists( 'register_block_template' ) ) {
+		if ( ! function_exists( 'register_block_template' ) || ! wp_is_block_theme() ) {
 			return;
 		}
 		register_block_template(

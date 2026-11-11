@@ -124,6 +124,21 @@ final class CLI {
 		\WP_CLI::success( sprintf( 'Guide content: %d created, %d updated, %d already there, %d photos added.', $r['created'], $r['updated'], $r['skipped'], $r['photos'] ) );
 	}
 
+	/**
+	 * Set up English and Hausa (Polylang): languages, Hausa copies of the main pages marked
+	 * "Needs Hausa translation", and Hausa menus. Re-run safe.
+	 *
+	 * ## EXAMPLES
+	 *     wp ek languages
+	 */
+	public function languages() {
+		$r = Languages::setup();
+		if ( is_wp_error( $r ) ) {
+			\WP_CLI::error( $r->get_error_message() );
+		}
+		\WP_CLI::success( sprintf( 'Languages: %d added, %d Hausa pages created (marked "Needs Hausa translation"), %d Hausa menus.', $r['languages'], $r['copies'], $r['menus'] ) );
+	}
+
 	public function status() {
 		$c = wp_count_posts( Post_Types::BUSINESS );
 		foreach ( array( 'pending', 'publish', Post_Types::STATUS_PAUSED, Post_Types::STATUS_REJECTED ) as $s ) {
@@ -149,7 +164,7 @@ final class CLI {
 	public function delete_sample( $args, $assoc ) {
 		global $wpdb;
 		$ids   = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_title LIKE %s", Post_Types::BUSINESS, 'SAMPLE%' ) );
-		$other = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN (%s, %s, 'post') AND post_title LIKE %s", Attractions::CPT, Events::CPT, 'SAMPLE%' ) );
+		$other = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN (%s, %s, %s, 'post') AND post_title LIKE %s", Attractions::CPT, Events::CPT, Tours::CPT, 'SAMPLE%' ) );
 		if ( $other ) {
 			\WP_CLI::confirm( sprintf( 'Delete %d SAMPLE attractions, events and stories?', count( $other ) ), $assoc );
 			foreach ( $other as $id ) {

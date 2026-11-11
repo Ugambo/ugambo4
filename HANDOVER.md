@@ -13,8 +13,9 @@ from exactly where the last one stopped.
 - **Phase 7 (Commissions, payouts & invoices): done and approved.**
 - **Phase 8 (Katsina Map & rankings): done and approved.**
 - **Phase 9 (Revenue features): done and approved.**
-- **Phase 10 (Tourism guide): done, waiting for the owner's go-ahead.**
-- Next: **Phase 11 (Brand & theme)**.
+- **Phase 10 (Tourism guide): done and approved.**
+- **Phase 11 (Brand & theme): done, waiting for the owner's go-ahead.**
+- Next: **Phase 12 (Other plugins, free versions)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -30,8 +31,12 @@ from exactly where the last one stopped.
 7. Map: Leaflet + OpenStreetMap, behind one settings function (`EK\Assets::map_config()`) so
    Google Maps can be switched on later.
 
+8. **Shop and checkout stay English-only at launch** (owner, 11 Nov 2026). No paid "Polylang for
+   WooCommerce" (about €99/year alone or €139/year in the Business Pack, per search results; check
+   polylang.pro before buying). It can be added later without redoing anything.
+
 ## Still to decide later
-- Phase 11: buy **Polylang for WooCommerce** (paid) or keep Shop/checkout English-only at launch.
+- Nothing open from Phase 11.
 
 ## What Phase 2 built (plain language)
 - **"List your business" page** (`/list-your-business/`): a 5-step, phone-friendly form for
@@ -306,6 +311,70 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 - Free libraries added: qrcode-generator 1.4.4 (MIT) for ticket QR codes, jsQR 1.4.0 (Apache 2.0) for the camera
   scanner (only loaded on /check-in/).
 
+## What Phase 11 built (plain language)
+1. **Theme:** Kadence (free) + our child theme **"Explore Katsina"** (`themes/explore-katsina/`).
+   - The brand is set as Kadence's *defaults*, so nothing is locked: you can still change colours,
+     fonts, header and footer in Appearance → Customize.
+   - Durbar Regalia colours. Unbounded headings and Overpass text, served from our own server.
+   - Visual identity:
+     - Night-indigo header and footer with a brass line.
+     - An arch emblem and arch-framed photos, after the city gates (kofa).
+     - Our own geometric line pattern, inspired by Hausa wall decoration.
+     - Crimson and brass borders, like Durbar regalia.
+   - No generic blue.
+2. **Homepage** (`front-page.php`, sections in `inc/home.php`):
+   - Hero with a **tabbed search**: Hotels (where, dates, guests), Restaurants (where, food), Event
+     centres (where, date, guests), Things to do (type). It works with arrow keys too.
+   - **Near you:** uses the phone's location, shows the 6 closest places within 15 km, and never stores
+     the location.
+   - **Map preview:** the map library only downloads when you scroll to it, to save data.
+   - Featured attractions (with photos), upcoming festivals (the Sallah Durbar), top-ranked hotels,
+     restaurants and event centres, Premium spotlight, homepage banner ad zone, our tours, stories, and
+     the **"List your business"** and **"Advertise with us"** banners.
+   - Empty sections either hide or say "coming soon".
+3. **Mobile bottom bar** (phones and tablets): Home, Explore, Map, Bookings, Account. It is hidden on
+   the full-screen map, the business dashboard and ticket check-in, which have their own controls.
+   The new **Explore** page (`/explore/`) has tiles for everything.
+4. **Menus** (made automatically, safe to re-run, never overwritten):
+   - Main menu: Hotels, Restaurants, Event centres, Things to do, Events, Map, and Plan your trip with
+     its 6 sub-pages.
+   - Footer: tours, stories, Top 10, list your business, advertise, agreement, plus the placeholder
+     contact details.
+5. **English / Hausa (Polylang, free):**
+   - English keeps normal addresses; Hausa pages start with `/ha/`. "English | Hausa" switcher in the
+     header and in the phone menu.
+   - **21 Hausa pages** were created, one for each main page plus the Plan your trip pages. Each:
+     - holds the **English text** (no machine translation);
+     - is marked **"Needs Hausa translation"** in the Pages list (a tick box on each page);
+     - shows visitors a short "not translated yet" note;
+     - is hidden from search engines until the box is unticked.
+   - Listings, attractions, events and tours appear in both languages (not duplicated), so the map,
+     rankings and bookings stay single and accurate.
+   - Links between our pages follow the visitor's language.
+   - Shop and checkout: English only (your decision).
+6. **Branded dashboards:**
+   - wp-admin has a **"Durbar Regalia" colour scheme**, used by default. Anyone can pick another in their
+     profile.
+   - The **login page** is branded.
+   - My Account and the business dashboard use the brand.
+   - Business pages now use the theme layout properly.
+7. **Accessibility:**
+   - Visible brass keyboard focus ring.
+   - Every brand colour pair checked for contrast (WCAG AA; all 4.5:1 or better).
+   - Animations switch off for people who prefer reduced motion.
+   - "Skip to content" link. Tabs follow the standard keyboard pattern.
+8. **Speed:** fonts preloaded, hero photo loaded first, everything else lazy-loaded. No Google Fonts and
+   no extra plugins.
+- New commands: `wp ek languages` (set up English/Hausa; safe to re-run).
+- `wp eval 'ekt_setup_content();'` sets up the menus and footer text. `setup.sh` runs both.
+- The test runner now carries on after a failure and lists every failing step at the end.
+
+**For you to do later:**
+- Ask a fluent Hausa writer to translate the Hausa pages, then untick "Needs Hausa translation" on each.
+- Plugin and theme words (buttons, labels) can be translated in a `.po` file. Phase 12 or 13 can set
+  that up with Loco Translate (free).
+- Replace the placeholder contact details in Appearance → Widgets (footer) when ready.
+
 ## What Phase 10 built (plain language)
 **Research first.** Every fact on the guide pages comes from a published source, listed under "Sources" on the
 page itself. The full notes, with confidence levels and every place where sources disagree, are in
@@ -422,7 +491,7 @@ page itself. The full notes, with confidence levels and every place where source
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 800 automatic checks, server and browser (Phases 2–10)
+./tests/run.sh      # about 900 automatic checks, server and browser (Phases 2–11)
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -438,6 +507,8 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
 | `docs/screenshots/phase9/` | Screenshots of the plan page, search with Featured + banner ad, tickets with QR codes, check-in, tour, events, advertise, admin sales and revenue |
+| `docs/screenshots/phase11/` | Screenshots of the homepage (computer and phone), Explore, My Account, Hausa page, login and wp-admin |
+| `themes/explore-katsina/` | Child theme of Kadence: brand defaults (`inc/defaults.php`), homepage (`front-page.php`, `inc/home.php`), styles, bottom bar, language switcher |
 | `docs/research/phase10-sources.md` | Phase 10 research: every fact, its source, confidence, and conflicts between sources |
 | `docs/screenshots/phase10/` | Screenshots of Things to do, attraction pages (computer and phone), Sallah Durbar, Plan your trip, safety page, the attraction editor |
 | `docs/screenshots/phase8/` | Screenshots of the Katsina Map (computer and phone), map cards, Top 10 page, rank on a hotel page, attraction page, review moderation |
@@ -457,7 +528,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/vendor/qrcode/`, `jsqr/` | QR code drawing (MIT) and camera scanning (Apache 2.0) for tickets |
 | `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase4-woo-bridge.php`, `e2e/phase2–10.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase4-woo-bridge.php`, `e2e/phase2–11.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).

@@ -33,8 +33,8 @@ final class Stories {
 
 	/** "Plan your trip" and its sub-pages use a few plugin styles (e.g. the "Things change" note). */
 	public static function guide_page_styles() {
-		$trip = Install::page_id( 'plan_trip' );
-		if ( $trip && is_page() && ( get_queried_object_id() === $trip || in_array( $trip, get_post_ancestors( get_queried_object_id() ), true ) ) ) {
+		$trips = Install::page_ids_all( 'plan_trip' );
+		if ( $trips && is_page() && ( in_array( get_queried_object_id(), $trips, true ) || array_intersect( $trips, get_post_ancestors( get_queried_object_id() ) ) ) ) {
 			wp_enqueue_style( 'ek' );
 		}
 	}
@@ -101,7 +101,7 @@ final class Stories {
 		wp_enqueue_style( 'ek' );
 		$topic = isset( $_GET['topic'] ) ? sanitize_key( wp_unslash( $_GET['topic'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		$topic = isset( self::categories()[ $topic ] ) ? $topic : '';
-		$q     = array( 'post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => 30, 'fields' => 'ids' );
+		$q     = array( 'post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => 30, 'fields' => 'ids', 'lang' => '' ); // All languages: Hausa readers see English stories until translated.
 		if ( $topic ) {
 			$q['category_name'] = $topic;
 		}

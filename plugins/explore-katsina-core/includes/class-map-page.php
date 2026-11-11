@@ -24,8 +24,7 @@ final class Map_Page {
 	}
 
 	public static function is_map_page() {
-		$id = Install::page_id( 'map' );
-		return $id && is_page( $id );
+		return Install::is_page( 'map' );
 	}
 
 	/** The map page uses its own full-screen layout (no theme header/footer). */

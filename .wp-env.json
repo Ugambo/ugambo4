@@ -16,6 +16,7 @@
     "ek-tests": "./tests",
     "wp-content/mu-plugins/ek-local-mail.php": "./mu-plugins/ek-local-mail.php",
     "ek-plugin-cache": "./.cache/plugins",
-    "ek-sample-data": "./sample-data"
+    "ek-sample-data": "./sample-data",
+    "wp-content/themes/explore-katsina": "./themes/explore-katsina"
   }
 }

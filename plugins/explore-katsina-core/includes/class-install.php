@@ -637,6 +637,11 @@ final class Install {
 				'slug'    => 'top-event-centres',
 				'content' => '<!-- wp:shortcode -->[ek_top type="event-centre"]<!-- /wp:shortcode -->',
 			),
+			'explore'           => array(
+				'title'   => __( 'Explore', 'explore-katsina' ),
+				'slug'    => 'explore',
+				'content' => '<!-- wp:shortcode -->[ek_explore]<!-- /wp:shortcode -->',
+			),
 			'things_to_do'      => array(
 				'title'   => __( 'Things to do', 'explore-katsina' ),
 				'slug'    => 'things-to-do',
@@ -717,9 +722,34 @@ final class Install {
 		update_option( 'ek_pages', $ids );
 	}
 
+	/** Address of one of our pages, in the visitor's language when a translation exists (Polylang). */
 	public static function page_url( $key ) {
 		$ids = (array) get_option( 'ek_pages', array() );
-		return ! empty( $ids[ $key ] ) ? get_permalink( $ids[ $key ] ) : home_url( '/' );
+		if ( empty( $ids[ $key ] ) ) {
+			return function_exists( 'pll_home_url' ) ? pll_home_url() : home_url( '/' );
+		}
+		return get_permalink( Languages::translated( (int) $ids[ $key ] ) );
+	}
+
+	/** Is the visitor on one of our pages (in any language)? */
+	public static function is_page( $key ) {
+		$id = self::page_id( $key );
+		if ( ! $id || ! is_page() ) {
+			return false;
+		}
+		$ids = function_exists( 'pll_get_post_translations' ) ? array_map( 'intval', array_values( pll_get_post_translations( $id ) ) ) : array();
+		$ids[] = $id;
+		return in_array( (int) get_queried_object_id(), $ids, true );
+	}
+
+	/** One of our pages and its translations (for lists of page IDs). */
+	public static function page_ids_all( $key ) {
+		$id = self::page_id( $key );
+		if ( ! $id ) {
+			return array();
+		}
+		$ids = function_exists( 'pll_get_post_translations' ) ? array_map( 'intval', array_values( pll_get_post_translations( $id ) ) ) : array();
+		return array_values( array_unique( array_merge( array( $id ), $ids ) ) );
 	}
 
 	public static function page_id( $key ) {

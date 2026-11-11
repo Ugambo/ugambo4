@@ -47,8 +47,7 @@ final class Dashboard {
 	}
 
 	public static function is_dashboard_page() {
-		$id = Install::page_id( 'dashboard' );
-		return $id && is_page( $id );
+		return Install::is_page( 'dashboard' );
 	}
 
 	public static function app_shell( $template ) {

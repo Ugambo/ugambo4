@@ -131,7 +131,8 @@ wp plugin delete hello --quiet 2>/dev/null || true
 # Free plugins, added phase by phase. They come from wordpress.org, so they are
 # skipped (with a warning) when wordpress.org can't be reached.
 #   Phase 3: WooCommerce + Paystack + Flutterwave (payments only)
-EXTRA_PLUGINS=(woocommerce woo-paystack rave-woocommerce-payment-gateway)
+#   Phase 11: Polylang (English / Hausa, free version)
+EXTRA_PLUGINS=(woocommerce woo-paystack rave-woocommerce-payment-gateway polylang)
 if curl -s -o /dev/null --max-time 8 https://downloads.wordpress.org/; then
   # Download on this computer, then install from the file. (WordPress inside Docker may not
   # be able to reach wordpress.org itself, e.g. behind a proxy.)
@@ -157,11 +158,23 @@ if curl -s -o /dev/null --max-time 8 https://downloads.wordpress.org/; then
     wp option update woocommerce_onboarding_profile '{"skipped":true}' --format=json --quiet 2>/dev/null || true
     ok "WooCommerce set to Naira (₦), Katsina, guest checkout"
   fi
+  # Phase 11: Kadence (free) is the parent of our child theme "explore-katsina".
+  if ! wp theme is-installed kadence 2>/dev/null; then
+    curl -fsSL -o ".cache/plugins/kadence-theme.zip" "https://downloads.wordpress.org/theme/kadence.latest-stable.zip" \
+      && wp theme install "ek-plugin-cache/kadence-theme.zip" --quiet \
+      || warn "Could not install the Kadence theme"
+  fi
 else
   warn "Skipping ${EXTRA_PLUGINS[*]}: wordpress.org can't be reached from here."
   warn "Bookings use the local TEST payment screen until WooCommerce is installed."
 fi
 ok "explore-katsina-core active"
+if wp theme is-installed kadence 2>/dev/null; then
+  wp theme activate explore-katsina --quiet && wp eval 'ekt_setup_content();' && ok "Theme: Explore Katsina (Kadence child)"
+  wp ek languages && ok "Languages: English + Hausa (Polylang)" || warn "Polylang not active: English only"
+else
+  warn "Kadence theme missing: the site uses WordPress's default theme until it can be installed."
+fi
 # Researched guide content (attractions, Sallah Durbar, Plan your trip, draft stories). Re-run safe:
 # only adds what is missing and never overwrites edits made in wp-admin.
 wp ek import-guide && ok "Guide content imported"
