@@ -1,6 +1,6 @@
 # Local development stack.
-#   docker compose up -d postgres redis      databases only; run the API on your machine with pnpm dev:api
-#   docker compose --profile app up --build  everything, including migrations and the API
+#   docker compose up -d postgres redis s3   data stores only; run the apps on your machine (see README)
+#   docker compose --profile app up --build  everything, including migrations, the API and the admin dashboard
 name: rideswithme
 
 services:
@@ -29,6 +29,13 @@ services:
       timeout: 3s
       retries: 20
 
+  # S3-compatible storage for local development and CI (moto). It keeps files in
+  # memory, so uploads disappear when it restarts. Production uses a real
+  # S3-compatible service with private buckets (see documentation/DECISIONS.md).
+  s3:
+    image: motoserver/moto:5.2.5
+    ports: ['9000:5000']
+
   migrate:
     profiles: [app]
     build: { context: ., dockerfile: infrastructure/docker/api.Dockerfile, target: migrate }
@@ -46,10 +53,30 @@ services:
       REDIS_URL: redis://redis:6379/0
       # The compose stack is for development, so the console SMS provider is allowed.
       NODE_ENV: development
+      S3_ENDPOINT: http://s3:5000
+      # Signed links must point somewhere the phone or browser can reach.
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
+      S3_FORCE_PATH_STYLE: 'true'
+      S3_CREATE_BUCKET: 'true'
+      # The admin dashboard is a proxy in front of the API.
+      TRUST_PROXY_HOPS: '1'
     ports: ['3000:3000']
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
+      s3: { condition: service_started }
+
+  admin-dashboard:
+    profiles: [app]
+    build: { context: ., dockerfile: infrastructure/docker/admin-dashboard.Dockerfile }
+    env_file: apps/admin-dashboard/.env.local
+    environment:
+      API_URL: http://api:3000
+      STORAGE_ORIGIN: http://localhost:9000
+      SESSION_COOKIE_SECURE: 'false'
+    ports: ['3001:3001']
+    depends_on:
+      api: { condition: service_started }
 
 volumes:
   postgres-data:

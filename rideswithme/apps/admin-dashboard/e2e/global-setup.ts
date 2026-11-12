@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, openSync, writeFileSync } from 'node:fs';
+import { connect } from 'node:net';
 import path from 'node:path';
 import { Client } from 'pg';
 import { migrate } from '@rideswithme/database';
@@ -32,6 +33,21 @@ async function waitFor(url: string, name: string, proc: ChildProcess) {
   throw new Error(`${name} did not start at ${url}`);
 }
 
+/** Clears the e2e Redis database (rate-limit counters from earlier runs) without needing redis-cli. */
+function flushRedis(url: string): Promise<void> {
+  const u = new URL(url);
+  const db = u.pathname.slice(1) || '0';
+  return new Promise((resolve, reject) => {
+    const socket = connect(Number(u.port || 6379), u.hostname, () =>
+      socket.write(`SELECT ${db}\r\nFLUSHDB\r\nQUIT\r\n`),
+    );
+    socket.on('error', reject);
+    // Read (and ignore) the replies; an unread socket never sees the server close it.
+    socket.on('data', () => undefined);
+    socket.on('close', () => resolve());
+  });
+}
+
 async function resetDatabase() {
   const admin = new Client({ connectionString: E2E_DATABASE_URL.replace(/\/[^/]+$/, '/postgres') });
   await admin.connect();
@@ -48,7 +64,7 @@ export default async function globalSetup() {
 
   const env = apiEnv();
   const cliEnv = { ...process.env, ...env };
-  spawnSync('redis-cli', ['-n', '14', 'flushdb']);
+  await flushRedis(env.REDIS_URL!);
   for (const [phone, role] of [
     [ADMIN_PHONE, 'admin'],
     [SECOND_ADMIN_PHONE, 'admin'],

@@ -14,8 +14,16 @@ defaults:
   run:
     working-directory: rideswithme
 
+env:
+  TEST_DATABASE_URL: postgres://rideswithme:rideswithme@localhost:5432/rideswithme_test
+  TEST_REDIS_URL: redis://localhost:6379/15
+  TEST_S3_ENDPOINT: http://localhost:9000
+  E2E_DATABASE_URL: postgres://rideswithme:rideswithme@localhost:5432/rideswithme_e2e
+  E2E_REDIS_URL: redis://localhost:6379/14
+
 jobs:
   check:
+    name: Lint, typecheck, unit and integration tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -33,9 +41,9 @@ jobs:
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
-    env:
-      TEST_DATABASE_URL: postgres://rideswithme:rideswithme@localhost:5432/rideswithme_test
-      TEST_REDIS_URL: redis://localhost:6379/15
+      s3:
+        image: motoserver/moto:5.2.5
+        ports: ['9000:5000']
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -50,14 +58,82 @@ jobs:
       - run: pnpm format:check
       - run: pnpm turbo run build typecheck lint test
 
-  docker:
+  e2e:
+    name: Admin dashboard end-to-end (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: rideswithme
+          POSTGRES_PASSWORD: rideswithme
+          POSTGRES_DB: rideswithme_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rideswithme" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+      s3:
+        image: motoserver/moto:5.2.5
+        ports: ['9000:5000']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: rideswithme/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: rideswithme/.nvmrc
+          cache: pnpm
+          cache-dependency-path: rideswithme/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=@rideswithme/api --filter=@rideswithme/admin-dashboard
+      - run: pnpm --filter @rideswithme/admin-dashboard exec playwright install --with-deps chromium
+      - run: pnpm --filter @rideswithme/admin-dashboard e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-e2e
+          path: |
+            rideswithme/apps/admin-dashboard/e2e/.output
+            rideswithme/apps/admin-dashboard/test-results
+          retention-days: 7
+
+  mobile-bundle:
+    name: Driver app bundles (Metro, Android)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: rideswithme/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: rideswithme/.nvmrc
+          cache: pnpm
+          cache-dependency-path: rideswithme/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=@rideswithme/driver-mobile^...
+      - run: pnpm --filter @rideswithme/driver-mobile bundle:check
+        env:
+          CI: '1'
+          EXPO_NO_TELEMETRY: '1'
+
+  docker:
+    name: Build container images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: check
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build API and migration images
+      - name: Build API, migration and admin dashboard images
         run: |
           docker buildx build -f infrastructure/docker/api.Dockerfile --target migrate .
           docker buildx build -f infrastructure/docker/api.Dockerfile --target api .
+          docker buildx build -f infrastructure/docker/admin-dashboard.Dockerfile .
