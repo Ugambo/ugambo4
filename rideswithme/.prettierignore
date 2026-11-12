@@ -2,3 +2,10 @@ dist
 coverage
 pnpm-lock.yaml
 .turbo
+# Build and test output
+.next
+next-env.d.ts
+.expo
+**/e2e/.output
+test-results
+playwright-report

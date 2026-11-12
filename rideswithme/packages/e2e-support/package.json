@@ -1,0 +1,23 @@
+{
+  "name": "@rideswithme/e2e-support",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Helpers for the web apps' browser tests: fresh database, API process, SMS codes from the API log, driver applications",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@rideswithme/database": "workspace:*",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}

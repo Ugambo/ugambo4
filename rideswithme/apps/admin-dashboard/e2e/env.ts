@@ -1,7 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 
-export const ROOT = path.resolve(__dirname, '../../..');
 export const OUT = path.join(__dirname, '.output');
 export const API_LOG = path.join(OUT, 'api.log');
 export const API_URL = 'http://127.0.0.1:3100';

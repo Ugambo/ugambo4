@@ -1,9 +1,15 @@
-import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, openSync, writeFileSync } from 'node:fs';
-import { connect } from 'node:net';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { Client } from 'pg';
-import { migrate } from '@rideswithme/database';
+import {
+  ROOT,
+  flushRedis,
+  resetDatabase,
+  savePids,
+  startApi,
+  startNextStandalone,
+  waitForHttp,
+} from '@rideswithme/e2e-support';
 import {
   ADMIN_PHONE,
   ADMIN_URL,
@@ -11,94 +17,38 @@ import {
   API_URL,
   E2E_DATABASE_URL,
   OUT,
-  ROOT,
   SECOND_ADMIN_PHONE,
   adminEnv,
   apiEnv,
 } from './env';
 import { submitDriverApplication } from './support';
 
-async function waitFor(url: string, name: string, proc: ChildProcess) {
-  for (let i = 0; i < 120; i++) {
-    if (proc.exitCode !== null)
-      throw new Error(`${name} exited with code ${proc.exitCode}; see ${OUT}`);
-    try {
-      const res = await fetch(url);
-      if (res.status < 500) return;
-    } catch {
-      // not up yet
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`${name} did not start at ${url}`);
-}
-
-/** Clears the e2e Redis database (rate-limit counters from earlier runs) without needing redis-cli. */
-function flushRedis(url: string): Promise<void> {
-  const u = new URL(url);
-  const db = u.pathname.slice(1) || '0';
-  return new Promise((resolve, reject) => {
-    const socket = connect(Number(u.port || 6379), u.hostname, () =>
-      socket.write(`SELECT ${db}\r\nFLUSHDB\r\nQUIT\r\n`),
-    );
-    socket.on('error', reject);
-    // Read (and ignore) the replies; an unread socket never sees the server close it.
-    socket.on('data', () => undefined);
-    socket.on('close', () => resolve());
-  });
-}
-
-async function resetDatabase() {
-  const admin = new Client({ connectionString: E2E_DATABASE_URL.replace(/\/[^/]+$/, '/postgres') });
-  await admin.connect();
-  const dbName = new URL(E2E_DATABASE_URL).pathname.slice(1);
-  await admin.query(`DROP DATABASE IF EXISTS ${dbName} WITH (FORCE)`);
-  await admin.query(`CREATE DATABASE ${dbName}`);
-  await admin.end();
-  await migrate(E2E_DATABASE_URL);
-}
-
 export default async function globalSetup() {
   mkdirSync(OUT, { recursive: true });
-  await resetDatabase();
+  await resetDatabase(E2E_DATABASE_URL);
 
   const env = apiEnv();
-  const cliEnv = { ...process.env, ...env };
   await flushRedis(env.REDIS_URL!);
-  for (const [phone, role] of [
-    [ADMIN_PHONE, 'admin'],
-    [SECOND_ADMIN_PHONE, 'admin'],
-  ] as const) {
+  for (const phone of [ADMIN_PHONE, SECOND_ADMIN_PHONE]) {
     const r = spawnSync(
       'node',
-      ['apps/api/dist/cli.js', 'grant-role', '--phone', phone, '--role', role],
-      { cwd: ROOT, env: cliEnv, encoding: 'utf8' },
+      ['apps/api/dist/cli.js', 'grant-role', '--phone', phone, '--role', 'admin'],
+      { cwd: ROOT, env: { ...process.env, ...env }, encoding: 'utf8' },
     );
     if (r.status !== 0) throw new Error(`grant-role failed: ${r.stderr}`);
   }
 
-  const apiLog = openSync(API_LOG, 'w');
-  const apiProc = spawn('node', ['apps/api/dist/main.js'], {
-    cwd: ROOT,
-    env: cliEnv,
-    stdio: ['ignore', apiLog, apiLog],
-  });
-  const adminLog = openSync(path.join(OUT, 'admin.log'), 'w');
-  // Run the standalone server, as the Docker image does. It needs the static assets beside it.
-  const app = path.join(__dirname, '..');
-  const standalone = path.join(app, '.next', 'standalone', 'apps', 'admin-dashboard');
-  cpSync(path.join(app, '.next', 'static'), path.join(standalone, '.next', 'static'), {
-    recursive: true,
-  });
-  const adminProc = spawn('node', [path.join(standalone, 'server.js')], {
-    cwd: standalone,
-    env: { ...process.env, ...adminEnv(), PORT: '3101', HOSTNAME: '127.0.0.1' },
-    stdio: ['ignore', adminLog, adminLog],
-  });
-  writeFileSync(path.join(OUT, 'pids.json'), JSON.stringify([apiProc.pid, adminProc.pid]));
+  const apiProc = startApi(env, API_LOG);
+  const adminProc = startNextStandalone(
+    'admin-dashboard',
+    3101,
+    adminEnv(),
+    path.join(OUT, 'admin.log'),
+  );
+  savePids(path.join(OUT, 'pids.json'), [apiProc, adminProc]);
 
-  await waitFor(`${API_URL}/health/live`, 'API', apiProc);
-  await waitFor(`${ADMIN_URL}/login`, 'Admin dashboard', adminProc);
+  await waitForHttp(`${API_URL}/health/live`, 'API', apiProc, OUT);
+  await waitForHttp(`${ADMIN_URL}/login`, 'Admin dashboard', adminProc, OUT);
 
   // Two submitted applications waiting in the queue.
   await submitDriverApplication({
