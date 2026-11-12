@@ -13,7 +13,9 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { DriversModule } from './drivers/drivers.module';
 import { HealthModule } from './health/health.module';
+import { MapsModule } from './maps/maps.module';
 import { RedisModule } from './redis/redis.module';
+import { RidesModule } from './rides/rides.module';
 import { SmsModule } from './sms/sms.module';
 import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
@@ -64,6 +66,8 @@ export class AppModule {
         AuthModule,
         AdminModule,
         DriversModule,
+        MapsModule,
+        RidesModule,
         HealthModule,
       ],
       providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

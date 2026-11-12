@@ -93,6 +93,18 @@ export const configSchema = z
     UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
     DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
 
+    MAPS_PROVIDER: z.enum(['fake', 'google']).default('fake'),
+    GOOGLE_MAPS_API_KEY: z.string().optional(),
+
+    // Matching and ride timings.
+    DISPATCH_INTERVAL_MS: z.coerce.number().int().min(0).max(60_000).default(1000),
+    OFFER_TIMEOUT_SECONDS: z.coerce.number().int().min(5).max(120).default(15),
+    SEARCH_TIMEOUT_SECONDS: z.coerce.number().int().min(30).max(1800).default(180),
+    QUOTE_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
+    SCHEDULED_DISPATCH_LEAD_MINUTES: z.coerce.number().int().min(1).max(120).default(10),
+    DRIVER_POSITION_STALE_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
+    NO_SHOW_WAIT_MINUTES: z.coerce.number().int().min(1).max(60).default(5),
+
     DOCUMENT_EXPIRY_SWEEP_MINUTES: z.coerce.number().int().min(0).max(1440).default(60),
   })
   .superRefine((c, ctx) => {
@@ -122,6 +134,20 @@ export const configSchema = z
         code: z.ZodIssueCode.custom,
         path: ['S3_SERVER_SIDE_ENCRYPTION'],
         message: 'Driver documents must be encrypted at rest in production',
+      });
+    }
+    if (c.MAPS_PROVIDER === 'google' && !c.GOOGLE_MAPS_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['GOOGLE_MAPS_API_KEY'],
+        message: 'Required when MAPS_PROVIDER=google',
+      });
+    }
+    if (c.NODE_ENV === 'production' && c.MAPS_PROVIDER === 'fake') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['MAPS_PROVIDER'],
+        message: 'The fake maps provider is not allowed in production',
       });
     }
     if (c.NODE_ENV === 'production' && c.SMS_PROVIDER === 'console') {

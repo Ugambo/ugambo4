@@ -6,13 +6,16 @@ import type { Kysely } from 'kysely';
 import { AdminService } from './admin/admin.service';
 import { AppModule } from './app.module';
 import { MfaService } from './auth/mfa.service';
+import { PricingService } from './pricing/pricing.service';
 import { DB } from './database/database.module';
 import type { Database } from './database/types';
 
 const USAGE = `Usage:
   node dist/cli.js grant-role  --phone <number> --role <role>   Creates the user if needed (first super admin)
   node dist/cli.js revoke-role --phone <number> --role <role>
-  node dist/cli.js reset-mfa   --phone <number>                 Clears TOTP and signs the user out everywhere`;
+  node dist/cli.js reset-mfa   --phone <number>                 Clears TOTP and signs the user out everywhere
+  node dist/cli.js seed-city   --key <key> --name <name> --bbox <minLng,minLat,maxLng,maxLat>
+                                Creates a rectangular service area with placeholder fares (development)`;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -21,6 +24,7 @@ function arg(name: string): string | undefined {
 
 async function main() {
   const command = process.argv[2];
+  if (command === 'seed-city') return seedCity();
   const phone = normalizeNigerianPhone(arg('phone') ?? '');
   if (!command || !phone) throw new Error(USAGE);
 
@@ -62,6 +66,25 @@ async function main() {
     } else {
       throw new Error(USAGE);
     }
+  } finally {
+    await app.close();
+  }
+}
+
+async function seedCity() {
+  const key = arg('key');
+  const name = arg('name');
+  const bbox = (arg('bbox') ?? '').split(',').map(Number);
+  if (!key || !name || bbox.length !== 4 || bbox.some((n) => Number.isNaN(n)))
+    throw new Error(USAGE);
+  const app = await NestFactory.createApplicationContext(AppModule.forRoot(), {
+    logger: ['error', 'warn'],
+  });
+  try {
+    await app.get(PricingService).seedCity(key, name, bbox as [number, number, number, number]);
+    console.warn(
+      `Service area "${name}" (${key}) created with PLACEHOLDER fares. Set real fares before launch.`,
+    );
   } finally {
     await app.close();
   }

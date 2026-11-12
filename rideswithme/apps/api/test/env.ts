@@ -28,6 +28,9 @@ export function testConfig(overrides: Record<string, string> = {}): AppConfig {
     S3_SERVER_SIDE_ENCRYPTION: process.env.TEST_S3_SSE ?? 'AES256',
     S3_CREATE_BUCKET: 'true',
     DOCUMENT_EXPIRY_SWEEP_MINUTES: '0',
+    MAPS_PROVIDER: 'fake',
+    // Tests drive the dispatcher by calling tick() themselves.
+    DISPATCH_INTERVAL_MS: '0',
     ...overrides,
   });
 }

@@ -47,6 +47,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         body.retryAfterSeconds = exception.retryAfterSeconds;
         res.setHeader('Retry-After', String(exception.retryAfterSeconds));
       }
+    } else if (isRetryableDbConflict(exception)) {
+      // Deadlock or serialization failure: nothing was changed; the client can retry.
+      status = HttpStatus.CONFLICT;
+      body = { code: ErrorCode.CONFLICT, message: 'Busy, please retry', retryAfterSeconds: 1 };
+      res.setHeader('Retry-After', '1');
+      this.logger.warn({ err: exception, requestId }, 'Database conflict; client asked to retry');
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       body = {
@@ -64,4 +70,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (requestId) payload.requestId = requestId;
     res.status(status).json(payload);
   }
+}
+
+/** PostgreSQL deadlock_detected (40P01) and serialization_failure (40001). */
+function isRetryableDbConflict(err: unknown): boolean {
+  const code = (err as { code?: unknown } | null)?.code;
+  return code === '40P01' || code === '40001';
 }
