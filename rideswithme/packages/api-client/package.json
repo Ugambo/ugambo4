@@ -15,6 +15,21 @@
   },
   "dependencies": {
     "@rideswithme/shared-types": "workspace:*",
-    "@rideswithme/validation": "workspace:*"
+    "@rideswithme/validation": "workspace:*",
+    "socket.io-client": "^4.8.4"
+  },
+  "description": "Typed HTTP client for the RideswithMe API, and the realtime (Socket.IO) client at ./realtime",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./realtime": {
+      "types": "./dist/realtime.d.ts",
+      "default": "./dist/realtime.js"
+    }
+  },
+  "devDependencies": {
+    "socket.io": "^4.8.4"
   }
 }

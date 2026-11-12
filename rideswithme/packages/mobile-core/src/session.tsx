@@ -12,7 +12,7 @@ import {
 import { Platform } from 'react-native';
 import { type ApiClient, createApiClient, type TokenStore } from '@rideswithme/api-client';
 import type { AuthTokens, Language } from '@rideswithme/shared-types';
-import { createRealtime } from './realtime';
+import { createRealtime } from '@rideswithme/api-client/realtime';
 
 export type SessionStatus = 'loading' | 'signedOut' | 'signedIn';
 

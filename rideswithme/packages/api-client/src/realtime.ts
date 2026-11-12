@@ -3,7 +3,7 @@ import { io, type Socket } from 'socket.io-client';
 export type RealtimeListener = (payload: never) => void;
 
 /**
- * The app's realtime connection to the API (Socket.IO at /realtime).
+ * A realtime connection to the API (Socket.IO at /realtime).
  * - Uses a fresh access token on every (re)connect.
  * - If the server refuses an expired token, refreshes once and reconnects.
  * - Reconnects on its own after network drops (back-off up to 15 s); callers
