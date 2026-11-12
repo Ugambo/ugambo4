@@ -61,16 +61,16 @@ tested backups; rate limits on OTP, login and booking.
 
 ## Phases
 
-| Phase                    | Scope                                                                                        | Status                       |
-| ------------------------ | -------------------------------------------------------------------------------------------- | ---------------------------- |
-| 1 Foundation             | Monorepo, Docker, database, migrations, phone OTP auth, roles, shared packages, CI           | Approved                     |
-| 2 Driver onboarding      | Driver registration, document upload, admin verification queue                               | **Built, awaiting approval** |
-| 3 Core ride flow         | Location search, fare estimate, ride request, matching, state machine, cash                  |                              |
-| 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness                                 |                              |
-| 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              |                              |
-| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                |                              |
-| 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          |                              |
-| 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds |                              |
+| Phase                    | Scope                                                                                        | Status                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 1 Foundation             | Monorepo, Docker, database, migrations, phone OTP auth, roles, shared packages, CI           | Approved                                                      |
+| 2 Driver onboarding      | Driver registration, document upload, admin verification queue                               | Approved                                                      |
+| 3 Core ride flow         | Location search, fare estimate, ride request, matching, state machine, cash                  | **Built, awaiting approval** (passenger web moved to Phase 4) |
+| 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness; passenger web booking          |                                                               |
+| 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              |                                                               |
+| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                |                                                               |
+| 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          |                                                               |
+| 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds |                                                               |
 
 ## Open decisions (defaults in use)
 

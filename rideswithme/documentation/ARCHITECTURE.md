@@ -23,21 +23,23 @@ PostgreSQL; Redis holds only data that can expire or be rebuilt.
 pnpm workspaces + Turborepo. `pnpm turbo run build` builds packages in dependency
 order.
 
-| Path                                          | Purpose                                                          | State                                 |
-| --------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------- |
-| `apps/api`                                    | NestJS API                                                       | Phases 1-2 built                      |
-| `apps/admin-dashboard`                        | Next.js admin dashboard (driver verification so far)             | Phase 2 built; full dashboard Phase 6 |
-| `apps/driver-mobile`                          | Expo driver app (onboarding so far)                              | Phase 2 built; trips Phases 3-4       |
-| `apps/passenger-mobile`, `apps/passenger-web` | Passenger apps                                                   | Phase 3                               |
-| `apps/fleet-portal`                           | Next.js fleet portal                                             | Phase 6                               |
-| `packages/shared-types`                       | Response types, role/permission keys, error codes, driver types  | Built                                 |
-| `packages/validation`                         | zod request schemas, Nigerian phone, NIN, plate, NUBAN           | Built                                 |
-| `packages/api-client`                         | Typed fetch client with token refresh, used by every app         | Built                                 |
-| `packages/ui-components`                      | Design tokens (colours, type, spacing, radius); components later | Tokens built                          |
-| `packages/utilities`                          | Money in kobo, English/Hausa message catalogues                  | Built                                 |
-| `infrastructure/database`                     | SQL migrations and migration runner                              | Built                                 |
-| `infrastructure/docker`                       | API, migration and admin dashboard images; Postgres init         | Built                                 |
-| `infrastructure/deployment`                   | Production deployment                                            | Phase 8                               |
+| Path                        | Purpose                                                                         | State                                 |
+| --------------------------- | ------------------------------------------------------------------------------- | ------------------------------------- |
+| `apps/api`                  | NestJS API                                                                      | Phases 1-2 built                      |
+| `apps/admin-dashboard`      | Next.js admin dashboard (driver verification so far)                            | Phase 2 built; full dashboard Phase 6 |
+| `apps/driver-mobile`        | Expo driver app (onboarding so far)                                             | Phase 2 built; trips Phases 3-4       |
+| `apps/passenger-mobile`     | Expo passenger app: map, booking, trip, receipts                                | Phase 3 built                         |
+| `apps/passenger-web`        | Next.js passenger web booking                                                   | Phase 4                               |
+| `apps/fleet-portal`         | Next.js fleet portal                                                            | Phase 6                               |
+| `packages/shared-types`     | Response types, role/permission keys, error codes, driver types                 | Built                                 |
+| `packages/validation`       | zod request schemas, Nigerian phone, NIN, plate, NUBAN                          | Built                                 |
+| `packages/api-client`       | Typed fetch client with token refresh, used by every app                        | Built                                 |
+| `packages/ui-components`    | Design tokens; shared React Native components at `/native` (incl. bottom sheet) | Built                                 |
+| `packages/mobile-core`      | Mobile session (secure storage), language, sign-in, formatting                  | Built                                 |
+| `packages/utilities`        | Money in kobo, English/Hausa message catalogues                                 | Built                                 |
+| `infrastructure/database`   | SQL migrations and migration runner                                             | Built                                 |
+| `infrastructure/docker`     | API, migration and admin dashboard images; Postgres init                        | Built                                 |
+| `infrastructure/deployment` | Production deployment                                                           | Phase 8                               |
 
 Dependency rule: apps depend on packages; packages never depend on apps;
 `shared-types` depends on nothing.
@@ -137,11 +139,40 @@ with unit tests; screens use the shared `api-client`, validation and tokens.
 - **Retries:** clients retry on network failure, so create endpoints take an
   `Idempotency-Key` (from Phase 3) and token refresh tolerates lost responses.
 
+## Ride flow (Phase 3)
+
+```
+passenger app                    api                                         Redis / Postgres
+ │ POST fares/estimate ────────► service area (PostGIS) → route (maps, cached) → fare engine per type
+ │ ◄── options with quoteId, price breakdown, nearest-driver ETA                 fare_quotes
+ │ POST rides (Idempotency-Key) ► snapshot the quote into the ride, status searching ─► rides, ride_events
+dispatcher (every second, each API copy)
+ │  scheduled due → searching; expire offers; give up after 3 min
+ │  nearest fresh, online, eligible, free driver (Redis GEOSEARCH, 3→5→8 km) ─► ride_requests (15 s)
+driver app
+ │ GET offers/current (poll) ──► offer: pickup, trip, fare, earnings
+ │ POST accept ────────────────► lock ride → conditional UPDATE (searching → driver_assigned)
+ │ arrived → start (waiting charge) → complete (cash payment + commission owed)
+```
+
+- Pricing: `apps/api/src/pricing/fare-engine.ts` is a pure function of the rule and
+  the route, unit-tested with hand-calculated values; everything is integer kobo.
+- Maps: `MapsProvider` with a Google implementation (Places API (New), Geocoding,
+  Routes) and an offline fake for development and tests.
+- Every ride status change and offer is written to `ride_events`.
+- Phase 3 apps poll; Phase 4 adds Socket.IO, background location and buffering.
+
+## Mobile apps
+
+Both Expo apps use `@rideswithme/mobile-core` (secure session, language, sign-in)
+and `@rideswithme/ui-components/native`. `metro.workspace.js` makes workspace
+packages use the app's own React, React Native and Expo modules, so each exists
+once in the bundle. The passenger app is a full-screen map (react-native-maps)
+with a draggable bottom sheet whose content follows the ride: where to → choose a
+ride → searching → driver card → on trip → receipt.
+
 ## Planned shape of later phases
 
-- **Matching (Phase 3):** nearby drivers from Redis `GEOSEARCH`, filtered by
-  category, online state and service area; acceptance is a single conditional
-  `UPDATE rides … WHERE status = 'searching'` so two drivers can never win.
 - **Real time (Phase 4):** Socket.IO with the Redis adapter so any API replica can
   reach any client; clients refetch ride state on reconnect; positions carry device
   and server timestamps and are shown as stale past a threshold.

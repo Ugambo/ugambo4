@@ -7,19 +7,23 @@ bottom. Each entry says what was decided, why, and how to change it.
 
 These need your answer or awareness. Work continues on the stated assumption.
 
-| #    | Issue                                                                                                                                                                                                                                                         | What I did / propose                                                                                                                                                                                                                                              |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B-1  | The brief says "an empty repository", but `ugambo/ugambo4` already contains the Explore Katsina WordPress project.                                                                                                                                            | Built RideswithMe in `rideswithme/` (the root folder name the brief uses) and left Explore Katsina untouched. Moving it to its own repository later is a folder copy; CI already only runs on `rideswithme/**` changes.                                           |
-| B-2  | Section 2 refers to the phases as section 14 and the open decisions as section 15. They are sections 15 and 16 (14 is UI direction).                                                                                                                          | Assumed the obvious intent.                                                                                                                                                                                                                                       |
-| B-3  | "Masked calling" needs a voice/telephony provider (number proxying). None is in the stack.                                                                                                                                                                    | Proposal: a `VoiceProxyProvider` interface like the SMS one, with a vendor chosen before Phase 3 call buttons ship. Until then the call button can be hidden by configuration. **Needs a vendor decision.**                                                       |
-| B-4  | Email is collected at registration but there is no email provider in the stack, so addresses cannot be verified.                                                                                                                                              | Email is stored and marked unverified (`email_verified_at` is null). Verification needs a transactional email vendor. **Needs a vendor decision** (any SMTP or API vendor; behind an interface).                                                                  |
-| B-5  | 99.9% availability (about 8.7 hours of downtime a year, maintenance included) is not realistic on a single VPS with Docker: one host failure or one OS upgrade can use most of it.                                                                            | For launch, either (a) two API hosts behind a load balancer plus managed PostgreSQL with point-in-time recovery, or (b) accept a lower target (99.5%) for the single-VPS launch. Decide before Phase 8. The API is already stateless so (a) needs no code change. |
-| B-6  | Bus seats: "unique constraint on schedule + seat" plus holds that expire. A plain unique constraint would block re-selling a seat whose hold expired or whose booking was cancelled.                                                                          | Phase 7 will use a partial unique index over active rows (held or confirmed), with expired holds moved to `expired` by a job and re-checked under a row lock at payment time. Same guarantee, seats become sellable again.                                        |
-| B-7  | Hausa uses ƙ, ɗ and ɓ, which force SMS into UCS-2 encoding: 70 characters per segment instead of 160. The Hausa OTP message is two segments, roughly double the cost of the English one.                                                                      | Kept correct spelling. Alternatives: shorten the Hausa message to fit one UCS-2 segment, or send OTP SMS in English for everyone. **Your call.**                                                                                                                  |
-| B-8  | The payout form needs the full list of Nigerian banks and fintech accounts (OPay, Moniepoint, PalmPay, Kuda and others that many drivers use), with their codes, and a check that the account name matches. Neither exists until Paystack arrives in Phase 5. | Phase 2 offers 15 major banks (placeholder list in the driver app) and stores what the driver types. Phase 5 replaces the list with Paystack's bank list and verifies the account name before any payout.                                                         |
-| B-9  | Nothing in the stack verifies a NIN against NIMC records. Reviewers can only compare the number with the NIN slip by eye.                                                                                                                                     | Proposal: an identity-verification vendor (e.g. Prembly/IdentityPass, Smile ID, VerifyMe, Dojah) behind an interface, checking NIN, name, photo and licence before approval. **Needs a vendor decision**; can be added any time before launch.                    |
-| B-10 | Which documents each vehicle type needs is not in the brief (and some permits differ by state).                                                                                                                                                               | Defaults in DECISIONS D-026, editable as data. **Please confirm or correct them**, especially for Keke Napep and motorcycles in the launch city.                                                                                                                  |
-| B-11 | CI has not run on GitHub yet: the first run failed within 3 seconds with no logs, which means GitHub never gave it a runner (an account setting, e.g. Actions billing or spending limit, or Actions disabled for this private repository).                    | Check the run at github.com/Ugambo/ugambo4/actions. Everything CI runs also ran locally before each commit.                                                                                                                                                       |
+| #    | Issue                                                                                                                                                                                                                                                         | What I did / propose                                                                                                                                                                                                                                                                                    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B-1  | The brief says "an empty repository", but `ugambo/ugambo4` already contains the Explore Katsina WordPress project.                                                                                                                                            | Built RideswithMe in `rideswithme/` (the root folder name the brief uses) and left Explore Katsina untouched. Moving it to its own repository later is a folder copy; CI already only runs on `rideswithme/**` changes.                                                                                 |
+| B-2  | Section 2 refers to the phases as section 14 and the open decisions as section 15. They are sections 15 and 16 (14 is UI direction).                                                                                                                          | Assumed the obvious intent.                                                                                                                                                                                                                                                                             |
+| B-3  | "Masked calling" needs a voice/telephony provider (number proxying). None is in the stack.                                                                                                                                                                    | Proposal: a `VoiceProxyProvider` interface like the SMS one, with a vendor chosen before Phase 3 call buttons ship. Until then the call button can be hidden by configuration. **Needs a vendor decision.**                                                                                             |
+| B-4  | Email is collected at registration but there is no email provider in the stack, so addresses cannot be verified.                                                                                                                                              | Email is stored and marked unverified (`email_verified_at` is null). Verification needs a transactional email vendor. **Needs a vendor decision** (any SMTP or API vendor; behind an interface).                                                                                                        |
+| B-5  | 99.9% availability (about 8.7 hours of downtime a year, maintenance included) is not realistic on a single VPS with Docker: one host failure or one OS upgrade can use most of it.                                                                            | For launch, either (a) two API hosts behind a load balancer plus managed PostgreSQL with point-in-time recovery, or (b) accept a lower target (99.5%) for the single-VPS launch. Decide before Phase 8. The API is already stateless so (a) needs no code change.                                       |
+| B-6  | Bus seats: "unique constraint on schedule + seat" plus holds that expire. A plain unique constraint would block re-selling a seat whose hold expired or whose booking was cancelled.                                                                          | Phase 7 will use a partial unique index over active rows (held or confirmed), with expired holds moved to `expired` by a job and re-checked under a row lock at payment time. Same guarantee, seats become sellable again.                                                                              |
+| B-7  | Hausa uses ƙ, ɗ and ɓ, which force SMS into UCS-2 encoding: 70 characters per segment instead of 160. The Hausa OTP message is two segments, roughly double the cost of the English one.                                                                      | Kept correct spelling. Alternatives: shorten the Hausa message to fit one UCS-2 segment, or send OTP SMS in English for everyone. **Your call.**                                                                                                                                                        |
+| B-8  | The payout form needs the full list of Nigerian banks and fintech accounts (OPay, Moniepoint, PalmPay, Kuda and others that many drivers use), with their codes, and a check that the account name matches. Neither exists until Paystack arrives in Phase 5. | Phase 2 offers 15 major banks (placeholder list in the driver app) and stores what the driver types. Phase 5 replaces the list with Paystack's bank list and verifies the account name before any payout.                                                                                               |
+| B-9  | Nothing in the stack verifies a NIN against NIMC records. Reviewers can only compare the number with the NIN slip by eye.                                                                                                                                     | Proposal: an identity-verification vendor (e.g. Prembly/IdentityPass, Smile ID, VerifyMe, Dojah) behind an interface, checking NIN, name, photo and licence before approval. **Needs a vendor decision**; can be added any time before launch.                                                          |
+| B-10 | Which documents each vehicle type needs is not in the brief (and some permits differ by state).                                                                                                                                                               | Defaults in DECISIONS D-026, editable as data. **Please confirm or correct them**, especially for Keke Napep and motorcycles in the launch city.                                                                                                                                                        |
+| B-11 | CI has not run on GitHub yet: the first run failed within 3 seconds with no logs, which means GitHub never gave it a runner (an account setting, e.g. Actions billing or spending limit, or Actions disabled for this private repository).                    | Check the run at github.com/Ugambo/ugambo4/actions. Everything CI runs also ran locally before each commit.                                                                                                                                                                                             |
+| B-12 | Real maps need Google Maps Platform keys: a server key (Places API (New), Geocoding, Routes) and an Android Maps SDK key for the passenger app's map. None is configured.                                                                                     | Development and tests use an offline fake (demo places, straight-line routes). **Please create the two keys** (restricted by API and by server IP / app signature); they go in `GOOGLE_MAPS_API_KEY` and `GOOGLE_MAPS_ANDROID_API_KEY`. The Google adapter is unit-tested but has not been called live. |
+| B-13 | Fare values are not in the brief.                                                                                                                                                                                                                             | Placeholder fares are seeded for every vehicle type (D-034). **Please supply real base, per-km, per-minute, minimum, booking, waiting and cancellation fees and commission per vehicle type** before launch.                                                                                            |
+| B-14 | The launch city's boundary is needed as a polygon.                                                                                                                                                                                                            | `seed-city` creates a rectangle for development. For launch, send the boundary (GeoJSON, or draw it in Phase 6's admin map) and it is loaded through `PUT /v1/admin/service-areas`.                                                                                                                     |
+| B-15 | Passenger web booking (brief section 5) was planned for Phase 3.                                                                                                                                                                                              | Moved to Phase 4: its trip screens need the live updates Phase 4 adds, and building them on polling first would mean writing them twice. Mobile booking is complete in Phase 3.                                                                                                                         |
 
 ## Decision log
 
@@ -313,3 +317,95 @@ the phone is set to Hausa), switchable on every main screen. Offline banner from
 the build environment): it type-checks, its logic is unit-tested, and Metro
 bundles it for Android in CI. Bundle identifiers `com.rideswithme.driver` are
 placeholders until the company domain and store accounts are known.
+
+### D-032 Upfront prices
+
+The passenger sees and books a fixed price from the quote (distance and time from
+the route at booking). The final fare is that price plus any waiting charge at
+pickup. Actual distance driven does not change it, which suits cash payment and
+avoids disputes. Route deviations caused by the passenger (extra stops) are a
+later feature.
+
+### D-033 Fare formula details
+
+- `F = B + D×Rd + T×Rt + A` with D in metres and T in seconds, prorated to the
+  per-km and per-minute rates in integer kobo (BigInt, half-up).
+- An optional peak multiplier (Nigerian-time windows; the highest active one wins,
+  1.0×–3.0×) applies to B + D×Rd + T×Rt.
+- The minimum fare applies to that trip part; then the booking fee (A) is added;
+  then the total is rounded **up** to ₦50 (configurable) so change is easy.
+- Split of a completed fare: the booking fee goes to the platform in full;
+  commission (basis points per vehicle type) is taken from the rest; the driver
+  keeps the remainder. For cash rides the driver holds the cash, so the booking fee
+  plus commission is recorded as owed (`commissions`, `pending_settlement`) and
+  settled from the driver's wallet in Phase 5.
+- Waiting: free for the first minutes after the driver arrives, then per started
+  minute.
+- Cancellation: free while searching and for a grace period (2 minutes) after a
+  driver accepts; the fee applies after that or once the driver has arrived. A
+  driver may report a no-show after waiting 5 minutes at the pickup, which charges
+  the passenger the same fee. Cash fees cannot be taken on the spot; they are
+  recorded as outstanding and collected from the wallet in Phase 5.
+- Fare rule changes create a new row and deactivate the old one; booked rides keep
+  their snapshot (tested: a change after booking does not affect the ride).
+
+### D-034 Placeholder fares (NOT business-approved)
+
+Seeded by `seed-city` for each vehicle type, e.g. car ₦500 base, ₦120/km, ₦15/min,
+₦800 minimum, ₦100 booking fee, ₦300 cancellation, 20% commission; Keke Napep
+₦200 base, ₦70/km, ₦8/min, ₦400 minimum, ₦50 booking fee, 15% commission. See
+`apps/api/src/pricing/default-fares.ts`. Replace before launch (B-13). Only super
+admins hold `pricing.manage` and `service_areas.manage` by default; every change
+is audited with the previous and new values.
+
+### D-035 Matching
+
+- Drivers' live state (online, vehicle type, latest position with device and
+  server time) lives in Redis, with one geo index per vehicle type.
+- A ride is offered to **one driver at a time**: the nearest online, eligible,
+  free driver of the booked type whose last position is under 60 seconds old. The
+  driver has 15 seconds; after a rejection or timeout the next nearest is asked.
+  A driver is never asked twice for the same ride. The search radius grows from 3
+  to 5 to 8 km; after 3 minutes the ride ends as `no_driver_found`.
+- Eligibility (documents in date, account active) is checked again before each
+  offer and at acceptance; a driver whose documents lapse is taken offline.
+- A dispatcher runs every second on each API copy; rows are claimed with
+  `FOR UPDATE SKIP LOCKED`, so several copies cooperate safely.
+- Acceptance is one conditional update on the ride (`status = 'searching'`),
+  after locking the ride row first. Unique indexes stop a driver holding two
+  active rides or two open offers, and a passenger holding two immediate rides.
+  The concurrent-accept test caught a deadlock when the ride was locked second;
+  every path now locks the ride before its offers, and any future deadlock returns
+  a retryable 409 instead of a 500.
+- When a driver cancels (other than for a no-show) the ride ends; the passenger
+  app offers to request again. Automatic re-dispatch is a possible improvement.
+
+### D-036 Idempotent booking
+
+`POST /v1/rides` requires an `Idempotency-Key`. The first request runs; a retry
+with the same key and body returns the same ride; the same key with a different
+body is refused; a retry while the first is running gets 409 with Retry-After.
+Failed attempts are forgotten so a corrected retry can run. Keys are kept 24 hours.
+The apps keep one key per booking attempt and reuse it on retry.
+
+### D-037 Live updates in Phase 3
+
+The passenger app polls its ride every 4 seconds and the driver app polls for
+requests every 3 seconds. Phase 4 replaces this with Socket.IO, background
+location and an offline position buffer. Driver positions are already stored with
+device and server time, and apps show "last updated … ago" for positions older
+than 30 seconds.
+
+### D-038 Shared mobile packages
+
+`@rideswithme/ui-components/native` (presentational components, all text passed
+in) and `@rideswithme/mobile-core` (secure session, language, sign-in, formatting)
+are shared by both Expo apps. A Metro resolver rule (`metro.workspace.js`) makes
+workspace packages use the app's own React, React Native and Expo modules; the
+bundle source maps were checked to contain exactly one copy of each.
+
+### D-039 Contacting the driver
+
+The driver card shows call and message buttons, disabled with a "coming soon"
+note, until a masked-calling vendor is chosen (B-3). Phone numbers are never
+shown to either side.

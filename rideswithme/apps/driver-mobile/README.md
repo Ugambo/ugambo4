@@ -9,7 +9,12 @@ Expo SDK 58 / React Native app for drivers. Phase 2 covers the driver applicatio
   storage
 - sending the application for review, and seeing the result
 
-Trips arrive in Phase 3 and background location in Phase 4.
+Phase 3 adds driving: going online (foreground location), ride requests with a
+15-second countdown, accept or decline, navigation to pickup and destination
+(Google Maps), arrived / start / complete, collecting cash, no-show and
+cancellation, and an earnings screen (today, this week, each trip with the fee
+taken). Phase 4 adds background location, an offline position buffer and live
+updates instead of polling.
 
 Development builds are required (not Expo Go), because background location
 arrives in Phase 4:
@@ -24,7 +29,7 @@ Checks that run without a phone:
 
 ```bash
 pnpm typecheck
-pnpm test            # checklist, date input and upload/retry logic
+pnpm test            # checklist, dates, upload/retry, offer countdown, cash, earnings totals
 pnpm bundle:check    # Metro bundles the whole app for Android
 ```
 

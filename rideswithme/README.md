@@ -3,12 +3,15 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** Phase 2 (driver onboarding) is built and awaiting approval:
+**Status:** Phase 3 (core ride flow) is built and awaiting approval:
 
 - **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
   admin two-factor authentication, audit log, Docker and CI.
 - **Phase 2:** driver registration in the driver app, document upload to private
   storage, and the admin dashboard's verification queue.
+- **Phase 3:** place search, fare estimates, booking (now or scheduled), matching
+  to the nearest driver, the ride state machine and cash payment, in the passenger
+  app and the driver app.
 
 The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
@@ -35,6 +38,8 @@ cp apps/api/.env.example apps/api/.env
 
 pnpm build
 DATABASE_URL=postgres://rideswithme:rideswithme@localhost:5432/rideswithme pnpm db:migrate
+# A development city with PLACEHOLDER fares (Kano rectangle):
+pnpm --filter @rideswithme/api cli seed-city --key kano --name Kano --bbox 8.40,11.90,8.62,12.10
 pnpm dev:api                                # http://localhost:3000
 ```
 
@@ -49,6 +54,12 @@ pnpm --filter @rideswithme/admin-dashboard dev                         # http://
 ```
 
 With `SMS_PROVIDER=console` the sign-in code appears in the API log.
+
+### Passenger and driver apps
+
+Both need a development build on a phone or emulator (see each app's README).
+With `MAPS_PROVIDER=fake` the API offers demo places in Kano, Katsina, Abuja and
+Lagos (search "Kurmi", "airport"…), and routes are straight-line estimates.
 
 ### Driver app
 
@@ -88,9 +99,9 @@ end-to-end tests use `E2E_DATABASE_URL` (a database they drop and recreate) and
 ## Layout
 
 ```
-apps/            api, admin-dashboard, driver-mobile (built);
-                 passenger-mobile, passenger-web, fleet-portal (later phases)
-packages/        shared-types, validation, api-client, ui-components, utilities
+apps/            api, admin-dashboard, driver-mobile, passenger-mobile (built);
+                 passenger-web (Phase 4), fleet-portal (Phase 6)
+packages/        shared-types, validation, api-client, ui-components, utilities, mobile-core
 infrastructure/  database (migrations + runner), docker, deployment
 documentation/   PRD, ARCHITECTURE, DATABASE, API_DOCUMENTATION, DECISIONS
 ```

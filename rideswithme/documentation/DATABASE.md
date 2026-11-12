@@ -34,13 +34,14 @@ pnpm db:status      # list applied and pending migrations
 
 ## Applied migrations
 
-| Migration                   | Contents                                                                                                                                     |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0001_extensions             | `postgis`, `citext`; helper functions `set_updated_at()` and `forbid_update_delete()`                                                        |
-| 0002_identity               | users, roles, permissions, role_permissions, user_roles, user_sessions, user_consents                                                        |
-| 0003_audit_logs             | audit_logs (append-only)                                                                                                                     |
-| 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                                                                         |
-| 0005_driver_onboarding      | vehicle_categories, document_types, requirements per category, driver_profiles, vehicles, file_uploads, driver_documents; driver permissions |
+| Migration                   | Contents                                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0001_extensions             | `postgis`, `citext`; helper functions `set_updated_at()` and `forbid_update_delete()`                                                                       |
+| 0002_identity               | users, roles, permissions, role_permissions, user_roles, user_sessions, user_consents                                                                       |
+| 0003_audit_logs             | audit_logs (append-only)                                                                                                                                    |
+| 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                                                                                        |
+| 0005_driver_onboarding      | vehicle_categories, document_types, requirements per category, driver_profiles, vehicles, file_uploads, driver_documents; driver permissions                |
+| 0006_core_ride_flow         | service_areas, fare_rules, fare_quotes, rides, ride_requests (offers), ride_events, payments, commissions, saved_places, idempotency_keys; ride permissions |
 
 ## Identity domain
 
@@ -163,17 +164,54 @@ content type and size, encrypted document number and last 4, `expires_on` (last
 valid day, Nigerian time), reviewer, review time, rejection reason. Indexed for
 the latest per driver and type, the pending queue, and the expiry sweep.
 
+## Rides domain (Phase 3)
+
+```
+service_areas 1──* fare_rules *──1 vehicle_categories
+fare_quotes ──1 fare_rules           (a price shown to a passenger)
+rides ──1 fare_quotes                (fare_snapshot frozen at booking)
+rides 1──* ride_requests             (offers to drivers, one open at a time)
+rides 1──* ride_events               (append-only timeline, ordered by seq)
+rides 1──* payments                  (cash fare, outstanding cancellation fee)
+rides 1──1 commissions               (owed by the driver for cash rides)
+```
+
+- **service_areas:** `key`, `name`, `boundary` (PostGIS MultiPolygon, GiST
+  index), `is_active`. A pickup must be inside an active area.
+- **fare_rules:** per area and vehicle type, all money in bigint kobo: base, per
+  km, per minute, minimum, booking fee, cancellation fee and grace, waiting free
+  minutes and per-minute charge, commission (basis points), rounding increment,
+  peak windows (jsonb). One active row per area and type; changes add a row.
+- **fare_quotes:** pickup/dropoff points and addresses, route distance, duration
+  and polyline, the price breakdown and total, expiry.
+- **rides:** passenger, driver, vehicle, type, area, status (enum of the 9 states),
+  pickup/dropoff, `scheduled_for`, `fare_snapshot` (rule values, breakdown, route),
+  quoted, waiting, final and cancellation amounts, commission, payment method,
+  search radius and deadline, and a timestamp per step. Partial unique indexes: one
+  active immediate ride per passenger; one assigned ride per driver.
+- **ride_requests:** ride, driver, status (`offered`, `accepted`, `rejected`,
+  `expired`, `withdrawn`), distance to pickup, expiry. Unique per (ride, driver);
+  at most one `offered` per driver.
+- **ride_events:** `seq` (strict order), event type, from/to status, actor, location,
+  metadata. UPDATE and DELETE are refused.
+- **payments:** ride, payer, method, purpose (`ride_fare`, `cancellation_fee`),
+  amount, status (`collected`, `outstanding`, …), who collected it and when.
+- **commissions:** fare, booking fee, basis points, commission,
+  `pending_settlement` until Phase 5 settles it from the driver's wallet.
+- **saved_places:** home, work (one each) and up to 20 others per user.
+- **idempotency_keys:** user, key, scope, request hash, stored response (24 h).
+
 ## Not in the database
 
-- One-time codes, rate-limit counters, job locks: Redis, with expiry.
+- One-time codes, rate-limit counters, job locks, cached routes: Redis, with expiry.
+- Driver online state and live positions (with device and server time) and the
+  per-vehicle-type geo index used for matching: Redis.
 - Document files: private S3-compatible storage (keys in `driver_documents.object_key`).
 - Live driver positions (Phase 4): Redis.
 
 ## Planned domains
 
-Tables listed in the brief for later phases (passenger_profiles, fleets, service_areas,
-saved_places, rides, ride_requests, ride_events, driver_locations,
-trip_locations partitioned by date, fare_rules, fare_quotes, commissions,
-payments, wallets, wallet_transactions, bus_*, emergency_alerts,
+Tables listed in the brief for later phases (passenger_profiles, fleets, driver_locations,
+trip_locations partitioned by date, wallets, wallet_transactions, bus_*, emergency_alerts,
 incident_reports, ratings, reviews, promotions, notifications, support_tickets)
 are added by the phase that first needs them.

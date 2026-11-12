@@ -34,31 +34,39 @@ client: `@rideswithme/api-client`.
 `@rideswithme/utilities`). Rate-limited responses carry `retryAfterSeconds` and a
 `Retry-After` header.
 
-| Code                                                       | HTTP | Meaning                                                                |
-| ---------------------------------------------------------- | ---- | ---------------------------------------------------------------------- |
-| VALIDATION_FAILED                                          | 422  | Body, query or path is invalid; `details` lists the problems           |
-| UNAUTHENTICATED                                            | 401  | Missing, invalid or expired access token. Refresh and retry            |
-| SESSION_REVOKED                                            | 401  | Session ended (logout, revoked, suspended). Sign in again              |
-| REFRESH_TOKEN_INVALID                                      | 401  | Refresh token rejected. Sign in again                                  |
-| FORBIDDEN                                                  | 403  | Missing permission; `details.missing` lists them                       |
-| MFA_REQUIRED                                               | 403  | Role needs TOTP; `details.enrolled` says whether to set up or verify   |
-| ACCOUNT_SUSPENDED                                          | 403  | Account suspended                                                      |
-| NOT_FOUND                                                  | 404  |                                                                        |
-| CONFLICT                                                   | 409  | E.g. email already used                                                |
-| LAST_SUPER_ADMIN                                           | 409  | Would leave no active super admin                                      |
-| TOTP_NOT_ENROLLED / TOTP_ALREADY_ENABLED                   | 409  |                                                                        |
-| OTP_INVALID / OTP_EXPIRED / TOTP_INVALID                   | 422  |                                                                        |
-| RATE_LIMITED / OTP_RESEND_TOO_SOON / OTP_TOO_MANY_ATTEMPTS | 429  | Wait `retryAfterSeconds`                                               |
-| SMS_DELIVERY_FAILED                                        | 502  | SMS vendor failed; retry is allowed straight away                      |
-| DRIVER_NOT_REGISTERED                                      | 404  | No driver application yet                                              |
-| DRIVER_PROFILE_LOCKED                                      | 409  | Application submitted or approved; details can't change                |
-| DRIVER_INCOMPLETE                                          | 422  | `details.gaps` (driver) or `details.blockers` (admin approval)         |
-| INVALID_STATE                                              | 409  | Not allowed in the current status (e.g. approving a reviewed document) |
-| UPLOAD_INVALID                                             | 422  | `details.reason` says why the file can't be used                       |
-| NIN_ALREADY_REGISTERED / PLATE_ALREADY_REGISTERED          | 409  | Already on another driver                                              |
-| VEHICLE_CATEGORY_UNAVAILABLE                               | 422  | Vehicle type not enabled                                               |
-| STORAGE_UNAVAILABLE                                        | 503  | Object storage unreachable; retry                                      |
-| INTERNAL_ERROR                                             | 500  | Quote the `requestId` to support                                       |
+| Code                                                       | HTTP      | Meaning                                                                |
+| ---------------------------------------------------------- | --------- | ---------------------------------------------------------------------- |
+| VALIDATION_FAILED                                          | 422       | Body, query or path is invalid; `details` lists the problems           |
+| UNAUTHENTICATED                                            | 401       | Missing, invalid or expired access token. Refresh and retry            |
+| SESSION_REVOKED                                            | 401       | Session ended (logout, revoked, suspended). Sign in again              |
+| REFRESH_TOKEN_INVALID                                      | 401       | Refresh token rejected. Sign in again                                  |
+| FORBIDDEN                                                  | 403       | Missing permission; `details.missing` lists them                       |
+| MFA_REQUIRED                                               | 403       | Role needs TOTP; `details.enrolled` says whether to set up or verify   |
+| ACCOUNT_SUSPENDED                                          | 403       | Account suspended                                                      |
+| NOT_FOUND                                                  | 404       |                                                                        |
+| CONFLICT                                                   | 409       | E.g. email already used                                                |
+| LAST_SUPER_ADMIN                                           | 409       | Would leave no active super admin                                      |
+| TOTP_NOT_ENROLLED / TOTP_ALREADY_ENABLED                   | 409       |                                                                        |
+| OTP_INVALID / OTP_EXPIRED / TOTP_INVALID                   | 422       |                                                                        |
+| RATE_LIMITED / OTP_RESEND_TOO_SOON / OTP_TOO_MANY_ATTEMPTS | 429       | Wait `retryAfterSeconds`                                               |
+| SMS_DELIVERY_FAILED                                        | 502       | SMS vendor failed; retry is allowed straight away                      |
+| DRIVER_NOT_REGISTERED                                      | 404       | No driver application yet                                              |
+| DRIVER_PROFILE_LOCKED                                      | 409       | Application submitted or approved; details can't change                |
+| DRIVER_INCOMPLETE                                          | 422       | `details.gaps` (driver) or `details.blockers` (admin approval)         |
+| INVALID_STATE                                              | 409       | Not allowed in the current status (e.g. approving a reviewed document) |
+| UPLOAD_INVALID                                             | 422       | `details.reason` says why the file can't be used                       |
+| NIN_ALREADY_REGISTERED / PLATE_ALREADY_REGISTERED          | 409       | Already on another driver                                              |
+| VEHICLE_CATEGORY_UNAVAILABLE                               | 422       | Vehicle type not enabled                                               |
+| STORAGE_UNAVAILABLE                                        | 503       | Object storage unreachable; retry                                      |
+| OUTSIDE_SERVICE_AREA / ROUTE_NOT_FOUND                     | 422       | Pickup outside every area / no route                                   |
+| QUOTE_EXPIRED                                              | 422       | Ask for a new estimate                                                 |
+| PAYMENT_METHOD_UNAVAILABLE                                 | 422       | Only cash until Phase 5                                                |
+| RIDE_ALREADY_ACTIVE                                        | 409       | One ride at a time                                                     |
+| OFFER_UNAVAILABLE                                          | 409       | Offer expired or taken                                                 |
+| DRIVER_NOT_ELIGIBLE                                        | 403       | `details.blockers`                                                     |
+| IDEMPOTENCY_KEY_REQUIRED / IDEMPOTENCY_CONFLICT            | 422 / 409 | See booking                                                            |
+| MAPS_UNAVAILABLE                                           | 503       | Maps vendor unreachable; retry                                         |
+| INTERNAL_ERROR                                             | 500       | Quote the `requestId` to support                                       |
 
 ## Health
 
@@ -379,6 +387,86 @@ application is submitted or approved.
 Reviewers cannot act on their own application (`403`). Conflicting decisions on
 the same item get `409 INVALID_STATE`. Every view and decision is audited.
 
+## Rides (Phase 3)
+
+### Places and saved places
+
+| Method | Path                                                 | Notes                                                                                                       |
+| ------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/places/autocomplete?q=&lat=&lng=&sessionToken=` | Nigeria only, biased near `lat,lng`. Returns `[{ placeId, primaryText, secondaryText }]`. 120 per minute    |
+| GET    | `/v1/places/details/:placeId?sessionToken=`          | `{ placeId, name, address, location: { lat, lng } }`                                                        |
+| GET    | `/v1/places/reverse?lat=&lng=`                       | Address for a point                                                                                         |
+| GET    | `/v1/me/saved-places`                                | Home, work and others                                                                                       |
+| POST   | `/v1/me/saved-places`                                | `{ label: home\|work\|other, name, address, location, placeId? }`. Saving home or work replaces the old one |
+| DELETE | `/v1/me/saved-places/:id`                            |                                                                                                             |
+
+### POST /v1/fares/estimate
+
+```json
+{
+  "pickup": { "location": { "lat": 12.0, "lng": 8.5167 }, "address": "Kurmi Market, Kano" },
+  "dropoff": { "location": { "lat": 12.0476, "lng": 8.5246 }, "address": "Kano Airport" }
+}
+```
+
+Returns the route and one option per available vehicle type, each with a
+`quoteId` (valid 10 minutes), the total, the full `breakdown` (base, distance,
+time, peak surcharge, minimum top-up, booking fee, rounding) and `etaSeconds` of
+the nearest available driver (`null` when none is near).
+`422 OUTSIDE_SERVICE_AREA` when the pickup is outside every active area.
+
+### Booking and the passenger's rides
+
+| Method | Path                         | Notes                                                                                                                                                                                                                                                                                                        |
+| ------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/v1/rides`                  | **`Idempotency-Key` header required.** `{ quoteId, paymentMethod: "cash", scheduledFor? }` → `201 RideView`. `scheduledFor` 15 minutes to 7 days ahead. Errors: `QUOTE_EXPIRED`, `PAYMENT_METHOD_UNAVAILABLE` (only cash for now), `RIDE_ALREADY_ACTIVE`, `IDEMPOTENCY_KEY_REQUIRED`, `IDEMPOTENCY_CONFLICT` |
+| GET    | `/v1/rides/active`           | Current ride and scheduled rides                                                                                                                                                                                                                                                                             |
+| GET    | `/v1/rides`                  | History, newest first, `cursor` paging                                                                                                                                                                                                                                                                       |
+| GET    | `/v1/rides/:id`              | `RideView` (poll every few seconds in Phase 3)                                                                                                                                                                                                                                                               |
+| POST   | `/v1/rides/:id/cancel`       | `{ reason? }`. Until the trip starts. Free while searching and for 2 minutes after a driver accepts; then the fee in `fare.cancellationPolicy`                                                                                                                                                               |
+| GET    | `/v1/rides/:id/driver-photo` | 60-second link to the assigned driver's approved photo, while the ride is active                                                                                                                                                                                                                             |
+
+`RideView`: `id`, `status`, `category`, `pickup`, `dropoff`, `route` (distance,
+duration, polyline), `scheduledFor`, `paymentMethod`, `fare` (`quotedTotalKobo`,
+`waitingChargeKobo`, `finalTotalKobo`, `cancellationFeeKobo`,
+`cancellationPolicy`, `breakdown`), `driver` (`firstName`, vehicle make, model,
+colour and plate, `position` with `recordedAt`/`receivedAt` while the ride is
+active, `hasPhoto`), and a timestamp per step.
+
+Statuses: `requested` (scheduled) → `searching` → `driver_assigned` →
+`driver_arrived` → `in_progress` → `completed`, or `cancelled_by_passenger`,
+`cancelled_by_driver`, `no_driver_found`.
+
+### Driver: availability, requests and trips
+
+| Method | Path                            | Notes                                                                                                                                                                        |
+| ------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/driver/availability`       | `{ online, blockers, position }`                                                                                                                                             |
+| POST   | `/v1/driver/availability`       | `{ online: true, location: { lat, lng, recordedAt, accuracy?, heading?, speed? } }` or `{ online: false }`. `403 DRIVER_NOT_ELIGIBLE` with `blockers`                        |
+| POST   | `/v1/driver/location`           | `{ points: [...] }` (1–500, e.g. buffered while offline). The newest reading becomes the position; older ones never move the driver back                                     |
+| GET    | `/v1/driver/offers/current`     | `{ offer }`: pickup, dropoff, distance to pickup, trip distance and time, fare, estimated earnings, `expiresAt` (15 s)                                                       |
+| POST   | `/v1/driver/offers/:id/accept`  | `DriverRideView`. `409 OFFER_UNAVAILABLE` if expired, answered, or another driver got the ride                                                                               |
+| POST   | `/v1/driver/offers/:id/reject`  | `204`; the next driver is asked                                                                                                                                              |
+| GET    | `/v1/driver/rides/active`       | `{ ride }`                                                                                                                                                                   |
+| GET    | `/v1/driver/rides`              | History with `earnings` (fare, booking fee, commission, net)                                                                                                                 |
+| POST   | `/v1/driver/rides/:id/arrived`  |                                                                                                                                                                              |
+| POST   | `/v1/driver/rides/:id/start`    | Adds the waiting charge if the driver waited beyond the free minutes                                                                                                         |
+| POST   | `/v1/driver/rides/:id/complete` | `{ cashCollectedKobo }`. Records the cash payment and the commission owed                                                                                                    |
+| POST   | `/v1/driver/rides/:id/cancel`   | `{ reason: passenger_no_show\|vehicle_problem\|safety_concern\|other, note? }`. A no-show needs 5 minutes' wait at the pickup and charges the passenger the cancellation fee |
+
+Steps out of order return `409 INVALID_STATE`; other drivers' rides return `404`.
+
+### Admin
+
+| Method | Path                                   | Permission           | Notes                                                                                                                    |
+| ------ | -------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/v1/admin/service-areas`              | rides.read           | GeoJSON boundaries                                                                                                       |
+| PUT    | `/v1/admin/service-areas`              | service_areas.manage | `{ key, name, boundary: GeoJSON Polygon or MultiPolygon, isActive }`; create or replace by key; invalid polygons refused |
+| GET    | `/v1/admin/fare-rules`                 | rides.read           | Active rule per area and vehicle type                                                                                    |
+| PUT    | `/v1/admin/fare-rules/:area/:category` | pricing.manage       | All rule fields in kobo/basis points, `peakWindows`. Audited with old and new values                                     |
+| GET    | `/v1/admin/rides`                      | rides.read           | Filter by `status`, `passengerId`, `driverId`                                                                            |
+| GET    | `/v1/admin/rides/:id`                  | rides.read           | Ride plus its full event timeline                                                                                        |
+
 ## Command line (operators)
 
 Run from `rideswithme/` after `pnpm build`, with the API's environment set:
@@ -387,6 +475,10 @@ Run from `rideswithme/` after `pnpm build`, with the API's environment set:
 pnpm --filter @rideswithme/api cli grant-role  --phone 0803… --role super_admin
 pnpm --filter @rideswithme/api cli revoke-role --phone 0803… --role admin
 pnpm --filter @rideswithme/api cli reset-mfa   --phone 0803…
+pnpm --filter @rideswithme/api cli seed-city   --key kano --name Kano --bbox 8.40,11.90,8.62,12.10
 ```
+
+`seed-city` creates a rectangular service area with placeholder fares for
+development (DECISIONS D-034).
 
 These are audited as `system` actions.
