@@ -68,6 +68,8 @@ export interface ApiClientOptions {
   getLanguage?: () => Language;
   /** Called when the refresh token is rejected and the user must sign in again. */
   onSessionExpired?: () => void;
+  /** Extra headers on every API request (e.g. the admin dashboard's anti-forgery header). */
+  headers?: Record<string, string>;
 }
 
 interface RequestOptions {
@@ -92,7 +94,7 @@ export function createApiClient(options: ApiClientOptions) {
     for (const [k, v] of Object.entries(req.query ?? {})) {
       if (v !== undefined && v !== '') url.searchParams.set(k, String(v));
     }
-    const headers: Record<string, string> = { Accept: 'application/json' };
+    const headers: Record<string, string> = { ...options.headers, Accept: 'application/json' };
     if (req.body !== undefined) headers['Content-Type'] = 'application/json';
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
     if (options.getLanguage) headers['Accept-Language'] = options.getLanguage();

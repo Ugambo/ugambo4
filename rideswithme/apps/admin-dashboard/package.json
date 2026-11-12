@@ -1,0 +1,38 @@
+{
+  "name": "@rideswithme/admin-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src e2e",
+    "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@rideswithme/api-client": "workspace:*",
+    "@rideswithme/shared-types": "workspace:*",
+    "@rideswithme/ui-components": "workspace:*",
+    "@rideswithme/utilities": "workspace:*",
+    "@rideswithme/validation": "workspace:*",
+    "jose": "^6.2.17",
+    "next": "16.4.6",
+    "qrcode": "^1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "^0.0.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@rideswithme/database": "workspace:*",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "pg": "^8.23.1"
+  }
+}
