@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { MfaService } from '../src/auth/mfa.service';
+import { base32Decode, hotp } from '../src/auth/totp';
 import {
   currentTotp,
   createHarness,
@@ -62,10 +63,11 @@ describe('permissions and two-factor authentication', () => {
       .set('Authorization', auth)
       .send({ code: '000000' === currentTotp(setup.body.secret) ? '111111' : '000000' })
       .expect(422);
+    const usedCode = currentTotp(setup.body.secret);
     const activated = await h.http
       .post('/v1/auth/mfa/totp/activate')
       .set('Authorization', auth)
-      .send({ code: currentTotp(setup.body.secret) })
+      .send({ code: usedCode })
       .expect(200);
     expect(activated.body.mfa).toEqual({
       required: true,
@@ -81,13 +83,19 @@ describe('permissions and two-factor authentication', () => {
     const replay = await h.http
       .post('/v1/auth/mfa/totp/verify')
       .set('Authorization', auth2)
-      .send({ code: currentTotp(setup.body.secret) })
+      .send({ code: usedCode })
       .expect(422);
     expect(replay.body.error.code).toBe('TOTP_INVALID');
+    // The next time step is accepted (within the one-step drift window).
+    const { totp_last_used_step } = await h.db
+      .selectFrom('users')
+      .select('totp_last_used_step')
+      .where('id', '=', first.user.id)
+      .executeTakeFirstOrThrow();
     await h.http
       .post('/v1/auth/mfa/totp/verify')
       .set('Authorization', auth2)
-      .send({ code: currentTotp(setup.body.secret, 1) })
+      .send({ code: hotp(base32Decode(setup.body.secret), Number(totp_last_used_step) + 1) })
       .expect(200);
     await h.http.get('/v1/admin/users').set('Authorization', auth2).expect(200);
 
