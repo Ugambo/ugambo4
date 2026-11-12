@@ -6,6 +6,7 @@ pnpm-lock.yaml
 .next
 next-env.d.ts
 .expo
+.expo-export-check
 **/e2e/.output
 test-results
 playwright-report

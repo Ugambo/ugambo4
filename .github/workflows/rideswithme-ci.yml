@@ -59,7 +59,7 @@ jobs:
       - run: pnpm turbo run build typecheck lint test
 
   e2e:
-    name: Admin dashboard end-to-end (Playwright)
+    name: Web apps end-to-end (Playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
@@ -91,16 +91,20 @@ jobs:
           cache: pnpm
           cache-dependency-path: rideswithme/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo run build --filter=@rideswithme/api --filter=@rideswithme/admin-dashboard
+      - run: pnpm turbo run build --filter=@rideswithme/api --filter=@rideswithme/admin-dashboard --filter=@rideswithme/passenger-web --filter=@rideswithme/e2e-support
       - run: pnpm --filter @rideswithme/admin-dashboard exec playwright install --with-deps chromium
       - run: pnpm --filter @rideswithme/admin-dashboard e2e
+      - run: pnpm --filter @rideswithme/passenger-web e2e
+        if: success() || failure()
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: admin-e2e
+          name: web-e2e
           path: |
             rideswithme/apps/admin-dashboard/e2e/.output
             rideswithme/apps/admin-dashboard/test-results
+            rideswithme/apps/passenger-web/e2e/.output
+            rideswithme/apps/passenger-web/test-results
           retention-days: 7
 
   mobile-bundle:
@@ -136,8 +140,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build API, migration and admin dashboard images
+      - name: Build API, migration, admin dashboard and passenger website images
         run: |
           docker buildx build -f infrastructure/docker/api.Dockerfile --target migrate .
           docker buildx build -f infrastructure/docker/api.Dockerfile --target api .
           docker buildx build -f infrastructure/docker/admin-dashboard.Dockerfile .
+          docker buildx build -f infrastructure/docker/passenger-web.Dockerfile .

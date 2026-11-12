@@ -1,6 +1,6 @@
 # Local development stack.
 #   docker compose up -d postgres redis s3   data stores only; run the apps on your machine (see README)
-#   docker compose --profile app up --build  everything, including migrations, the API and the admin dashboard
+#   docker compose --profile app up --build  everything, including migrations, the API, the admin dashboard and the passenger website
 name: rideswithme
 
 services:
@@ -60,6 +60,8 @@ services:
       S3_CREATE_BUCKET: 'true'
       # The admin dashboard is a proxy in front of the API.
       TRUST_PROXY_HOPS: '1'
+      # Browsers on the passenger website connect here directly for live updates.
+      CORS_ORIGINS: http://localhost:3002
     ports: ['3000:3000']
     depends_on:
       migrate: { condition: service_completed_successfully }
@@ -75,6 +77,20 @@ services:
       STORAGE_ORIGIN: http://localhost:9000
       SESSION_COOKIE_SECURE: 'false'
     ports: ['3001:3001']
+    depends_on:
+      api: { condition: service_started }
+
+  passenger-web:
+    profiles: [app]
+    build: { context: ., dockerfile: infrastructure/docker/passenger-web.Dockerfile }
+    env_file: apps/passenger-web/.env.local
+    environment:
+      API_URL: http://api:3000
+      # Where the browser reaches the API for live updates.
+      API_PUBLIC_URL: http://localhost:3000
+      STORAGE_ORIGIN: http://localhost:9000
+      SESSION_COOKIE_SECURE: 'false'
+    ports: ['3002:3002']
     depends_on:
       api: { condition: service_started }
 
