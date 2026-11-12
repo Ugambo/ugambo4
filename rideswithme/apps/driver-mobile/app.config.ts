@@ -28,6 +28,11 @@ const config: ExpoConfig = {
       {
         locationWhenInUsePermission:
           'RideswithMe shares your location with passengers and the dispatcher while you are online.',
+        locationAlwaysAndWhenInUsePermission:
+          'RideswithMe keeps sharing your location while you are online, even when the app is in the background, so you keep getting ride requests and passengers can see you coming.',
+        isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
+        isIosBackgroundLocationEnabled: true,
       },
     ],
     [

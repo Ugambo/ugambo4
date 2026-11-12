@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError, newIdempotencyKey } from '@rideswithme/api-client';
 import { formatTime } from '@rideswithme/mobile-core';
 import {
+  type DriverPosition,
   ACTIVE_RIDE_STATUSES,
   type FareEstimateResponse,
   type Place,
@@ -27,7 +28,7 @@ import { DriverCard, FareLines, VehicleRow } from '@/components/ride-parts';
 import { RideMap } from '@/components/ride-map';
 import { Body, Button, Card, ErrorText, Title } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
-import { api } from '@/lib/session';
+import { api, useOnReconnect, useRealtimeEvent } from '@/lib/session';
 import {
   canCancel,
   cancellationFeeNow,
@@ -37,7 +38,8 @@ import {
 } from '@/lib/trip-logic';
 import { useTripDraft } from '@/lib/trip-draft';
 
-const POLL_MS = 4000;
+/** Live updates do the work; this slow poll only covers missed events. */
+const FALLBACK_POLL_MS = 30_000;
 
 /** API place input: drop empty optional fields. */
 function toPlaceInput(p: Place) {
@@ -139,14 +141,52 @@ export default function Home() {
     };
   }, [draft.pickup, draft.dropoff, ride]);
 
-  // Follow the active ride until it finishes (Phase 4 replaces polling with live updates).
+  // Live: the ride's status and the driver's position as they change.
+  useRealtimeEvent<RideView>(
+    'ride:updated',
+    useCallback((updated: RideView) => {
+      if (updated.status === 'requested') {
+        setScheduled((s) => [...s.filter((x) => x.id !== updated.id), updated]);
+        return;
+      }
+      setScheduled((s) => s.filter((x) => x.id !== updated.id));
+      setRide((current) =>
+        !current || current.id === updated.id || !ACTIVE_RIDE_STATUSES.includes(current.status)
+          ? updated
+          : current,
+      );
+    }, []),
+  );
+  useRealtimeEvent<{ rideId: string; position: DriverPosition }>(
+    'driver:position',
+    useCallback((p: { rideId: string; position: DriverPosition }) => {
+      setRide((current) =>
+        current?.id === p.rideId && current.driver
+          ? { ...current, driver: { ...current.driver, position: p.position } }
+          : current,
+      );
+    }, []),
+  );
+  // Anything sent while the connection was down is missed: refetch on reconnect.
+  useOnReconnect(
+    useCallback(() => {
+      void loadActive().catch(() => undefined);
+    }, [loadActive]),
+  );
+
+  // Fallback in case a live event was missed; also re-renders "last updated" ages.
+  const [, setTick] = useState(0);
   useEffect(() => {
     if (!ride || !ACTIVE_RIDE_STATUSES.includes(ride.status)) return;
-    const id = setInterval(() => {
+    const age = setInterval(() => setTick((n) => n + 1), 5000);
+    const poll = setInterval(() => {
       api.rides.get(ride.id).then(setRide, () => undefined);
-    }, POLL_MS);
-    return () => clearInterval(id);
-  }, [ride]);
+    }, FALLBACK_POLL_MS);
+    return () => {
+      clearInterval(age);
+      clearInterval(poll);
+    };
+  }, [ride?.id, ride?.status]);
 
   const option = estimate?.options.find((o) => o.category.key === selected) ?? null;
 

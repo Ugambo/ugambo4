@@ -4,6 +4,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@rideswithme/ui-components';
 import { I18nProvider } from '@/lib/i18n';
 import { SessionProvider } from '@/lib/session';
+// Registers the background location task at start-up (the OS may start it without any screen).
+import '@/lib/background-location';
 
 export default function RootLayout() {
   return (

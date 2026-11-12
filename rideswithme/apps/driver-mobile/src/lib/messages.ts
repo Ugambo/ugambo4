@@ -148,6 +148,12 @@ const en = {
   'earnings.cashNote': 'Fees on cash trips are settled from your wallet when payouts start.',
   'earnings.history': 'Trips',
   'earnings.empty': 'No trips yet.',
+  'drive.trackingTitle': 'RideswithMe: you are online',
+  'drive.trackingBody': 'Sharing your location for ride requests. Go offline in the app to stop.',
+  'drive.reconnecting': 'Reconnecting… requests will arrive as soon as you are back online.',
+  'drive.foregroundOnly':
+    'Location is shared only while this app is open. Allow "always" location access to keep receiving requests in the background.',
+  'drive.pendingUploads': '{count} location updates waiting to upload',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -298,6 +304,13 @@ const ha: Record<MessageKey, string> = {
     'Za a daidaita kuɗin tafiye-tafiyen kuɗi hannu daga walat ɗinku idan biyan kuɗi ya fara.',
   'earnings.history': 'Tafiye-tafiye',
   'earnings.empty': 'Babu tafiya tukuna.',
+  'drive.trackingTitle': 'RideswithMe: kuna kan aiki',
+  'drive.trackingBody':
+    'Ana raba wurin da kuke don bukatun tafiya. Daina aiki a manhajar don tsayawa.',
+  'drive.reconnecting': 'Ana sake haɗawa… bukatu za su iso da zarar intanet ya dawo.',
+  'drive.foregroundOnly':
+    'Ana raba wuri ne kawai idan manhajar a buɗe take. Ba da izinin wuri "koyaushe" don ci gaba da samun bukatu a bayan fage.',
+  'drive.pendingUploads': 'Sabuntawar wuri {count} na jiran lodawa',
 };
 
 export const messages = { en, ha };

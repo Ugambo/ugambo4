@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { Link } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import NetInfo from '@react-native-community/netinfo';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '@rideswithme/api-client';
 import { formatDistance, formatDuration } from '@rideswithme/mobile-core';
@@ -10,16 +11,23 @@ import { formatKobo } from '@rideswithme/utilities';
 import { Body, Button, Card, ErrorText, Screen, Title } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import type { MessageKey } from '@/lib/messages';
-import { api } from '@/lib/session';
+import {
+  flushLocations,
+  locationBuffer,
+  startTracking,
+  stopTracking,
+} from '@/lib/background-location';
+import { api, useOnReconnect, useRealtimeConnected, useRealtimeEvent } from '@/lib/session';
 import { cashToCollect, navigationUrl, secondsLeft } from '@/lib/trips';
 
-const OFFER_POLL_MS = 3000;
-const RIDE_POLL_MS = 5000;
+/** Live events do the work; this slow poll only covers missed events. */
+const FALLBACK_POLL_MS = 30_000;
+const FLUSH_MS = 15_000;
 
 /**
  * The driver's working screen: go online, answer ride requests, run the trip.
- * Phase 3 polls the API; Phase 4 adds live updates, background location and an
- * offline buffer for positions.
+ * Requests and trip changes arrive live; location is tracked in the background
+ * and buffered on the phone whenever there is no connection.
  */
 export default function Drive() {
   const { t } = useI18n();
@@ -32,7 +40,9 @@ export default function Drive() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [locationDenied, setLocationDenied] = useState(false);
-  const watcher = useRef<Location.LocationSubscription | null>(null);
+  const [foregroundOnly, setForegroundOnly] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const connected = useRealtimeConnected();
 
   const refresh = useCallback(async () => {
     const [availability, active] = await Promise.all([
@@ -54,59 +64,86 @@ export default function Drive() {
     return () => clearInterval(id);
   }, []);
 
-  // Share position while online (foreground only in Phase 3).
+  // Track location while online (background where allowed) and keep uploading the buffer.
   useEffect(() => {
     if (!online) return;
     let cancelled = false;
-    void Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.High, timeInterval: 10_000, distanceInterval: 25 },
-      (loc) => {
-        void api.trips
-          .sendLocation({
-            points: [
-              {
-                lat: loc.coords.latitude,
-                lng: loc.coords.longitude,
-                ...(loc.coords.accuracy !== null && { accuracy: loc.coords.accuracy }),
-                ...(loc.coords.heading !== null &&
-                  loc.coords.heading >= 0 && { heading: loc.coords.heading }),
-                ...(loc.coords.speed !== null &&
-                  loc.coords.speed >= 0 && { speed: loc.coords.speed }),
-                recordedAt: new Date(loc.timestamp).toISOString(),
-              },
-            ],
-          })
-          .catch(() => undefined);
+    void startTracking({ title: t('drive.trackingTitle'), body: t('drive.trackingBody') }).then(
+      (mode) => {
+        if (cancelled) return;
+        setLocationDenied(mode === 'denied');
+        setForegroundOnly(mode === 'foreground');
       },
-    ).then((sub) => {
-      if (cancelled) sub.remove();
-      else watcher.current = sub;
+    );
+    const flush = () => {
+      void flushLocations()
+        .catch(() => 0)
+        .then(() => locationBuffer().pending())
+        .then(setPendingUploads);
+    };
+    const timer = setInterval(flush, FLUSH_MS);
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected) flush();
     });
     return () => {
       cancelled = true;
-      watcher.current?.remove();
-      watcher.current = null;
+      clearInterval(timer);
+      unsubscribe();
     };
-  }, [online]);
+  }, [online, t]);
 
-  // Look for requests while online and free; follow the trip while on one.
+  // Live: new and withdrawn requests, and changes to the current trip.
+  useRealtimeEvent<DriverOfferView>(
+    'offer:new',
+    useCallback((o: DriverOfferView) => setOffer(o), []),
+  );
+  useRealtimeEvent<{ offerId: string }>(
+    'offer:closed',
+    useCallback(
+      (c: { offerId: string }) =>
+        setOffer((current) => (current?.offerId === c.offerId ? null : current)),
+      [],
+    ),
+  );
+  useRealtimeEvent<DriverRideView>(
+    'ride:updated',
+    useCallback((r: DriverRideView) => {
+      const ended =
+        r.status === 'completed' ||
+        r.status === 'cancelled_by_driver' ||
+        r.status === 'cancelled_by_passenger';
+      if (ended) {
+        setRide((current) => (current?.id === r.id ? null : current));
+        setFinished((current) => current ?? r);
+      } else setRide(r);
+    }, []),
+  );
+  // Events sent while the connection was down are missed: refetch on reconnect.
+  useOnReconnect(
+    useCallback(() => {
+      void refresh().catch(() => undefined);
+      api.trips.currentOffer().then(
+        (o) => setOffer(o.offer),
+        () => undefined,
+      );
+    }, [refresh]),
+  );
+
+  // Fallback in case a live event was missed.
   useEffect(() => {
     if (!online && !ride) return;
-    const id = setInterval(
-      () => {
-        if (ride)
-          api.trips.active().then(
-            (a) => setRide(a.ride),
-            () => undefined,
-          );
-        else
-          api.trips.currentOffer().then(
-            (o) => setOffer(o.offer),
-            () => undefined,
-          );
-      },
-      ride ? RIDE_POLL_MS : OFFER_POLL_MS,
-    );
+    const id = setInterval(() => {
+      if (ride)
+        api.trips.active().then(
+          (a) => setRide(a.ride),
+          () => undefined,
+        );
+      else
+        api.trips.currentOffer().then(
+          (o) => setOffer(o.offer),
+          () => undefined,
+        );
+    }, FALLBACK_POLL_MS);
     return () => clearInterval(id);
   }, [online, ride]);
 
@@ -128,6 +165,7 @@ export default function Drive() {
     run(async () => {
       if (online) {
         await api.trips.setAvailability({ online: false });
+        await stopTracking();
         setOnline(false);
         setOffer(null);
         return;
@@ -229,6 +267,11 @@ export default function Drive() {
           <Text style={styles.statusText}>{t(online ? 'drive.online' : 'drive.offline')}</Text>
         </View>
         {online && <Body muted>{t('drive.waiting')}</Body>}
+        {online && !connected && <Body muted>{t('drive.reconnecting')}</Body>}
+        {online && foregroundOnly && <Body muted>{t('drive.foregroundOnly')}</Body>}
+        {pendingUploads > 0 && (
+          <Body muted>{t('drive.pendingUploads', { count: pendingUploads })}</Body>
+        )}
         {locationDenied && <Body>{t('drive.locationNeeded')}</Body>}
         {!online && blockers.length > 0 && (
           <Card tone="bad">
