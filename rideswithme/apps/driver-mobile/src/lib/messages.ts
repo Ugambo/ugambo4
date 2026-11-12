@@ -4,27 +4,8 @@
  * Error messages come from @rideswithme/utilities.
  */
 const en = {
-  'common.continue': 'Continue',
-  'common.save': 'Save',
-  'common.retry': 'Try again',
-  'common.loading': 'Loading…',
-  'common.offline':
-    'No internet connection. You can keep going; we will try again when you are back online.',
-  'common.language': 'Language',
-  'common.signOut': 'Sign out',
-  'common.back': 'Back',
-
   'signIn.title': 'Drive with RideswithMe',
   'signIn.subtitle': 'Sign in with your phone number to start your driver application.',
-  'signIn.phone': 'Phone number',
-  'signIn.phoneHint': 'e.g. 0803 123 4567',
-  'signIn.sendCode': 'Send code',
-  'signIn.code': 'Enter the 6-digit code we sent to {phone}',
-  'signIn.verify': 'Sign in',
-  'signIn.resend': 'Send a new code',
-  'signIn.resendIn': 'Send a new code in {seconds}s',
-  'signIn.changeNumber': 'Change number',
-  'signIn.consent': 'By continuing you accept the RideswithMe terms and privacy policy.',
 
   'home.title': 'Your driver application',
   'home.onboarding': 'Complete each step, then send your application for review.',
@@ -122,26 +103,8 @@ const en = {
 export type MessageKey = keyof typeof en;
 
 const ha: Record<MessageKey, string> = {
-  'common.continue': 'Ci gaba',
-  'common.save': 'Adana',
-  'common.retry': 'Sake gwadawa',
-  'common.loading': 'Ana lodawa…',
-  'common.offline': 'Babu intanet. Kuna iya ci gaba; za mu sake gwadawa idan intanet ya dawo.',
-  'common.language': 'Harshe',
-  'common.signOut': 'Fita',
-  'common.back': 'Koma baya',
-
   'signIn.title': 'Tuƙa da RideswithMe',
   'signIn.subtitle': 'Shiga da lambar wayarku don fara bukatar zama direba.',
-  'signIn.phone': 'Lambar waya',
-  'signIn.phoneHint': 'misali 0803 123 4567',
-  'signIn.sendCode': 'Aika lamba',
-  'signIn.code': 'Shigar da lambar 6 da muka aika zuwa {phone}',
-  'signIn.verify': 'Shiga',
-  'signIn.resend': 'Aika sabuwar lamba',
-  'signIn.resendIn': 'Aika sabuwar lamba bayan daƙiƙa {seconds}',
-  'signIn.changeNumber': 'Canza lamba',
-  'signIn.consent': 'Ta ci gaba, kun yarda da sharuɗɗa da manufar sirri ta RideswithMe.',
 
   'home.title': 'Bukatarku ta zama direba',
   'home.onboarding': 'Kammala kowane mataki, sannan ku aika bukatarku don dubawa.',

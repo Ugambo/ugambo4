@@ -98,6 +98,8 @@ export interface DriverPosition extends LatLng {
 }
 
 export interface RideFareView {
+  /** From the booked fare: cancelling after the grace period (or once the driver has arrived) costs feeKobo. */
+  cancellationPolicy: { feeKobo: number; graceSeconds: number };
   quotedTotalKobo: number;
   waitingChargeKobo: number;
   finalTotalKobo: number | null;

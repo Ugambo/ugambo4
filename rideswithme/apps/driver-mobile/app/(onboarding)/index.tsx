@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { OnlineBlocker } from '@rideswithme/shared-types';
 import { colors, spacing, typography } from '@rideswithme/ui-components';
-import { LanguageSwitch } from '@/components/language-switch';
 import {
   Body,
   Button,
   Card,
   ErrorText,
   ErrorView,
+  LanguageSwitch,
   Loading,
   Pill,
   Screen,

@@ -75,6 +75,10 @@ export class RideViewService {
       scheduledFor: row.scheduled_for?.toISOString() ?? null,
       paymentMethod: row.payment_method as PaymentMethod,
       fare: {
+        cancellationPolicy: {
+          feeKobo: snapshot.rule.cancellationFeeKobo,
+          graceSeconds: snapshot.rule.cancellationGraceSeconds,
+        },
         quotedTotalKobo: koboFromDb(row.quoted_total_kobo),
         waitingChargeKobo: koboFromDb(row.waiting_charge_kobo),
         finalTotalKobo: row.final_total_kobo === null ? null : koboFromDb(row.final_total_kobo),

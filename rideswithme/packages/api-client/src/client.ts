@@ -1,4 +1,13 @@
 import type {
+  DriverAvailabilityView,
+  DriverOfferView,
+  DriverPosition,
+  DriverRideView,
+  FareEstimateResponse,
+  Place,
+  PlaceSuggestion,
+  RideView,
+  SavedPlace,
   AdminDriverDetail,
   AdminDriverListItem,
   AdminUserSummary,
@@ -22,6 +31,12 @@ import type {
   VerifyOtpResponse,
 } from '@rideswithme/shared-types';
 import type {
+  AvailabilityInput,
+  CreateRideInput,
+  DriverCancelInput,
+  FareEstimateInput,
+  LocationUpdateInput,
+  SavedPlaceInput,
   ApproveDocumentInput,
   ListAuditLogsQuery,
   ListDriversQuery,
@@ -269,6 +284,83 @@ export function createApiClient(options: ApiClientOptions) {
           }),
       },
     },
+    fares: {
+      estimate: (input: FareEstimateInput) =>
+        request<FareEstimateResponse>('/v1/fares/estimate', { method: 'POST', body: input }),
+    },
+    rides: {
+      /** Reuse the same idempotencyKey when retrying the same booking, so it is never booked twice. */
+      book: (input: CreateRideInput, idempotencyKey: string) =>
+        request<RideView>('/v1/rides', { method: 'POST', body: input, idempotencyKey }),
+      active: () => request<RideView[]>('/v1/rides/active'),
+      history: (cursor?: string) =>
+        request<Paginated<RideView>>('/v1/rides', { query: { cursor } }),
+      get: (id: string) => request<RideView>(`/v1/rides/${encodeURIComponent(id)}`),
+      cancel: (id: string, reason?: string) =>
+        request<RideView>(`/v1/rides/${encodeURIComponent(id)}/cancel`, {
+          method: 'POST',
+          body: reason ? { reason } : {},
+        }),
+      driverPhoto: (id: string) =>
+        request<DocumentViewUrl>(`/v1/rides/${encodeURIComponent(id)}/driver-photo`),
+    },
+    places: {
+      autocomplete: (q: string, near?: { lat: number; lng: number }, sessionToken?: string) =>
+        request<PlaceSuggestion[]>('/v1/places/autocomplete', {
+          query: { q, lat: near?.lat, lng: near?.lng, sessionToken },
+        }),
+      details: (placeId: string, sessionToken?: string) =>
+        request<Place>(`/v1/places/details/${encodeURIComponent(placeId)}`, {
+          query: { sessionToken },
+        }),
+      reverse: (at: { lat: number; lng: number }) =>
+        request<Place>('/v1/places/reverse', { query: { lat: at.lat, lng: at.lng } }),
+      saved: () => request<SavedPlace[]>('/v1/me/saved-places'),
+      save: (input: SavedPlaceInput) =>
+        request<SavedPlace>('/v1/me/saved-places', { method: 'POST', body: input }),
+      removeSaved: (id: string) =>
+        request<void>(`/v1/me/saved-places/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    },
+    trips: {
+      availability: () => request<DriverAvailabilityView>('/v1/driver/availability'),
+      setAvailability: (input: AvailabilityInput) =>
+        request<DriverAvailabilityView>('/v1/driver/availability', { method: 'POST', body: input }),
+      sendLocation: (input: LocationUpdateInput) =>
+        request<{ position: DriverPosition | null }>('/v1/driver/location', {
+          method: 'POST',
+          body: input,
+        }),
+      currentOffer: () => request<{ offer: DriverOfferView | null }>('/v1/driver/offers/current'),
+      accept: (offerId: string) =>
+        request<DriverRideView>(`/v1/driver/offers/${encodeURIComponent(offerId)}/accept`, {
+          method: 'POST',
+        }),
+      reject: (offerId: string) =>
+        request<void>(`/v1/driver/offers/${encodeURIComponent(offerId)}/reject`, {
+          method: 'POST',
+        }),
+      active: () => request<{ ride: DriverRideView | null }>('/v1/driver/rides/active'),
+      history: (cursor?: string) =>
+        request<Paginated<DriverRideView>>('/v1/driver/rides', { query: { cursor } }),
+      arrived: (rideId: string) =>
+        request<DriverRideView>(`/v1/driver/rides/${encodeURIComponent(rideId)}/arrived`, {
+          method: 'POST',
+        }),
+      start: (rideId: string) =>
+        request<DriverRideView>(`/v1/driver/rides/${encodeURIComponent(rideId)}/start`, {
+          method: 'POST',
+        }),
+      complete: (rideId: string, cashCollectedKobo: number) =>
+        request<DriverRideView>(`/v1/driver/rides/${encodeURIComponent(rideId)}/complete`, {
+          method: 'POST',
+          body: { cashCollectedKobo },
+        }),
+      cancel: (rideId: string, input: DriverCancelInput) =>
+        request<DriverRideView>(`/v1/driver/rides/${encodeURIComponent(rideId)}/cancel`, {
+          method: 'POST',
+          body: input,
+        }),
+    },
     vehicleCategories: () =>
       request<VehicleCategorySummary[]>('/v1/vehicle-categories', { auth: false }),
     driver: {
@@ -329,4 +421,13 @@ function safeJson(text: string): unknown {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * A random key for Idempotency-Key headers. Not a security token: it only has
+ * to be unique per user action. Works without crypto APIs (Hermes on older phones).
+ */
+export function newIdempotencyKey(): string {
+  const random = () => Math.random().toString(36).slice(2, 10);
+  return `${Date.now().toString(36)}-${random()}-${random()}`;
 }

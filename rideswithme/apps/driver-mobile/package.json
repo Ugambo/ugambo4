@@ -15,6 +15,7 @@
   "dependencies": {
     "@react-native-community/netinfo": "12.0.1",
     "@rideswithme/api-client": "workspace:*",
+    "@rideswithme/mobile-core": "workspace:*",
     "@rideswithme/shared-types": "workspace:*",
     "@rideswithme/ui-components": "workspace:*",
     "@rideswithme/utilities": "workspace:*",

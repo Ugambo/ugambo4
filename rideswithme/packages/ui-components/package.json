@@ -12,5 +12,42 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "@react-native-community/netinfo": "12.0.1",
+    "@types/react": "^19.3.0",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./native": {
+      "types": "./dist/native/index.d.ts",
+      "default": "./dist/native/index.js"
+    }
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-safe-area-context": "*",
+    "@react-native-community/netinfo": "*"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    },
+    "react-native-safe-area-context": {
+      "optional": true
+    },
+    "@react-native-community/netinfo": {
+      "optional": true
+    }
   }
 }
