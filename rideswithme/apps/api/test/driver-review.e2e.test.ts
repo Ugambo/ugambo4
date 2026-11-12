@@ -51,12 +51,13 @@ describe('verification queue', () => {
     const admin = await signInWithMfa(h, nextPhone(), 'admin');
     const first = await submittedDriver();
     const second = await submittedDriver('keke_napep');
-    // Someone still filling in their application is not in the queue.
+    // Someone still filling in their application is not in the queue, even with documents uploaded.
     const { tokens } = await signIn(h, nextPhone());
     await h.http
       .post('/v1/driver/registration')
       .set('Authorization', `Bearer ${tokens.accessToken}`)
       .expect(200);
+    await addDocument(h, `Bearer ${tokens.accessToken}`, 'profile_photo');
 
     const res = await h.http.get('/v1/admin/drivers').set('Authorization', admin.auth).expect(200);
     expect(res.body.items.map((d: { userId: string }) => d.userId)).toEqual([
@@ -253,6 +254,12 @@ describe('review decisions', () => {
       rejectionReason: 'Please upload the insurance for this vehicle',
     });
     expect(h.sms.messages[0]!.text).toContain('needs changes');
+    // Sent back: waiting on the driver now, so not in the review queue, though other documents are still pending.
+    const queue = await h.http
+      .get('/v1/admin/drivers')
+      .set('Authorization', admin.auth)
+      .expect(200);
+    expect(queue.body.items).toEqual([]);
 
     const view = (
       await h.http.get('/v1/driver/onboarding').set('Authorization', driver.auth).expect(200)

@@ -66,10 +66,14 @@ export class AdminDriversService {
           .whereRef('d.driver_user_id', '=', 'p.user_id')
           .where('d.status', '=', 'pending')
           .as('pending_documents'),
-        sql<Date | null>`least(
-          case when p.status = 'pending_review' then p.submitted_at end,
-          (select min(d.created_at) from driver_documents d where d.driver_user_id = p.user_id and d.status = 'pending')
-        )`.as('waiting_since'),
+        // Waiting on a reviewer: a submitted application (since submission), or an
+        // approved driver's renewal (since the oldest pending upload). Applications
+        // being filled in or sent back are waiting on the driver, not on us.
+        sql<Date | null>`case
+          when p.status = 'pending_review' then p.submitted_at
+          when p.status = 'approved' then (select min(d.created_at) from driver_documents d
+                                           where d.driver_user_id = p.user_id and d.status = 'pending')
+        end`.as('waiting_since'),
       ]);
 
     let query = this.db
