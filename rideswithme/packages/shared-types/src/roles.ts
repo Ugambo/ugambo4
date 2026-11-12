@@ -20,6 +20,9 @@ export const PERMISSION_KEYS = [
   'roles.assign',
   'roles.assign_privileged',
   'audit_logs.read',
+  'drivers.read',
+  'drivers.documents_view',
+  'drivers.verify',
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 

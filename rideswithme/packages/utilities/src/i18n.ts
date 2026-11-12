@@ -30,6 +30,20 @@ const en = {
   'error.LAST_SUPER_ADMIN': 'The last super admin cannot be removed.',
   'error.SMS_DELIVERY_FAILED': 'We could not send the code. Please try again.',
   'error.INTERNAL_ERROR': 'Something went wrong. Please try again.',
+  'error.DRIVER_NOT_REGISTERED': 'Start your driver registration first.',
+  'error.DRIVER_PROFILE_LOCKED': 'Your application is being reviewed and cannot be changed now.',
+  'error.DRIVER_INCOMPLETE': 'Some details or documents are still missing.',
+  'error.INVALID_STATE': 'This cannot be done right now.',
+  'error.UPLOAD_INVALID':
+    'The file could not be used. Upload it again as a photo (JPG or PNG) or PDF.',
+  'error.NIN_ALREADY_REGISTERED': 'This NIN is already registered to another driver.',
+  'error.PLATE_ALREADY_REGISTERED': 'This plate number is already registered.',
+  'error.VEHICLE_CATEGORY_UNAVAILABLE': 'This vehicle type is not available yet.',
+  'error.STORAGE_UNAVAILABLE': 'File upload is not available right now. Please try again shortly.',
+  'sms.driver_approved':
+    'Your RideswithMe driver account is approved. Open the RideswithMe Driver app to go online.',
+  'sms.driver_rejected':
+    'Your RideswithMe driver application needs changes. Open the RideswithMe Driver app to see what to fix.',
 } satisfies Catalog;
 
 export type MessageKey = keyof typeof en;
@@ -57,6 +71,21 @@ const ha: Record<MessageKey, string> = {
   'error.LAST_SUPER_ADMIN': 'Ba za a iya cire babban mai gudanarwa na ƙarshe ba.',
   'error.SMS_DELIVERY_FAILED': 'Ba mu iya aika lambar ba. Da fatan a sake gwadawa.',
   'error.INTERNAL_ERROR': 'Wani abu ya faru ba daidai ba. Da fatan a sake gwadawa.',
+  'error.DRIVER_NOT_REGISTERED': 'Da farko ku fara rajistar direba.',
+  'error.DRIVER_PROFILE_LOCKED': 'Ana duba bukatarku, ba za a iya canza ta yanzu ba.',
+  'error.DRIVER_INCOMPLETE': 'Akwai wasu bayanai ko takardu da suka rage.',
+  'error.INVALID_STATE': 'Ba za a iya yin wannan yanzu ba.',
+  'error.UPLOAD_INVALID':
+    'Ba a iya amfani da fayil ɗin ba. Sake loda shi a matsayin hoto (JPG ko PNG) ko PDF.',
+  'error.NIN_ALREADY_REGISTERED': 'An riga an yi rajistar wannan NIN ga wani direba.',
+  'error.PLATE_ALREADY_REGISTERED': 'An riga an yi rajistar wannan lambar mota.',
+  'error.VEHICLE_CATEGORY_UNAVAILABLE': "Wannan nau'in abin hawa bai samu ba tukuna.",
+  'error.STORAGE_UNAVAILABLE':
+    'Ba a iya loda fayil yanzu. Da fatan a sake gwadawa nan ba da jimawa ba.',
+  'sms.driver_approved':
+    'An amince da asusun direbanku na RideswithMe. Buɗe manhajar RideswithMe Driver don fara aiki.',
+  'sms.driver_rejected':
+    'Bukatar direbanku ta RideswithMe tana bukatar gyara. Buɗe manhajar RideswithMe Driver don ganin abin da za a gyara.',
 };
 
 export const catalogs: Record<Language, Record<MessageKey, string>> = { en, ha };

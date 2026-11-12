@@ -1,5 +1,12 @@
 import type {
+  AdminDriverDetail,
+  AdminDriverListItem,
   AdminUserSummary,
+  DocumentUploadTicket,
+  DocumentViewUrl,
+  DriverDocumentView,
+  DriverOnboardingView,
+  VehicleCategorySummary,
   ApiErrorBody,
   AuditLogEntry,
   AuthTokens,
@@ -15,10 +22,18 @@ import type {
   VerifyOtpResponse,
 } from '@rideswithme/shared-types';
 import type {
+  ApproveDocumentInput,
   ListAuditLogsQuery,
+  ListDriversQuery,
   ListUsersQuery,
+  PayoutAccountInput,
+  RejectDocumentInput,
+  RequestDocumentUploadInput,
   RequestOtpInput,
+  SubmitDocumentInput,
+  UpdateDriverProfileInput,
   UpdateMeInput,
+  UpsertVehicleInput,
   VerifyOtpInput,
 } from '@rideswithme/validation';
 
@@ -56,7 +71,7 @@ export interface ApiClientOptions {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
   query?: Record<string, string | number | undefined>;
   auth?: boolean;
@@ -221,6 +236,85 @@ export function createApiClient(options: ApiClientOptions) {
         }),
       listAuditLogs: (query: Partial<ListAuditLogsQuery> = {}) =>
         request<Paginated<AuditLogEntry>>('/v1/admin/audit-logs', { query }),
+      drivers: {
+        list: (query: Partial<ListDriversQuery> = {}) =>
+          request<Paginated<AdminDriverListItem>>('/v1/admin/drivers', { query }),
+        detail: (driverId: string) =>
+          request<AdminDriverDetail>(`/v1/admin/drivers/${encodeURIComponent(driverId)}`),
+        documentUrl: (driverId: string, documentId: string) =>
+          request<DocumentViewUrl>(
+            `/v1/admin/drivers/${encodeURIComponent(driverId)}/documents/${encodeURIComponent(documentId)}/view-url`,
+            { method: 'POST' },
+          ),
+        approveDocument: (driverId: string, documentId: string, input: ApproveDocumentInput = {}) =>
+          request<DriverDocumentView>(
+            `/v1/admin/drivers/${encodeURIComponent(driverId)}/documents/${encodeURIComponent(documentId)}/approve`,
+            { method: 'POST', body: input },
+          ),
+        rejectDocument: (driverId: string, documentId: string, input: RejectDocumentInput) =>
+          request<DriverDocumentView>(
+            `/v1/admin/drivers/${encodeURIComponent(driverId)}/documents/${encodeURIComponent(documentId)}/reject`,
+            { method: 'POST', body: input },
+          ),
+        approve: (driverId: string) =>
+          request<AdminDriverDetail>(`/v1/admin/drivers/${encodeURIComponent(driverId)}/approve`, {
+            method: 'POST',
+          }),
+        reject: (driverId: string, reason: string) =>
+          request<AdminDriverDetail>(`/v1/admin/drivers/${encodeURIComponent(driverId)}/reject`, {
+            method: 'POST',
+            body: { reason },
+          }),
+      },
+    },
+    vehicleCategories: () =>
+      request<VehicleCategorySummary[]>('/v1/vehicle-categories', { auth: false }),
+    driver: {
+      register: () => request<DriverOnboardingView>('/v1/driver/registration', { method: 'POST' }),
+      onboarding: () => request<DriverOnboardingView>('/v1/driver/onboarding'),
+      updateProfile: (input: UpdateDriverProfileInput) =>
+        request<DriverOnboardingView>('/v1/driver/profile', { method: 'PATCH', body: input }),
+      upsertVehicle: (input: UpsertVehicleInput) =>
+        request<DriverOnboardingView>('/v1/driver/vehicle', { method: 'PUT', body: input }),
+      setPayoutAccount: (input: PayoutAccountInput) =>
+        request<DriverOnboardingView>('/v1/driver/payout-account', { method: 'PUT', body: input }),
+      requestUpload: (input: RequestDocumentUploadInput) =>
+        request<DocumentUploadTicket>('/v1/driver/documents/uploads', {
+          method: 'POST',
+          body: input,
+        }),
+      /**
+       * PUTs the file to the signed storage URL. No API token is sent: the URL
+       * itself is the permission. `body` is a Blob in browsers and React Native.
+       */
+      uploadToStorage: async (
+        ticket: DocumentUploadTicket,
+        body: Blob | ArrayBuffer | Uint8Array,
+      ) => {
+        let res: Response;
+        try {
+          res = await fetchImpl(ticket.uploadUrl, {
+            method: ticket.method,
+            headers: ticket.headers,
+            body: body as NonNullable<RequestInit['body']>,
+          });
+        } catch (err) {
+          throw new ApiError(
+            0,
+            'NETWORK_ERROR',
+            err instanceof Error ? err.message : 'Upload failed',
+          );
+        }
+        if (!res.ok)
+          throw new ApiError(
+            res.status,
+            'UPLOAD_INVALID',
+            `Storage rejected the upload (HTTP ${res.status})`,
+          );
+      },
+      submitDocument: (input: SubmitDocumentInput) =>
+        request<DriverDocumentView>('/v1/driver/documents', { method: 'POST', body: input }),
+      submitForReview: () => request<DriverOnboardingView>('/v1/driver/submit', { method: 'POST' }),
     },
   };
 }
