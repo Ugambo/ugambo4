@@ -43,6 +43,8 @@ export interface Harness {
   db: Kysely<Database>;
   redis: Redis;
   config: AppConfig;
+  /** Base URL of the listening server (for realtime clients). */
+  url: string;
   close(): Promise<void>;
 }
 
@@ -54,8 +56,10 @@ export async function createHarness(overrides: Record<string, string> = {}): Pro
     .useValue(sms)
     .compile();
   const app = moduleRef.createNestApplication({ bodyParser: false, logger: false });
-  configureApp(app, config);
-  await app.init();
+  await configureApp(app, config);
+  // Listen on a free port so realtime (Socket.IO) clients can connect.
+  await app.listen(0, '127.0.0.1');
+  const address = app.getHttpServer().address() as { port: number };
   const db = app.get<Kysely<Database>>(DB);
   const redis = app.get<Redis>(REDIS);
   return {
@@ -65,6 +69,7 @@ export async function createHarness(overrides: Record<string, string> = {}): Pro
     db,
     redis,
     config,
+    url: `http://127.0.0.1:${address.port}`,
     close: () => app.close(),
   };
 }

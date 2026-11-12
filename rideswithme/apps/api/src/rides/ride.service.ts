@@ -28,7 +28,9 @@ import { type FareSnapshot, ruleValues } from '../pricing/pricing.service';
 import { ObjectStorageService } from '../storage/object-storage.service';
 import { canTransition, recordRideEvent } from './ride-events';
 import { type RideRow, RideViewService } from './ride-view.service';
+import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { PresenceService } from './presence.service';
+import { TripLocationsService } from './trip-locations.service';
 
 const MAX_SCHEDULED_PER_PASSENGER = 3;
 
@@ -46,6 +48,8 @@ export class RideService {
     private readonly presence: PresenceService,
     private readonly drivers: DriverViewService,
     private readonly storage: ObjectStorageService,
+    private readonly notifier: RealtimeNotifier,
+    private readonly tripLocations: TripLocationsService,
   ) {}
 
   // --- Passenger ---
@@ -210,6 +214,7 @@ export class RideService {
     });
 
     if (!scheduledFor) this.onRideSearching(rideId);
+    await this.notifier.rideChanged(rideId);
     return this.views.passengerView(await this.views.loadRow(rideId));
   }
 
@@ -260,7 +265,7 @@ export class RideService {
     reason: string | undefined,
     now = new Date(),
   ): Promise<RideView> {
-    await this.db.transaction().execute(async (trx) => {
+    const withdrawn = await this.db.transaction().execute(async (trx) => {
       const ride = await this.lock(trx, rideId, { passengerId });
       const to: RideStatus = 'cancelled_by_passenger';
       if (!canTransition(ride.status, to)) {
@@ -286,7 +291,7 @@ export class RideService {
         })
         .where('id', '=', rideId)
         .execute();
-      await this.withdrawOffers(trx, rideId);
+      const offers = await this.withdrawOffers(trx, rideId);
       if (fee > 0) await this.recordOutstandingFee(trx, rideId, passengerId, fee);
       await recordRideEvent(trx, {
         rideId,
@@ -297,7 +302,10 @@ export class RideService {
         actorId: passengerId,
         metadata: { reason: reason ?? null, feeKobo: fee },
       });
+      return offers;
     });
+    for (const o of withdrawn) await this.notifier.offerClosed(o.driver_id, o.id, 'withdrawn');
+    await this.notifier.rideChanged(rideId);
     return this.getForPassenger(passengerId, rideId);
   }
 
@@ -456,6 +464,7 @@ export class RideService {
       });
       return offer.ride_id;
     });
+    await this.notifier.rideChanged(rideId);
     return this.views.driverView(await this.views.loadRow(rideId));
   }
 
@@ -534,6 +543,9 @@ export class RideService {
       const snapshot = ride.fare_snapshot as FareSnapshot;
       const final = koboFromDb(ride.quoted_total_kobo) + koboFromDb(ride.waiting_charge_kobo);
       const split = splitFare(snapshot.rule, final);
+      const driven = ride.started_at
+        ? await this.tripLocations.drivenDistance(trx, rideId, ride.started_at, now)
+        : 0;
       await trx
         .updateTable('rides')
         .set({
@@ -541,6 +553,7 @@ export class RideService {
           completed_at: now,
           final_total_kobo: final,
           commission_kobo: split.commissionKobo,
+          actual_distance_meters: driven,
         })
         .where('id', '=', rideId)
         .execute();
@@ -572,6 +585,7 @@ export class RideService {
         finalTotalKobo: final,
         cashCollectedKobo,
         cashShortKobo: Math.max(0, final - cashCollectedKobo),
+        drivenMeters: driven,
         ...split,
       };
     });
@@ -654,6 +668,7 @@ export class RideService {
         metadata,
       });
     });
+    await this.notifier.rideChanged(rideId);
     return this.views.driverView(await this.views.loadRow(rideId));
   }
 
@@ -672,6 +687,7 @@ export class RideService {
         'fare_snapshot',
         'assigned_at',
         'arrived_at',
+        'started_at',
         'quoted_total_kobo',
         'waiting_charge_kobo',
         latOf('pickup').as('pickup_lat'),
@@ -690,11 +706,12 @@ export class RideService {
   }
 
   private async withdrawOffers(trx: Kysely<Database>, rideId: string) {
-    await trx
+    return trx
       .updateTable('ride_requests')
       .set({ status: 'withdrawn', responded_at: new Date() })
       .where('ride_id', '=', rideId)
       .where('status', '=', 'offered')
+      .returning(['id', 'driver_id'])
       .execute();
   }
 

@@ -35,6 +35,8 @@ import { AuthService } from './auth.service';
 import { MfaService } from './mfa.service';
 import { CurrentPrincipal, type Principal, Public } from './principal';
 import { SessionService } from './session.service';
+import { TokenService } from './token.service';
+import { APP_CONFIG, type AppConfig } from '../config/config';
 
 @Controller('v1/auth')
 export class AuthController {
@@ -43,6 +45,8 @@ export class AuthController {
     private readonly sessions: SessionService,
     private readonly mfa: MfaService,
     @Inject(RateLimiterService) private readonly rateLimiter: RateLimiterService,
+    private readonly tokens: TokenService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   @Public()
@@ -106,6 +110,21 @@ export class AuthController {
     if (!(await this.sessions.revokeOwn(principal.userId, id))) {
       throw new AppException(ErrorCode.NOT_FOUND, 'Session not found');
     }
+  }
+
+  /** A 60-second ticket for opening a realtime connection (used by web apps). */
+  @Post('realtime-ticket')
+  @HttpCode(200)
+  async realtimeTicket(
+    @CurrentPrincipal() principal: Principal,
+  ): Promise<{ ticket: string; expiresIn: number }> {
+    return {
+      ticket: await this.tokens.signRealtimeTicket({
+        userId: principal.userId,
+        sessionId: principal.sessionId,
+      }),
+      expiresIn: this.config.REALTIME_TICKET_TTL_SECONDS,
+    };
   }
 
   @Post('mfa/totp/setup')

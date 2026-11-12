@@ -12,7 +12,7 @@ async function main() {
     bodyParser: false,
   });
   app.useLogger(app.get(Logger));
-  configureApp(app, config);
+  await configureApp(app, config);
   await app.listen(config.PORT, '0.0.0.0');
 }
 

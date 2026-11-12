@@ -305,8 +305,21 @@ export interface RidesTable {
   completed_at: Timestamp | null;
   cancelled_at: Timestamp | null;
   cancellation_reason: string | null;
+  actual_distance_meters: number | null;
   created_at: CreatedAt;
   updated_at: ColumnType<Date, never, never>;
+}
+
+export interface TripLocationsTable {
+  id: ColumnType<string, never, never>;
+  ride_id: string;
+  driver_id: string;
+  location: Geography;
+  accuracy_meters: number | null;
+  heading: number | null;
+  speed_mps: number | null;
+  recorded_at: Timestamp;
+  received_at: ColumnType<Date, Date | undefined, never>;
 }
 
 export interface RideRequestsTable {
@@ -415,4 +428,5 @@ export interface Database {
   commissions: CommissionsTable;
   saved_places: SavedPlacesTable;
   idempotency_keys: IdempotencyKeysTable;
+  trip_locations: TripLocationsTable;
 }

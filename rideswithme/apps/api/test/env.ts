@@ -7,19 +7,27 @@ export const TEST_REDIS_URL = process.env.TEST_REDIS_URL ?? 'redis://localhost:6
 export const TEST_POLICY_VERSION = '2026-11';
 export const TEST_S3_ENDPOINT = process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:9000';
 
+/** Generated once per test run and shared by every app instance, as real replicas share secrets. */
+const SECRETS = {
+  jwt: randomBytes(32).toString('hex'),
+  pepper: randomBytes(32).toString('hex'),
+  fieldKey: randomBytes(32).toString('base64'),
+  lookup: randomBytes(32).toString('hex'),
+};
+
 export function testConfig(overrides: Record<string, string> = {}): AppConfig {
   return loadConfig({
     NODE_ENV: 'test',
     LOG_LEVEL: 'silent',
     DATABASE_URL: TEST_DATABASE_URL,
     REDIS_URL: TEST_REDIS_URL,
-    JWT_ACCESS_SECRET: randomBytes(32).toString('hex'),
-    OTP_PEPPER: randomBytes(32).toString('hex'),
-    FIELD_ENCRYPTION_KEYS: `test:${randomBytes(32).toString('base64')}`,
+    JWT_ACCESS_SECRET: SECRETS.jwt,
+    OTP_PEPPER: SECRETS.pepper,
+    FIELD_ENCRYPTION_KEYS: `test:${SECRETS.fieldKey}`,
     FIELD_ENCRYPTION_ACTIVE_KEY_ID: 'test',
     CURRENT_POLICY_VERSION: TEST_POLICY_VERSION,
     SMS_PROVIDER: 'console',
-    LOOKUP_HASH_SECRET: randomBytes(32).toString('hex'),
+    LOOKUP_HASH_SECRET: SECRETS.lookup,
     S3_ENDPOINT: TEST_S3_ENDPOINT,
     S3_BUCKET: process.env.TEST_S3_BUCKET ?? 'rideswithme-test',
     S3_ACCESS_KEY_ID: process.env.TEST_S3_ACCESS_KEY_ID ?? 'test',
@@ -31,6 +39,7 @@ export function testConfig(overrides: Record<string, string> = {}): AppConfig {
     MAPS_PROVIDER: 'fake',
     // Tests drive the dispatcher by calling tick() themselves.
     DISPATCH_INTERVAL_MS: '0',
+    MAINTENANCE_INTERVAL_MINUTES: '0',
     ...overrides,
   });
 }

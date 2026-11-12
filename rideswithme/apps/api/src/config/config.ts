@@ -105,6 +105,13 @@ export const configSchema = z
     DRIVER_POSITION_STALE_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
     NO_SHOW_WAIT_MINUTES: z.coerce.number().int().min(1).max(60).default(5),
 
+    // Live updates and location history.
+    REALTIME_SESSION_CHECK_SECONDS: z.coerce.number().int().min(5).max(3600).default(60),
+    REALTIME_TICKET_TTL_SECONDS: z.coerce.number().int().min(10).max(300).default(60),
+    LOCATION_MAX_AGE_HOURS: z.coerce.number().int().min(1).max(72).default(48),
+    TRIP_LOCATION_RETENTION_DAYS: z.coerce.number().int().min(7).max(3650).default(90),
+    MAINTENANCE_INTERVAL_MINUTES: z.coerce.number().int().min(0).max(1440).default(360),
+
     DOCUMENT_EXPIRY_SWEEP_MINUTES: z.coerce.number().int().min(0).max(1440).default(60),
   })
   .superRefine((c, ctx) => {

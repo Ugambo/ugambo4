@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { DriversModule } from '../drivers/drivers.module';
+import { RealtimeAuthService } from '../realtime/realtime-auth.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { RealtimeNotifier } from '../realtime/realtime.notifier';
+import { UsersModule } from '../users/users.module';
+import { LocationService } from './location.service';
+import { MaintenanceService } from './maintenance.service';
+import { TripLocationsService } from './trip-locations.service';
 import { PricingService } from '../pricing/pricing.service';
 import { AdminRidesController } from './admin-rides.controller';
 import { DispatcherService } from './dispatcher.service';
@@ -10,9 +18,27 @@ import { RideService } from './ride.service';
 import { RidesController } from './rides.controller';
 
 @Module({
-  imports: [DriversModule],
+  imports: [DriversModule, AuthModule, UsersModule],
   controllers: [RidesController, DriverTripsController, AdminRidesController],
-  providers: [PresenceService, PricingService, RideViewService, RideService, DispatcherService],
-  exports: [PricingService, DispatcherService, PresenceService],
+  providers: [
+    PresenceService,
+    PricingService,
+    RideViewService,
+    RideService,
+    DispatcherService,
+    TripLocationsService,
+    LocationService,
+    RealtimeNotifier,
+    RealtimeAuthService,
+    RealtimeGateway,
+    MaintenanceService,
+  ],
+  exports: [
+    PricingService,
+    DispatcherService,
+    PresenceService,
+    RealtimeGateway,
+    MaintenanceService,
+  ],
 })
 export class RidesModule {}

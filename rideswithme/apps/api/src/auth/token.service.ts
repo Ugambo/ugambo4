@@ -62,6 +62,43 @@ export class TokenService {
     }
   }
 
+  /**
+   * A short-lived ticket that only opens a realtime (Socket.IO) connection. Web
+   * apps keep API tokens on their own server; they fetch a ticket for the browser
+   * to connect directly to the API's live updates.
+   */
+  async signRealtimeTicket(claims: AccessTokenClaims): Promise<string> {
+    return new SignJWT({ sid: claims.sessionId, typ: 'realtime' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject(claims.userId)
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setIssuedAt()
+      .setExpirationTime(`${this.config.REALTIME_TICKET_TTL_SECONDS}s`)
+      .sign(this.secret);
+  }
+
+  /** Accepts an access token or a realtime ticket (for opening a realtime connection only). */
+  async verifyRealtimeCredential(token: string): Promise<AccessTokenClaims> {
+    try {
+      const { payload } = await jwtVerify(token, this.secret, {
+        issuer: ISSUER,
+        audience: AUDIENCE,
+        algorithms: ['HS256'],
+      });
+      if (
+        (payload.typ !== 'access' && payload.typ !== 'realtime') ||
+        typeof payload.sub !== 'string' ||
+        typeof payload.sid !== 'string'
+      ) {
+        throw new Error('Wrong token type');
+      }
+      return { userId: payload.sub, sessionId: payload.sid };
+    } catch {
+      throw new AppException(ErrorCode.UNAUTHENTICATED, 'Invalid realtime credential');
+    }
+  }
+
   newRefreshSecret(): { secret: string; hash: Buffer } {
     const secret = randomBytes(32).toString('base64url');
     return { secret, hash: hashRefreshSecret(secret) };

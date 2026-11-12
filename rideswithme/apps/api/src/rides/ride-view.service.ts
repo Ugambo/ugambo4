@@ -72,6 +72,7 @@ export class RideViewService {
         location: { lat: row.dropoff_lat, lng: row.dropoff_lng },
       },
       route: snapshot.route,
+      actualDistanceMeters: row.actual_distance_meters,
       scheduledFor: row.scheduled_for?.toISOString() ?? null,
       paymentMethod: row.payment_method as PaymentMethod,
       fare: {

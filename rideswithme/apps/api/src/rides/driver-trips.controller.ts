@@ -21,6 +21,7 @@ import { AppException } from '../common/app-exception';
 import { RateLimiterService } from '../common/rate-limit/rate-limiter.service';
 import { zod } from '../common/zod-validation.pipe';
 import { DriverViewService } from '../drivers/driver-view.service';
+import { LocationService } from './location.service';
 import { PresenceService } from './presence.service';
 import { RideService } from './ride.service';
 
@@ -32,6 +33,7 @@ export class DriverTripsController {
     private readonly presence: PresenceService,
     private readonly drivers: DriverViewService,
     private readonly rateLimiter: RateLimiterService,
+    private readonly locations: LocationService,
   ) {}
 
   @Get('availability')
@@ -80,13 +82,14 @@ export class DriverTripsController {
   async location(
     @CurrentPrincipal() p: Principal,
     @Body(zod(locationUpdateSchema)) body: z.output<typeof locationUpdateSchema>,
-  ): Promise<{ position: DriverPosition | null }> {
+  ): Promise<{ position: DriverPosition | null; stored: number }> {
     await this.rateLimiter.consume(
       { name: 'driver_location', limit: 60, windowSeconds: 60 },
       p.userId,
     );
     if (!p.roles.includes('driver')) throw new AppException(ErrorCode.FORBIDDEN, 'Drivers only');
-    return { position: await this.presence.updatePosition(p.userId, body.points) };
+    const res = await this.locations.ingest(p.userId, body.points);
+    return { position: res.position, stored: res.stored };
   }
 
   @Get('offers/current')

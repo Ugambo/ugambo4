@@ -15,6 +15,7 @@ import type { Database } from '../database/types';
 import { DriverViewService } from '../drivers/driver-view.service';
 import { REDIS } from '../redis/redis.module';
 import { PresenceService } from './presence.service';
+import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { recordRideEvent } from './ride-events';
 import { RideService } from './ride.service';
 
@@ -45,6 +46,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
     private readonly drivers: DriverViewService,
     private readonly rides: RideService,
     private readonly idempotency: IdempotencyService,
+    private readonly notifier: RealtimeNotifier,
   ) {}
 
   onModuleInit() {
@@ -101,6 +103,18 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
 
   /** Offers one searching ride to the nearest suitable driver, if it has no open offer. */
   async dispatchRide(rideId: string, now = new Date()): Promise<string | null> {
+    const offered = await this.offerNext(rideId, now);
+    if (offered) {
+      const view = await this.rides.currentOffer(offered.driverId, now);
+      if (view) await this.notifier.offerNew(offered.driverId, view);
+    }
+    return offered?.offerId ?? null;
+  }
+
+  private async offerNext(
+    rideId: string,
+    now: Date,
+  ): Promise<{ offerId: string; driverId: string } | null> {
     return this.db.transaction().execute(async (trx) => {
       const ride = await trx
         .selectFrom('rides as r')
@@ -172,7 +186,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
               distanceToPickupMeters: c.distanceMeters,
             },
           });
-          return offer.id;
+          return { offerId: offer.id, driverId: c.driverId };
         } catch (err) {
           // Another replica just offered this driver something else.
           if (isUniqueViolation(err)) continue;
@@ -227,6 +241,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
         actorType: 'system',
         metadata: { scheduled: true },
       });
+      await this.notifier.rideChanged(r.id);
     }
   }
 
@@ -245,6 +260,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
         actorType: 'system',
         metadata: { offerId: o.id, driverId: o.driver_id },
       });
+      await this.notifier.offerClosed(o.driver_id, o.id, 'expired');
     }
   }
 
@@ -274,6 +290,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
         to: 'no_driver_found',
         actorType: 'system',
       });
+      await this.notifier.rideChanged(r.id);
     }
   }
 }

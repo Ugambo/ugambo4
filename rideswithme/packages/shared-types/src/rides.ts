@@ -114,6 +114,8 @@ export interface RideView {
   pickup: Place;
   dropoff: Place;
   route: RouteSummary;
+  /** Distance actually driven, from the trip's location history (completed rides). */
+  actualDistanceMeters: number | null;
   scheduledFor: string | null;
   paymentMethod: PaymentMethod;
   fare: RideFareView;
