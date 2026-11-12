@@ -23,6 +23,9 @@ export const PERMISSION_KEYS = [
   'drivers.read',
   'drivers.documents_view',
   'drivers.verify',
+  'rides.read',
+  'service_areas.manage',
+  'pricing.manage',
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 

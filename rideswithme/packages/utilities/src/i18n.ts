@@ -40,6 +40,17 @@ const en = {
   'error.PLATE_ALREADY_REGISTERED': 'This plate number is already registered.',
   'error.VEHICLE_CATEGORY_UNAVAILABLE': 'This vehicle type is not available yet.',
   'error.STORAGE_UNAVAILABLE': 'File upload is not available right now. Please try again shortly.',
+  'error.OUTSIDE_SERVICE_AREA': 'RideswithMe is not available at this pickup point yet.',
+  'error.QUOTE_EXPIRED': 'This price has expired. Check the price again.',
+  'error.PAYMENT_METHOD_UNAVAILABLE':
+    'This payment method is not available yet. Please pay with cash.',
+  'error.RIDE_ALREADY_ACTIVE': 'You already have a ride in progress.',
+  'error.OFFER_UNAVAILABLE': 'This ride request is no longer available.',
+  'error.DRIVER_NOT_ELIGIBLE': 'You cannot go online yet. Check your documents.',
+  'error.IDEMPOTENCY_KEY_REQUIRED': 'Something went wrong. Please try again.',
+  'error.IDEMPOTENCY_CONFLICT': 'This request is already being processed.',
+  'error.MAPS_UNAVAILABLE': 'Maps are not available right now. Please try again shortly.',
+  'error.ROUTE_NOT_FOUND': 'We could not find a route between these places.',
   'sms.driver_approved':
     'Your RideswithMe driver account is approved. Open the RideswithMe Driver app to go online.',
   'sms.driver_rejected':
@@ -82,6 +93,18 @@ const ha: Record<MessageKey, string> = {
   'error.VEHICLE_CATEGORY_UNAVAILABLE': "Wannan nau'in abin hawa bai samu ba tukuna.",
   'error.STORAGE_UNAVAILABLE':
     'Ba a iya loda fayil yanzu. Da fatan a sake gwadawa nan ba da jimawa ba.',
+  'error.OUTSIDE_SERVICE_AREA': 'RideswithMe bai samu a wannan wurin ɗauka ba tukuna.',
+  'error.QUOTE_EXPIRED': 'Wannan farashi ya ƙare. Sake duba farashin.',
+  'error.PAYMENT_METHOD_UNAVAILABLE':
+    'Wannan hanyar biya ba ta samu ba tukuna. Da fatan a biya da kuɗi hannu.',
+  'error.RIDE_ALREADY_ACTIVE': 'Kuna da tafiya da ke gudana tuni.',
+  'error.OFFER_UNAVAILABLE': 'Wannan bukatar tafiya ba ta samuwa yanzu.',
+  'error.DRIVER_NOT_ELIGIBLE': 'Ba za ku iya fara aiki ba tukuna. Duba takardunku.',
+  'error.IDEMPOTENCY_KEY_REQUIRED': 'Wani abu ya faru ba daidai ba. Da fatan a sake gwadawa.',
+  'error.IDEMPOTENCY_CONFLICT': 'Ana sarrafa wannan bukata tuni.',
+  'error.MAPS_UNAVAILABLE':
+    'Taswira ba ta samu yanzu. Da fatan a sake gwadawa nan ba da jimawa ba.',
+  'error.ROUTE_NOT_FOUND': 'Ba mu sami hanya tsakanin waɗannan wurare ba.',
   'sms.driver_approved':
     'An amince da asusun direbanku na RideswithMe. Buɗe manhajar RideswithMe Driver don fara aiki.',
   'sms.driver_rejected':
