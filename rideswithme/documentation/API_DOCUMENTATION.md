@@ -165,6 +165,12 @@ The user's signed-in devices:
 
 Signs out one of the user's own devices. `204`, or `404` if it is not theirs.
 
+### POST /v1/auth/realtime-ticket
+
+`{ ticket, expiresIn: 60 }`: a short-lived credential for opening a live
+connection (see [Live updates](#live-updates-phase-4)), for web apps whose
+browsers do not hold an access token. It cannot be used on the HTTP API.
+
 ### Two-factor authentication (TOTP)
 
 Needed by fleet managers, support agents, admins and super admins before any
@@ -422,7 +428,7 @@ the nearest available driver (`null` when none is near).
 | POST   | `/v1/rides`                  | **`Idempotency-Key` header required.** `{ quoteId, paymentMethod: "cash", scheduledFor? }` → `201 RideView`. `scheduledFor` 15 minutes to 7 days ahead. Errors: `QUOTE_EXPIRED`, `PAYMENT_METHOD_UNAVAILABLE` (only cash for now), `RIDE_ALREADY_ACTIVE`, `IDEMPOTENCY_KEY_REQUIRED`, `IDEMPOTENCY_CONFLICT` |
 | GET    | `/v1/rides/active`           | Current ride and scheduled rides                                                                                                                                                                                                                                                                             |
 | GET    | `/v1/rides`                  | History, newest first, `cursor` paging                                                                                                                                                                                                                                                                       |
-| GET    | `/v1/rides/:id`              | `RideView` (poll every few seconds in Phase 3)                                                                                                                                                                                                                                                               |
+| GET    | `/v1/rides/:id`              | `RideView`. Changes also arrive live as `ride:updated`                                                                                                                                                                                                                                                       |
 | POST   | `/v1/rides/:id/cancel`       | `{ reason? }`. Until the trip starts. Free while searching and for 2 minutes after a driver accepts; then the fee in `fare.cancellationPolicy`                                                                                                                                                               |
 | GET    | `/v1/rides/:id/driver-photo` | 60-second link to the assigned driver's approved photo, while the ride is active                                                                                                                                                                                                                             |
 
@@ -431,7 +437,8 @@ duration, polyline), `scheduledFor`, `paymentMethod`, `fare` (`quotedTotalKobo`,
 `waitingChargeKobo`, `finalTotalKobo`, `cancellationFeeKobo`,
 `cancellationPolicy`, `breakdown`), `driver` (`firstName`, vehicle make, model,
 colour and plate, `position` with `recordedAt`/`receivedAt` while the ride is
-active, `hasPhoto`), and a timestamp per step.
+active, `hasPhoto`), `actualDistanceMeters` (distance driven, from the trip's
+location history, once completed), and a timestamp per step.
 
 Statuses: `requested` (scheduled) → `searching` → `driver_assigned` →
 `driver_arrived` → `in_progress` → `completed`, or `cancelled_by_passenger`,
@@ -439,20 +446,20 @@ Statuses: `requested` (scheduled) → `searching` → `driver_assigned` →
 
 ### Driver: availability, requests and trips
 
-| Method | Path                            | Notes                                                                                                                                                                        |
-| ------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/v1/driver/availability`       | `{ online, blockers, position }`                                                                                                                                             |
-| POST   | `/v1/driver/availability`       | `{ online: true, location: { lat, lng, recordedAt, accuracy?, heading?, speed? } }` or `{ online: false }`. `403 DRIVER_NOT_ELIGIBLE` with `blockers`                        |
-| POST   | `/v1/driver/location`           | `{ points: [...] }` (1–500, e.g. buffered while offline). The newest reading becomes the position; older ones never move the driver back                                     |
-| GET    | `/v1/driver/offers/current`     | `{ offer }`: pickup, dropoff, distance to pickup, trip distance and time, fare, estimated earnings, `expiresAt` (15 s)                                                       |
-| POST   | `/v1/driver/offers/:id/accept`  | `DriverRideView`. `409 OFFER_UNAVAILABLE` if expired, answered, or another driver got the ride                                                                               |
-| POST   | `/v1/driver/offers/:id/reject`  | `204`; the next driver is asked                                                                                                                                              |
-| GET    | `/v1/driver/rides/active`       | `{ ride }`                                                                                                                                                                   |
-| GET    | `/v1/driver/rides`              | History with `earnings` (fare, booking fee, commission, net)                                                                                                                 |
-| POST   | `/v1/driver/rides/:id/arrived`  |                                                                                                                                                                              |
-| POST   | `/v1/driver/rides/:id/start`    | Adds the waiting charge if the driver waited beyond the free minutes                                                                                                         |
-| POST   | `/v1/driver/rides/:id/complete` | `{ cashCollectedKobo }`. Records the cash payment and the commission owed                                                                                                    |
-| POST   | `/v1/driver/rides/:id/cancel`   | `{ reason: passenger_no_show\|vehicle_problem\|safety_concern\|other, note? }`. A no-show needs 5 minutes' wait at the pickup and charges the passenger the cancellation fee |
+| Method | Path                            | Notes                                                                                                                                                                                                                                                                                                    |
+| ------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/driver/availability`       | `{ online, blockers, position }`                                                                                                                                                                                                                                                                         |
+| POST   | `/v1/driver/availability`       | `{ online: true, location: { lat, lng, recordedAt, accuracy?, heading?, speed? } }` or `{ online: false }`. `403 DRIVER_NOT_ELIGIBLE` with `blockers`                                                                                                                                                    |
+| POST   | `/v1/driver/location`           | `{ points: [...] }` (1–500, e.g. buffered while offline) → `{ position, stored }`. The newest reading becomes the position; older ones never move the driver back. Readings taken during a ride are kept as its history (`stored` counts them); readings over 48 h old are dropped. 60 requests a minute |
+| GET    | `/v1/driver/offers/current`     | `{ offer }`: pickup, dropoff, distance to pickup, trip distance and time, fare, estimated earnings, `expiresAt` (15 s)                                                                                                                                                                                   |
+| POST   | `/v1/driver/offers/:id/accept`  | `DriverRideView`. `409 OFFER_UNAVAILABLE` if expired, answered, or another driver got the ride                                                                                                                                                                                                           |
+| POST   | `/v1/driver/offers/:id/reject`  | `204`; the next driver is asked                                                                                                                                                                                                                                                                          |
+| GET    | `/v1/driver/rides/active`       | `{ ride }`                                                                                                                                                                                                                                                                                               |
+| GET    | `/v1/driver/rides`              | History with `earnings` (fare, booking fee, commission, net)                                                                                                                                                                                                                                             |
+| POST   | `/v1/driver/rides/:id/arrived`  |                                                                                                                                                                                                                                                                                                          |
+| POST   | `/v1/driver/rides/:id/start`    | Adds the waiting charge if the driver waited beyond the free minutes                                                                                                                                                                                                                                     |
+| POST   | `/v1/driver/rides/:id/complete` | `{ cashCollectedKobo }`. Records the cash payment and the commission owed                                                                                                                                                                                                                                |
+| POST   | `/v1/driver/rides/:id/cancel`   | `{ reason: passenger_no_show\|vehicle_problem\|safety_concern\|other, note? }`. A no-show needs 5 minutes' wait at the pickup and charges the passenger the cancellation fee                                                                                                                             |
 
 Steps out of order return `409 INVALID_STATE`; other drivers' rides return `404`.
 
@@ -466,6 +473,37 @@ Steps out of order return `409 INVALID_STATE`; other drivers' rides return `404`
 | PUT    | `/v1/admin/fare-rules/:area/:category` | pricing.manage       | All rule fields in kobo/basis points, `peakWindows`. Audited with old and new values                                     |
 | GET    | `/v1/admin/rides`                      | rides.read           | Filter by `status`, `passengerId`, `driverId`                                                                            |
 | GET    | `/v1/admin/rides/:id`                  | rides.read           | Ride plus its full event timeline                                                                                        |
+
+## Live updates (Phase 4)
+
+Socket.IO at path `/realtime` on the API's address (websocket transport). Browser
+origins must be listed in `CORS_ORIGINS`.
+
+**Connecting:** pass `auth: { token }`, an access token or a realtime ticket. A
+refused handshake fails with the error message `UNAUTHENTICATED` (refresh the
+token and reconnect) or `SESSION_REVOKED` (signed out or suspended: sign in again).
+Each user is in a private room from the start; nothing needs subscribing for their
+own rides.
+
+**Server → client events**
+
+| Event             | To                                                | Payload                                                       |
+| ----------------- | ------------------------------------------------- | ------------------------------------------------------------- |
+| `ride:updated`    | The passenger, the driver, and the ride's room    | `RideView` for the passenger, `DriverRideView` for the driver |
+| `driver:position` | The passenger of the driver's active ride         | `{ rideId, position: { lat, lng, recordedAt, receivedAt } }`  |
+| `offer:new`       | The driver offered a ride                         | `DriverOfferView`                                             |
+| `offer:closed`    | The driver, when an offer expires or is withdrawn | `{ offerId, reason }`, reason `expired` or `withdrawn`        |
+| `session:ended`   | Every connection of a session that has ended      | `{ code: "SESSION_REVOKED" }`; the connection then closes     |
+
+**Client → server messages** (with acknowledgement `{ ok: true, … }` or `{ ok: false, code }`)
+
+| Message           | Who                                                                                   | Body                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `ride:subscribe`  | The ride's passenger or driver; staff with `rides.read` after two-factor verification | `{ rideId }`. Joins the ride's room (`NOT_FOUND` otherwise)                                 |
+| `location:update` | Drivers                                                                               | Same as `POST /v1/driver/location`; acknowledgement `{ ok, position, stored }`. 60 a minute |
+
+Events sent while a client is offline are not replayed: refetch state (for
+example `GET /v1/rides/active`) after reconnecting.
 
 ## Command line (operators)
 

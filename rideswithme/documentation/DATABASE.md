@@ -42,6 +42,7 @@ pnpm db:status      # list applied and pending migrations
 | 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                                                                                        |
 | 0005_driver_onboarding      | vehicle_categories, document_types, requirements per category, driver_profiles, vehicles, file_uploads, driver_documents; driver permissions                |
 | 0006_core_ride_flow         | service_areas, fare_rules, fare_quotes, rides, ride_requests (offers), ride_events, payments, commissions, saved_places, idempotency_keys; ride permissions |
+| 0007_trip_locations         | trip_locations (partitioned by day) with partition create/drop functions; rides.actual_distance_meters                                                      |
 
 ## Identity domain
 
@@ -201,17 +202,31 @@ rides 1──1 commissions               (owed by the driver for cash rides)
 - **saved_places:** home, work (one each) and up to 20 others per user.
 - **idempotency_keys:** user, key, scope, request hash, stored response (24 h).
 
+## Trip location history (Phase 4)
+
+- **trip_locations:** ride, driver, point (geography), accuracy, heading, speed,
+  `recorded_at` (phone time) and `received_at` (server time). Partitioned by range
+  on `recorded_at`, one partition per UTC day (`trip_locations_pYYYYMMDD`); primary
+  key `(recorded_at, id)`; index on `(ride_id, recorded_at)`. Only readings taken
+  during a ride are stored, attributed by phone time to the ride active then.
+- `ensure_trip_location_partitions(from_day, to_day)` creates missing partitions;
+  `drop_trip_location_partitions(before_day)` drops whole days older than the
+  retention period. The API's maintenance job calls both every 6 hours (2 days
+  back to 7 ahead; 90-day retention). There is no default partition.
+- **rides.actual_distance_meters:** distance driven between start and completion,
+  from readings with accuracy of 50 m or better.
+
 ## Not in the database
 
 - One-time codes, rate-limit counters, job locks, cached routes: Redis, with expiry.
 - Driver online state and live positions (with device and server time) and the
   per-vehicle-type geo index used for matching: Redis.
 - Document files: private S3-compatible storage (keys in `driver_documents.object_key`).
-- Live driver positions (Phase 4): Redis.
+- Location readings not yet uploaded: a SQLite buffer on the driver's phone.
 
 ## Planned domains
 
-Tables listed in the brief for later phases (passenger_profiles, fleets, driver_locations,
-trip_locations partitioned by date, wallets, wallet_transactions, bus_*, emergency_alerts,
+Tables listed in the brief for later phases (passenger_profiles, fleets, wallets, wallet_transactions, bus_*, emergency_alerts,
 incident_reports, ratings, reviews, promotions, notifications, support_tickets)
-are added by the phase that first needs them.
+are added by the phase that first needs them. `driver_locations` is not needed:
+the live position is in Redis and the history in `trip_locations` (DECISIONS D-042).

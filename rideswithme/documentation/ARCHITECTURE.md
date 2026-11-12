@@ -6,10 +6,12 @@
  passenger-mobile ─┐                                         ┌─ PostgreSQL 16 + PostGIS
  driver-mobile ────┤   HTTPS (REST /v1)                      │   (system of record)
  passenger-web ────┼────────────────────────────►  api  ─────┤
- fleet-portal ─────┤   Socket.IO (Phase 4)        (NestJS)   ├─ Redis
+ fleet-portal ─────┤   Socket.IO /realtime        (NestJS)   ├─ Redis
                    │                                 ▲       │   (OTP, rate limits, live positions, locks)
- admin browser ──► admin-dashboard server ───────────┘       ├─ SMS gateway (Termii, behind SmsProvider)
-                   (Next.js; holds the admin's tokens)       ├─ Paystack (Phase 5)
+ admin browser ──► admin-dashboard server ───────────┤       ├─ SMS gateway (Termii, behind SmsProvider)
+ passenger browser ► passenger-web server ───────────┘       ├─ Paystack (Phase 5)
+                   (Next.js; hold the user's tokens;         │
+                    browsers open Socket.IO with a ticket)   │
                                                              ├─ Google Maps (Phase 3)
  driver-mobile ──── signed PUT (upload) ───────────────────► └─ S3-compatible storage, private
  admin browser ──── signed GET (60 s view) ────────────────►
@@ -25,20 +27,22 @@ order.
 
 | Path                        | Purpose                                                                         | State                                 |
 | --------------------------- | ------------------------------------------------------------------------------- | ------------------------------------- |
-| `apps/api`                  | NestJS API                                                                      | Phases 1-2 built                      |
+| `apps/api`                  | NestJS API                                                                      | Phases 1-4 built                      |
 | `apps/admin-dashboard`      | Next.js admin dashboard (driver verification so far)                            | Phase 2 built; full dashboard Phase 6 |
-| `apps/driver-mobile`        | Expo driver app (onboarding so far)                                             | Phase 2 built; trips Phases 3-4       |
-| `apps/passenger-mobile`     | Expo passenger app: map, booking, trip, receipts                                | Phase 3 built                         |
-| `apps/passenger-web`        | Next.js passenger web booking                                                   | Phase 4                               |
+| `apps/driver-mobile`        | Expo driver app: onboarding, requests, trips, background location               | Phases 2-4 built                      |
+| `apps/passenger-mobile`     | Expo passenger app: map, booking, live trip, receipts                           | Phases 3-4 built                      |
+| `apps/passenger-web`        | Next.js passenger website: booking, live trip, receipts, history                | Phase 4 built                         |
 | `apps/fleet-portal`         | Next.js fleet portal                                                            | Phase 6                               |
 | `packages/shared-types`     | Response types, role/permission keys, error codes, driver types                 | Built                                 |
 | `packages/validation`       | zod request schemas, Nigerian phone, NIN, plate, NUBAN                          | Built                                 |
-| `packages/api-client`       | Typed fetch client with token refresh, used by every app                        | Built                                 |
-| `packages/ui-components`    | Design tokens; shared React Native components at `/native` (incl. bottom sheet) | Built                                 |
+| `packages/api-client`       | Typed fetch client with token refresh; Socket.IO client at `/realtime`          | Built                                 |
+| `packages/ui-components`    | Design tokens; React Native components at `/native`; base web CSS at `/web.css` | Built                                 |
 | `packages/mobile-core`      | Mobile session (secure storage), language, sign-in, formatting                  | Built                                 |
-| `packages/utilities`        | Money in kobo, English/Hausa message catalogues                                 | Built                                 |
+| `packages/web-core`         | Websites' server session and API proxy; browser helpers at `/client`            | Built                                 |
+| `packages/e2e-support`      | Starts the API and websites for browser tests                                   | Built                                 |
+| `packages/utilities`        | Money in kobo, message catalogues, passenger ride rules and ride text           | Built                                 |
 | `infrastructure/database`   | SQL migrations and migration runner                                             | Built                                 |
-| `infrastructure/docker`     | API, migration and admin dashboard images; Postgres init                        | Built                                 |
+| `infrastructure/docker`     | API, migration, admin dashboard and passenger website images; Postgres init     | Built                                 |
 | `infrastructure/deployment` | Production deployment                                                           | Phase 8                               |
 
 Dependency rule: apps depend on packages; packages never depend on apps;
@@ -46,18 +50,24 @@ Dependency rule: apps depend on packages; packages never depend on apps;
 
 ## API structure (`apps/api/src`)
 
-| Module     | Responsibility                                                                                  |
-| ---------- | ----------------------------------------------------------------------------------------------- |
-| `config`   | Reads and validates every environment variable at startup (zod); refuses to start on bad config |
-| `database` | Kysely over a `pg` pool; table types in `types.ts`                                              |
-| `redis`    | ioredis client                                                                                  |
-| `common`   | Error type and filter, zod pipe, rate limiter, field encryption, request context, cursors       |
-| `sms`      | `SmsProvider` interface; console and Termii implementations                                     |
-| `audit`    | Writes `audit_logs` rows, inside the caller's transaction when given one                        |
-| `auth`     | OTP, sessions and refresh rotation, JWTs, TOTP, global guards                                   |
-| `users`    | Current-user profile; role/permission loading                                                   |
-| `admin`    | User search, roles, suspension, audit log reading                                               |
-| `health`   | Liveness and readiness                                                                          |
+| Module     | Responsibility                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `config`   | Reads and validates every environment variable at startup (zod); refuses to start on bad config                                            |
+| `database` | Kysely over a `pg` pool; table types in `types.ts`                                                                                         |
+| `redis`    | ioredis client                                                                                                                             |
+| `common`   | Error type and filter, zod pipe, rate limiter, field encryption, request context, cursors                                                  |
+| `sms`      | `SmsProvider` interface; console and Termii implementations                                                                                |
+| `audit`    | Writes `audit_logs` rows, inside the caller's transaction when given one                                                                   |
+| `auth`     | OTP, sessions and refresh rotation, JWTs, TOTP, global guards                                                                              |
+| `users`    | Current-user profile; role/permission loading                                                                                              |
+| `admin`    | User search, roles, suspension, audit log reading                                                                                          |
+| `health`   | Liveness and readiness                                                                                                                     |
+| `storage`  | Private S3-compatible storage: presigned uploads with content checks, short-lived view links                                               |
+| `drivers`  | Driver applications, documents, eligibility, admin review                                                                                  |
+| `maps`     | `MapsProvider` (Google, or an offline fake): place search, details, reverse geocoding, routes                                              |
+| `pricing`  | Service areas, fare rules, the fare engine and quotes                                                                                      |
+| `rides`    | Booking, matching and dispatch, the ride state machine, cash completion, driver presence, location ingestion and history, partition upkeep |
+| `realtime` | Socket.IO gateway, notifier, connection authentication and session sweep                                                                   |
 
 ### Request lifecycle
 
@@ -160,7 +170,6 @@ driver app
 - Maps: `MapsProvider` with a Google implementation (Places API (New), Geocoding,
   Routes) and an offline fake for development and tests.
 - Every ride status change and offer is written to `ride_events`.
-- Phase 3 apps poll; Phase 4 adds Socket.IO, background location and buffering.
 
 ## Mobile apps
 
@@ -171,10 +180,33 @@ once in the bundle. The passenger app is a full-screen map (react-native-maps)
 with a draggable bottom sheet whose content follows the ride: where to → choose a
 ride → searching → driver card → on trip → receipt.
 
+## Live updates and location (Phase 4)
+
+```
+driver app ── background location (10 s / 20 m) ─► SQLite buffer ─► POST /v1/driver/location (batches of 200)
+                                                                      │  or location:update over the socket
+api ── presence (Redis: position, geo index) ─► driver:position ─► passenger (app or website)
+    └─ trip_locations (by phone time, to the ride active then; daily partitions, 90 days)
+ride or offer change ─► database commit ─► Redis adapter ─► every API copy ─► user and ride rooms
+client reconnects ─► refetches state (events are not replayed); 30 s fallback check
+```
+
+- `apps/api/src/realtime`: the gateway (authentication, rooms, `location:update`),
+  the notifier other modules call after a change commits, and a sweep that closes
+  connections whose session has ended.
+- Mobile apps connect with their access token; websites with a 60-second ticket
+  from their own server, so browsers never hold API tokens.
+- See DECISIONS D-040 to D-046.
+
+## Websites
+
+`admin-dashboard` and `passenger-web` share `@rideswithme/web-core`: the browser
+calls only the website's server, which holds the API tokens in an encrypted
+httpOnly cookie, refreshes them, and forwards an allow-list of API paths. Pages
+are client components using the shared typed API client. Each request gets a
+nonce-based Content-Security-Policy.
+
 ## Planned shape of later phases
 
-- **Real time (Phase 4):** Socket.IO with the Redis adapter so any API replica can
-  reach any client; clients refetch ride state on reconnect; positions carry device
-  and server timestamps and are shown as stale past a threshold.
 - **Payments (Phase 5):** Paystack webhooks verified by signature are the source of
   truth; wallets are a double-entry ledger with balances derived from it.

@@ -3,7 +3,7 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** Phase 3 (core ride flow) is built and awaiting approval:
+**Status:** Phase 4 (real-time tracking) is built and awaiting approval:
 
 - **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
   admin two-factor authentication, audit log, Docker and CI.
@@ -12,6 +12,9 @@ bus seats, for passengers, drivers, admins and fleet operators.
 - **Phase 3:** place search, fare estimates, booking (now or scheduled), matching
   to the nearest driver, the ride state machine and cash payment, in the passenger
   app and the driver app.
+- **Phase 4:** live updates over Socket.IO, driver background location with an
+  offline buffer on the phone, trip location history, "last updated" for old
+  positions, and the passenger website (booking, live trip, receipts, history).
 
 The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
@@ -61,6 +64,16 @@ Both need a development build on a phone or emulator (see each app's README).
 With `MAPS_PROVIDER=fake` the API offers demo places in Kano, Katsina, Abuja and
 Lagos (search "Kurmi", "airport"…), and routes are straight-line estimates.
 
+### Passenger website
+
+```bash
+cp apps/passenger-web/.env.example apps/passenger-web/.env.local   # set PASSENGER_SESSION_SECRET
+pnpm --filter @rideswithme/passenger-web dev                       # http://localhost:3002
+```
+
+The API's `CORS_ORIGINS` must include the website's address for live updates
+(the example `.env` already lists `http://localhost:3002`).
+
 ### Driver app
 
 ```bash
@@ -70,8 +83,9 @@ pnpm --filter @rideswithme/driver-mobile start               # needs a developme
 
 ### Everything in containers
 
-`docker compose --profile app up --build` runs migrations, the API and the admin
-dashboard (create `apps/api/.env` and `apps/admin-dashboard/.env.local` first).
+`docker compose --profile app up --build` runs migrations, the API, the admin
+dashboard and the passenger website (create `apps/api/.env`,
+`apps/admin-dashboard/.env.local` and `apps/passenger-web/.env.local` first).
 
 ## Commands
 
@@ -83,7 +97,8 @@ Run from `rideswithme/`.
 | `pnpm test`                                             | Unit and integration tests (needs PostgreSQL, Redis and S3; see below) |
 | `pnpm typecheck` / `pnpm lint` / `pnpm format:check`    | Static checks (CI runs all of these)                                   |
 | `pnpm --filter @rideswithme/admin-dashboard e2e`        | Browser tests of the admin dashboard against a real API (build first)  |
-| `pnpm --filter @rideswithme/driver-mobile bundle:check` | Bundles the driver app for Android with Metro                          |
+| `pnpm --filter @rideswithme/passenger-web e2e`          | Browser tests of the passenger website: booking with live updates      |
+| `pnpm --filter @rideswithme/driver-mobile bundle:check` | Bundles the driver app for Android with Metro (same for passenger)     |
 | `pnpm db:migrate` / `pnpm db:status`                    | Apply or list migrations (`DATABASE_URL`)                              |
 | `pnpm dev:api`                                          | API with reload, reading `apps/api/.env`                               |
 
@@ -92,16 +107,18 @@ Integration tests use `TEST_DATABASE_URL` (default
 `redis://localhost:6379/15`) and `TEST_S3_ENDPOINT` (default
 `http://127.0.0.1:9000`). With the compose services, set
 `TEST_DATABASE_URL=postgres://rideswithme:rideswithme@localhost:5432/rideswithme_test`.
-The test database is wiped and rebuilt from migrations on every run. The admin
-end-to-end tests use `E2E_DATABASE_URL` (a database they drop and recreate) and
-`E2E_REDIS_URL` in the same way.
+The test database is wiped and rebuilt from migrations on every run. The website
+end-to-end tests use `E2E_DATABASE_URL` (a database they drop and recreate; the
+passenger website's tests add `_passenger` to its name) and `E2E_REDIS_URL` in the
+same way.
 
 ## Layout
 
 ```
-apps/            api, admin-dashboard, driver-mobile, passenger-mobile (built);
-                 passenger-web (Phase 4), fleet-portal (Phase 6)
-packages/        shared-types, validation, api-client, ui-components, utilities, mobile-core
+apps/            api, admin-dashboard, driver-mobile, passenger-mobile, passenger-web (built);
+                 fleet-portal (Phase 6)
+packages/        shared-types, validation, api-client, ui-components, utilities, mobile-core,
+                 web-core, e2e-support
 infrastructure/  database (migrations + runner), docker, deployment
 documentation/   PRD, ARCHITECTURE, DATABASE, API_DOCUMENTATION, DECISIONS
 ```

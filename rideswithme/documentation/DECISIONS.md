@@ -24,6 +24,7 @@ These need your answer or awareness. Work continues on the stated assumption.
 | B-13 | Fare values are not in the brief.                                                                                                                                                                                                                             | Placeholder fares are seeded for every vehicle type (D-034). **Please supply real base, per-km, per-minute, minimum, booking, waiting and cancellation fees and commission per vehicle type** before launch.                                                                                            |
 | B-14 | The launch city's boundary is needed as a polygon.                                                                                                                                                                                                            | `seed-city` creates a rectangle for development. For launch, send the boundary (GeoJSON, or draw it in Phase 6's admin map) and it is loaded through `PUT /v1/admin/service-areas`.                                                                                                                     |
 | B-15 | Passenger web booking (brief section 5) was planned for Phase 3.                                                                                                                                                                                              | Moved to Phase 4: its trip screens need the live updates Phase 4 adds, and building them on polling first would mean writing them twice. Mobile booking is complete in Phase 3.                                                                                                                         |
+| B-16 | The brief asks for Google Maps; the passenger website needs a browser Maps JavaScript key, which is separate from the server key.                                                                                                                             | Until one is supplied, the website draws a to-scale route sketch (pickup, destination, route, driver) instead of a street map. Adding the map later changes one component. Please provide a browser key restricted to the website's domain.                                                             |
 
 ## Decision log
 
@@ -388,7 +389,7 @@ body is refused; a retry while the first is running gets 409 with Retry-After.
 Failed attempts are forgotten so a corrected retry can run. Keys are kept 24 hours.
 The apps keep one key per booking attempt and reuse it on retry.
 
-### D-037 Live updates in Phase 3
+### D-037 Live updates in Phase 3 (replaced in Phase 4 by D-040 to D-044)
 
 The passenger app polls its ride every 4 seconds and the driver app polls for
 requests every 3 seconds. Phase 4 replaces this with Socket.IO, background
@@ -409,3 +410,85 @@ bundle source maps were checked to contain exactly one copy of each.
 The driver card shows call and message buttons, disabled with a "coming soon"
 note, until a masked-calling vendor is chosen (B-3). Phone numbers are never
 shown to either side.
+
+### D-040 Live updates over Socket.IO
+
+The API serves Socket.IO at `/realtime`, with the Redis adapter so an event raised
+on one API copy reaches clients connected to any other. Each user joins a private
+room on connecting; a ride's passenger, driver and staff with `rides.read` may also
+join that ride's room. Events: `ride:updated` (the full ride view, shaped for the
+passenger or the driver), `offer:new`, `offer:closed`, `driver:position` (only to
+the passenger of the driver's active ride) and `session:ended`. Drivers may send
+locations over the connection (`location:update`, 60 a minute) as well as over
+HTTP. Events are sent after the database change commits; a failure to send is
+logged and never undoes the change. Apps treat events as hints to show fresh
+state, not as the record: see D-044.
+
+### D-041 Who may connect
+
+A connection authenticates with an access token (the mobile apps) or a 60-second
+realtime ticket (the websites, whose browsers never hold API tokens; their server
+asks for a ticket with the user's token). A ticket only opens a connection; the
+HTTP API refuses it. Staff permissions apply over the connection only when the
+session has passed two-factor verification, as on HTTP. Every 60 seconds each API
+copy checks that its connections' sessions are still valid, and closes any that
+were signed out, revoked or suspended with `session:ended`. A refused handshake
+says why: `UNAUTHENTICATED` (missing or expired credential: clients refresh their
+token once and retry) or `SESSION_REVOKED` (signed out or account suspended).
+
+### D-042 Trip location history
+
+`trip_locations` stores readings taken during a ride, partitioned by UTC day.
+Each reading is attributed, by the time the phone took it, to the driver's ride
+that was active at that moment, so a buffer uploaded late still lands on the right
+trip; readings outside any ride are not stored (the live position is in Redis
+only). Readings more than 48 hours old are dropped, and phone times more than two
+minutes in the future are clamped. A maintenance job (every 6 hours, one API copy
+at a time via a Redis lock) creates partitions from two days back to seven ahead
+and drops partitions older than 90 days (`TRIP_LOCATION_RETENTION_DAYS`), which
+is how location history is deleted under the privacy rules. There is no default
+partition: if the job stopped for over a week, location history writes would
+fail, which monitoring in Phase 8 must catch. On completion the driven distance is
+computed from readings with accuracy of 50 m or better and stored on the ride
+(`actual_distance_meters`); the fare stays the upfront price (D-032), so this is
+for receipts and disputes. The brief's `driver_locations` table is not created:
+the live position lives in Redis (D-035).
+
+### D-043 Driver app: background location and offline buffer
+
+While online, the driver app tracks location with a foreground service (Android
+shows an ongoing notification; iOS background location), every 10 seconds or 20
+metres. If the driver allows location only while the app is open, it still works
+and says so. Every reading goes first into a SQLite buffer on the phone (up to
+20,000 readings, oldest dropped first) and is uploaded in batches of 200 every 15
+seconds and when the network returns; a batch is deleted only after the API
+accepts it, so nothing is lost to a dropped connection or an app restart. The
+newest reading becomes the driver's position; older ones never move the driver
+back. The screen shows how many readings are waiting to upload.
+
+### D-044 Missed events
+
+Events sent while a client is disconnected are not replayed. Instead every screen
+that shows live state refetches it when the connection comes back, and also checks
+every 30 seconds as a fallback. Positions older than 30 seconds are always shown
+as "last updated … ago", never as live.
+
+### D-045 Passenger website
+
+Next.js, built like the admin dashboard: the browser talks only to the website's
+own server, which keeps the API tokens in an encrypted httpOnly cookie and forwards
+an allow-list of passenger endpoints. Live updates go straight from the browser to
+the API with a realtime ticket (D-041), so the API must list the website's origin
+in `CORS_ORIGINS`. Payment is cash only until Phase 5. The map is a to-scale sketch
+until a browser Maps key is supplied (B-16).
+
+### D-046 Shared code for the apps and websites
+
+To avoid copies between apps: the passenger ride rules and ride text live in
+`@rideswithme/utilities`; the realtime client in `@rideswithme/api-client/realtime`
+(no React Native code, used by both mobile apps and the website);
+`@rideswithme/web-core` holds the websites' server session and proxy (standard
+Request/Response, no Next.js dependency) and, at `/client`, their API client,
+translations and loading/error/offline states; base web styles are in
+`@rideswithme/ui-components/web.css`; `@rideswithme/e2e-support` starts the
+services for the websites' browser tests.
