@@ -9,6 +9,8 @@ export type DB = Kysely<Database>;
 
 // bigint (int8) as string so values above 2^53 are never silently rounded.
 types.setTypeParser(types.builtins.INT8, (v) => v);
+// date as YYYY-MM-DD; the default parser shifts it into the server's time zone.
+types.setTypeParser(types.builtins.DATE, (v) => v);
 
 @Injectable()
 class DatabaseLifecycle implements OnApplicationShutdown {

@@ -11,9 +11,11 @@ import { CryptoModule } from './common/crypto/crypto.module';
 import { type AppConfig, loadConfig } from './config/config';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
+import { DriversModule } from './drivers/drivers.module';
 import { HealthModule } from './health/health.module';
 import { RedisModule } from './redis/redis.module';
 import { SmsModule } from './sms/sms.module';
+import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 
 const REQUEST_ID = /^[A-Za-z0-9._-]{1,64}$/;
@@ -57,9 +59,11 @@ export class AppModule {
         CryptoModule,
         AuditModule,
         SmsModule,
+        StorageModule,
         UsersModule,
         AuthModule,
         AdminModule,
+        DriversModule,
         HealthModule,
       ],
       providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

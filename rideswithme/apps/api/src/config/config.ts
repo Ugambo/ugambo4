@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const bool = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
+
 const encryptionKeys = z.string().transform((value, ctx) => {
   const keys = new Map<string, Buffer>();
   for (const pair of value
@@ -73,6 +75,25 @@ export const configSchema = z
     MFA_VERIFY_MAX_PER_15_MIN: z.coerce.number().int().min(1).max(50).default(5),
 
     CURRENT_POLICY_VERSION: z.string().min(1).max(32),
+
+    // Keyed hash for exact-match lookups on encrypted values (e.g. duplicate NIN check).
+    LOOKUP_HASH_SECRET: z.string().min(32, 'Use at least 32 random characters'),
+
+    S3_ENDPOINT: z.string().url().optional(),
+    // Endpoint written into signed URLs handed to phones and browsers, when it differs
+    // from the one the API uses (e.g. http://minio:9000 inside Docker).
+    S3_PUBLIC_ENDPOINT: z.string().url().optional(),
+    S3_REGION: z.string().min(1).default('us-east-1'),
+    S3_BUCKET: z.string().min(3).max(63),
+    S3_ACCESS_KEY_ID: z.string().min(1),
+    S3_SECRET_ACCESS_KEY: z.string().min(1),
+    S3_FORCE_PATH_STYLE: bool.default('false'),
+    S3_SERVER_SIDE_ENCRYPTION: z.enum(['none', 'AES256']).default('AES256'),
+    S3_CREATE_BUCKET: bool.default('false'),
+    UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
+    DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
+
+    DOCUMENT_EXPIRY_SWEEP_MINUTES: z.coerce.number().int().min(0).max(1440).default(60),
   })
   .superRefine((c, ctx) => {
     if (!c.FIELD_ENCRYPTION_KEYS.has(c.FIELD_ENCRYPTION_ACTIVE_KEY_ID)) {
@@ -94,6 +115,13 @@ export const configSchema = z
         code: z.ZodIssueCode.custom,
         path: ['TERMII_API_KEY'],
         message: 'TERMII_API_KEY and TERMII_SENDER_ID are required when SMS_PROVIDER=termii',
+      });
+    }
+    if (c.NODE_ENV === 'production' && c.S3_SERVER_SIDE_ENCRYPTION === 'none') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['S3_SERVER_SIDE_ENCRYPTION'],
+        message: 'Driver documents must be encrypted at rest in production',
       });
     }
     if (c.NODE_ENV === 'production' && c.SMS_PROVIDER === 'console') {
