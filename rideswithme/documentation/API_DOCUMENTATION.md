@@ -34,23 +34,31 @@ client: `@rideswithme/api-client`.
 `@rideswithme/utilities`). Rate-limited responses carry `retryAfterSeconds` and a
 `Retry-After` header.
 
-| Code                                                       | HTTP | Meaning                                                              |
-| ---------------------------------------------------------- | ---- | -------------------------------------------------------------------- |
-| VALIDATION_FAILED                                          | 422  | Body, query or path is invalid; `details` lists the problems         |
-| UNAUTHENTICATED                                            | 401  | Missing, invalid or expired access token. Refresh and retry          |
-| SESSION_REVOKED                                            | 401  | Session ended (logout, revoked, suspended). Sign in again            |
-| REFRESH_TOKEN_INVALID                                      | 401  | Refresh token rejected. Sign in again                                |
-| FORBIDDEN                                                  | 403  | Missing permission; `details.missing` lists them                     |
-| MFA_REQUIRED                                               | 403  | Role needs TOTP; `details.enrolled` says whether to set up or verify |
-| ACCOUNT_SUSPENDED                                          | 403  | Account suspended                                                    |
-| NOT_FOUND                                                  | 404  |                                                                      |
-| CONFLICT                                                   | 409  | E.g. email already used                                              |
-| LAST_SUPER_ADMIN                                           | 409  | Would leave no active super admin                                    |
-| TOTP_NOT_ENROLLED / TOTP_ALREADY_ENABLED                   | 409  |                                                                      |
-| OTP_INVALID / OTP_EXPIRED / TOTP_INVALID                   | 422  |                                                                      |
-| RATE_LIMITED / OTP_RESEND_TOO_SOON / OTP_TOO_MANY_ATTEMPTS | 429  | Wait `retryAfterSeconds`                                             |
-| SMS_DELIVERY_FAILED                                        | 502  | SMS vendor failed; retry is allowed straight away                    |
-| INTERNAL_ERROR                                             | 500  | Quote the `requestId` to support                                     |
+| Code                                                       | HTTP | Meaning                                                                |
+| ---------------------------------------------------------- | ---- | ---------------------------------------------------------------------- |
+| VALIDATION_FAILED                                          | 422  | Body, query or path is invalid; `details` lists the problems           |
+| UNAUTHENTICATED                                            | 401  | Missing, invalid or expired access token. Refresh and retry            |
+| SESSION_REVOKED                                            | 401  | Session ended (logout, revoked, suspended). Sign in again              |
+| REFRESH_TOKEN_INVALID                                      | 401  | Refresh token rejected. Sign in again                                  |
+| FORBIDDEN                                                  | 403  | Missing permission; `details.missing` lists them                       |
+| MFA_REQUIRED                                               | 403  | Role needs TOTP; `details.enrolled` says whether to set up or verify   |
+| ACCOUNT_SUSPENDED                                          | 403  | Account suspended                                                      |
+| NOT_FOUND                                                  | 404  |                                                                        |
+| CONFLICT                                                   | 409  | E.g. email already used                                                |
+| LAST_SUPER_ADMIN                                           | 409  | Would leave no active super admin                                      |
+| TOTP_NOT_ENROLLED / TOTP_ALREADY_ENABLED                   | 409  |                                                                        |
+| OTP_INVALID / OTP_EXPIRED / TOTP_INVALID                   | 422  |                                                                        |
+| RATE_LIMITED / OTP_RESEND_TOO_SOON / OTP_TOO_MANY_ATTEMPTS | 429  | Wait `retryAfterSeconds`                                               |
+| SMS_DELIVERY_FAILED                                        | 502  | SMS vendor failed; retry is allowed straight away                      |
+| DRIVER_NOT_REGISTERED                                      | 404  | No driver application yet                                              |
+| DRIVER_PROFILE_LOCKED                                      | 409  | Application submitted or approved; details can't change                |
+| DRIVER_INCOMPLETE                                          | 422  | `details.gaps` (driver) or `details.blockers` (admin approval)         |
+| INVALID_STATE                                              | 409  | Not allowed in the current status (e.g. approving a reviewed document) |
+| UPLOAD_INVALID                                             | 422  | `details.reason` says why the file can't be used                       |
+| NIN_ALREADY_REGISTERED / PLATE_ALREADY_REGISTERED          | 409  | Already on another driver                                              |
+| VEHICLE_CATEGORY_UNAVAILABLE                               | 422  | Vehicle type not enabled                                               |
+| STORAGE_UNAVAILABLE                                        | 503  | Object storage unreachable; retry                                      |
+| INTERNAL_ERROR                                             | 500  | Quote the `requestId` to support                                       |
 
 ## Health
 
@@ -221,6 +229,155 @@ All need the listed permission, and TOTP verification for the session.
 
 Every role change, suspension and reactivation is written to the audit log with
 the actor, IP, user agent and request id.
+
+## Drivers (Phase 2)
+
+### GET /v1/vehicle-categories — _public_
+
+Enabled vehicle types with the documents each requires:
+
+```json
+[
+  {
+    "key": "car",
+    "name": "Car",
+    "description": "…",
+    "seats": 4,
+    "requiredDocuments": ["profile_photo", "national_id", "…"]
+  }
+]
+```
+
+### The driver's application
+
+Any signed-in user can start an application; it gives them the `driver` role. All
+of these act on the caller's own application and return the full
+`DriverOnboardingView` (below) unless noted.
+
+| Method | Path                        | Body                                                                  | Notes                                                                                              |
+| ------ | --------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| POST   | `/v1/driver/registration`   | –                                                                     | Starts or resumes. Idempotent                                                                      |
+| GET    | `/v1/driver/onboarding`     | –                                                                     | `404 DRIVER_NOT_REGISTERED` before registration                                                    |
+| PATCH  | `/v1/driver/profile`        | `{ "fullName"?, "nin"? }`                                             | NIN: 11 digits, spaces allowed. `409 NIN_ALREADY_REGISTERED`                                       |
+| PUT    | `/v1/driver/vehicle`        | `{ "categoryKey", "plateNumber", "make", "model", "colour", "year" }` | Plate normalised to `ABC123DE`. `409 PLATE_ALREADY_REGISTERED`, `422 VEHICLE_CATEGORY_UNAVAILABLE` |
+| PUT    | `/v1/driver/payout-account` | `{ "bankCode", "accountNumber", "accountName" }`                      | 10-digit NUBAN                                                                                     |
+| POST   | `/v1/driver/submit`         | –                                                                     | `422 DRIVER_INCOMPLETE` with `details.gaps` until everything is in                                 |
+
+Profile, vehicle and payout changes return `409 DRIVER_PROFILE_LOCKED` once the
+application is submitted or approved.
+
+### Uploading a document (three steps)
+
+1. **Ask to upload.** `POST /v1/driver/documents/uploads`
+   ```json
+   { "documentType": "drivers_licence", "contentType": "application/pdf", "sizeBytes": 183402 }
+   ```
+   `contentType` is `image/jpeg`, `image/png` or `application/pdf` (photos:
+   images only); `sizeBytes` at most 10 MB. Returns a ticket:
+   ```json
+   {
+     "uploadId": "…",
+     "uploadUrl": "https://storage…",
+     "method": "PUT",
+     "headers": { "Content-Type": "application/pdf", "x-amz-server-side-encryption": "AES256" },
+     "expiresAt": "…"
+   }
+   ```
+   Vehicle documents need the vehicle first (`422 DRIVER_INCOMPLETE`). Limited to
+   40 per hour.
+2. **Upload the file** with `PUT uploadUrl`, sending exactly `headers` and the
+   exact number of bytes declared. No API token: the URL is the permission.
+3. **Attach it.** `POST /v1/driver/documents` → `201` `DriverDocumentView`
+   ```json
+   { "uploadId": "…", "documentNumber": "KTN-12345-AB67", "expiresOn": "2027-09-30" }
+   ```
+   `documentNumber` is required where the type needs one (driver's licence);
+   `expiresOn` (last valid day, `YYYY-MM-DD`) where the type expires, and it must
+   not be in the past. `422 UPLOAD_INVALID` with `details.reason`:
+   `not_found` (file not uploaded), `already_used`, `expired`, `too_large`,
+   `size_mismatch`, `wrong_type` (the bytes are not the declared type).
+
+### DriverOnboardingView
+
+```json
+{
+  "userId": "…",
+  "status": "onboarding | pending_review | approved | rejected | suspended",
+  "rejectionReason": null,
+  "submittedAt": null,
+  "approvedAt": null,
+  "profile": { "fullName": "Musa Abdullahi", "ninLast4": "8901" },
+  "payoutAccount": {
+    "bankCode": "058",
+    "accountName": "Musa Abdullahi",
+    "accountNumberLast4": "6789"
+  },
+  "vehicle": {
+    "id": "…",
+    "category": { "key": "car", "name": "Car" },
+    "plateNumber": "KTN452XA",
+    "make": "Toyota",
+    "model": "Corolla",
+    "colour": "Silver",
+    "year": 2016
+  },
+  "requirements": [
+    {
+      "key": "drivers_licence",
+      "name": "Driver's licence",
+      "scope": "driver",
+      "media": "document",
+      "requiresExpiry": true,
+      "requiresNumber": true,
+      "status": "missing | pending | approved | rejected | expired",
+      "latest": {
+        "id": "…",
+        "documentType": "drivers_licence",
+        "status": "pending",
+        "contentType": "application/pdf",
+        "sizeBytes": 183402,
+        "numberLast4": "AB67",
+        "expiresOn": "2027-09-30",
+        "rejectionReason": null,
+        "createdAt": "…",
+        "reviewedAt": null
+      },
+      "hasValidApproval": false
+    }
+  ],
+  "editable": true,
+  "submission": {
+    "ready": false,
+    "gaps": [{ "code": "NIN" }, { "code": "DOCUMENT", "documentType": "insurance_certificate" }]
+  },
+  "eligibility": {
+    "canGoOnline": false,
+    "blockers": [
+      { "code": "DRIVER_NOT_APPROVED" },
+      { "code": "DOCUMENT_EXPIRED", "documentType": "drivers_licence" }
+    ]
+  }
+}
+```
+
+`eligibility` decides whether the driver may go online (Phase 3). Blocker codes:
+`ACCOUNT_NOT_ACTIVE`, `DRIVER_NOT_APPROVED`, `NO_ACTIVE_VEHICLE`,
+`VEHICLE_CATEGORY_DISABLED`, `DOCUMENT_NOT_APPROVED`, `DOCUMENT_EXPIRED`.
+
+## Admin: driver verification
+
+| Method | Path                                                   | Permission             | Notes                                                                                                                                                           |
+| ------ | ------------------------------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/admin/drivers`                                    | drivers.read           | `queue=review` (default: waiting on a reviewer, oldest first) or `all` (newest first); `status`, `search` (name, phone in any format, plate), `limit`, `cursor` |
+| GET    | `/v1/admin/drivers/:id`                                | drivers.read           | `DriverOnboardingView` plus `phone`, `accountStatus`, `documentHistory` (every upload), `reviewedBy`, `reviewedAt`                                              |
+| POST   | `/v1/admin/drivers/:id/documents/:documentId/view-url` | drivers.documents_view | `{ url, contentType, expiresAt }`: a 60-second link. Audited                                                                                                    |
+| POST   | `/v1/admin/drivers/:id/documents/:documentId/approve`  | drivers.verify         | `{ "expiresOn"? }` to set or correct the expiry. Pending documents only                                                                                         |
+| POST   | `/v1/admin/drivers/:id/documents/:documentId/reject`   | drivers.verify         | `{ "reason", "withdrawApproval"? }`. Rejecting an approved document needs `withdrawApproval: true`                                                              |
+| POST   | `/v1/admin/drivers/:id/approve`                        | drivers.verify         | Only `pending_review`, and only when every required document is approved and in date (`422 DRIVER_INCOMPLETE` lists blockers). Sends an SMS                     |
+| POST   | `/v1/admin/drivers/:id/reject`                         | drivers.verify         | `{ "reason" }`. Back to the driver to fix; sends an SMS                                                                                                         |
+
+Reviewers cannot act on their own application (`403`). Conflicting decisions on
+the same item get `409 INVALID_STATE`. Every view and decision is audited.
 
 ## Command line (operators)
 

@@ -7,15 +7,19 @@ bottom. Each entry says what was decided, why, and how to change it.
 
 These need your answer or awareness. Work continues on the stated assumption.
 
-| #   | Issue                                                                                                                                                                                    | What I did / propose                                                                                                                                                                                                                                              |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B-1 | The brief says "an empty repository", but `ugambo/ugambo4` already contains the Explore Katsina WordPress project.                                                                       | Built RideswithMe in `rideswithme/` (the root folder name the brief uses) and left Explore Katsina untouched. Moving it to its own repository later is a folder copy; CI already only runs on `rideswithme/**` changes.                                           |
-| B-2 | Section 2 refers to the phases as section 14 and the open decisions as section 15. They are sections 15 and 16 (14 is UI direction).                                                     | Assumed the obvious intent.                                                                                                                                                                                                                                       |
-| B-3 | "Masked calling" needs a voice/telephony provider (number proxying). None is in the stack.                                                                                               | Proposal: a `VoiceProxyProvider` interface like the SMS one, with a vendor chosen before Phase 3 call buttons ship. Until then the call button can be hidden by configuration. **Needs a vendor decision.**                                                       |
-| B-4 | Email is collected at registration but there is no email provider in the stack, so addresses cannot be verified.                                                                         | Email is stored and marked unverified (`email_verified_at` is null). Verification needs a transactional email vendor. **Needs a vendor decision** (any SMTP or API vendor; behind an interface).                                                                  |
-| B-5 | 99.9% availability (about 8.7 hours of downtime a year, maintenance included) is not realistic on a single VPS with Docker: one host failure or one OS upgrade can use most of it.       | For launch, either (a) two API hosts behind a load balancer plus managed PostgreSQL with point-in-time recovery, or (b) accept a lower target (99.5%) for the single-VPS launch. Decide before Phase 8. The API is already stateless so (a) needs no code change. |
-| B-6 | Bus seats: "unique constraint on schedule + seat" plus holds that expire. A plain unique constraint would block re-selling a seat whose hold expired or whose booking was cancelled.     | Phase 7 will use a partial unique index over active rows (held or confirmed), with expired holds moved to `expired` by a job and re-checked under a row lock at payment time. Same guarantee, seats become sellable again.                                        |
-| B-7 | Hausa uses ƙ, ɗ and ɓ, which force SMS into UCS-2 encoding: 70 characters per segment instead of 160. The Hausa OTP message is two segments, roughly double the cost of the English one. | Kept correct spelling. Alternatives: shorten the Hausa message to fit one UCS-2 segment, or send OTP SMS in English for everyone. **Your call.**                                                                                                                  |
+| #    | Issue                                                                                                                                                                                                                                                         | What I did / propose                                                                                                                                                                                                                                              |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B-1  | The brief says "an empty repository", but `ugambo/ugambo4` already contains the Explore Katsina WordPress project.                                                                                                                                            | Built RideswithMe in `rideswithme/` (the root folder name the brief uses) and left Explore Katsina untouched. Moving it to its own repository later is a folder copy; CI already only runs on `rideswithme/**` changes.                                           |
+| B-2  | Section 2 refers to the phases as section 14 and the open decisions as section 15. They are sections 15 and 16 (14 is UI direction).                                                                                                                          | Assumed the obvious intent.                                                                                                                                                                                                                                       |
+| B-3  | "Masked calling" needs a voice/telephony provider (number proxying). None is in the stack.                                                                                                                                                                    | Proposal: a `VoiceProxyProvider` interface like the SMS one, with a vendor chosen before Phase 3 call buttons ship. Until then the call button can be hidden by configuration. **Needs a vendor decision.**                                                       |
+| B-4  | Email is collected at registration but there is no email provider in the stack, so addresses cannot be verified.                                                                                                                                              | Email is stored and marked unverified (`email_verified_at` is null). Verification needs a transactional email vendor. **Needs a vendor decision** (any SMTP or API vendor; behind an interface).                                                                  |
+| B-5  | 99.9% availability (about 8.7 hours of downtime a year, maintenance included) is not realistic on a single VPS with Docker: one host failure or one OS upgrade can use most of it.                                                                            | For launch, either (a) two API hosts behind a load balancer plus managed PostgreSQL with point-in-time recovery, or (b) accept a lower target (99.5%) for the single-VPS launch. Decide before Phase 8. The API is already stateless so (a) needs no code change. |
+| B-6  | Bus seats: "unique constraint on schedule + seat" plus holds that expire. A plain unique constraint would block re-selling a seat whose hold expired or whose booking was cancelled.                                                                          | Phase 7 will use a partial unique index over active rows (held or confirmed), with expired holds moved to `expired` by a job and re-checked under a row lock at payment time. Same guarantee, seats become sellable again.                                        |
+| B-7  | Hausa uses ƙ, ɗ and ɓ, which force SMS into UCS-2 encoding: 70 characters per segment instead of 160. The Hausa OTP message is two segments, roughly double the cost of the English one.                                                                      | Kept correct spelling. Alternatives: shorten the Hausa message to fit one UCS-2 segment, or send OTP SMS in English for everyone. **Your call.**                                                                                                                  |
+| B-8  | The payout form needs the full list of Nigerian banks and fintech accounts (OPay, Moniepoint, PalmPay, Kuda and others that many drivers use), with their codes, and a check that the account name matches. Neither exists until Paystack arrives in Phase 5. | Phase 2 offers 15 major banks (placeholder list in the driver app) and stores what the driver types. Phase 5 replaces the list with Paystack's bank list and verifies the account name before any payout.                                                         |
+| B-9  | Nothing in the stack verifies a NIN against NIMC records. Reviewers can only compare the number with the NIN slip by eye.                                                                                                                                     | Proposal: an identity-verification vendor (e.g. Prembly/IdentityPass, Smile ID, VerifyMe, Dojah) behind an interface, checking NIN, name, photo and licence before approval. **Needs a vendor decision**; can be added any time before launch.                    |
+| B-10 | Which documents each vehicle type needs is not in the brief (and some permits differ by state).                                                                                                                                                               | Defaults in DECISIONS D-026, editable as data. **Please confirm or correct them**, especially for Keke Napep and motorcycles in the launch city.                                                                                                                  |
+| B-11 | CI has not run on GitHub yet: the first run failed within 3 seconds with no logs, which means GitHub never gave it a runner (an account setting, e.g. Actions billing or spending limit, or Actions disabled for this private repository).                    | Check the run at github.com/Ugambo/ugambo4/actions. Everything CI runs also ran locally before each commit.                                                                                                                                                       |
 
 ## Decision log
 
@@ -196,3 +200,116 @@ Phase 3 with ride requests.
 5. Buses: third-party operators list their routes; RideswithMe takes a service fee.
 
 No Phase 1 code depends on these yet.
+
+### D-023 Driver documents: direct uploads to private storage
+
+- The app asks the API for an upload; the API records it (`file_uploads`) and
+  returns a signed PUT URL valid for 10 minutes, bound to the declared type and
+  exact size. The phone uploads straight to storage (no file passes through the
+  API, which keeps the API light and lets uploads go as fast as the connection
+  allows).
+- When the app attaches the upload, the API checks the object exists, its size
+  matches, it is at most 10 MB, and its first bytes really are JPEG, PNG or PDF.
+  The type the phone declared is not trusted. HTML or programs renamed as images
+  are refused.
+- Only uploads the user was given can be attached, each only once.
+- Object keys are `driver-documents/<user id>/<type>/<random uuid>`: no names or
+  numbers in keys or URLs.
+- The bucket is private. Storage encrypts every object at rest
+  (`S3_SERVER_SIDE_ENCRYPTION=AES256`, required in production). Admins view a
+  document through a link valid for 60 seconds, and every view is written to the
+  audit log.
+- The driver app shrinks photos to at most 1600 px, JPEG quality 70% (typically
+  200-500 KB from a 4-8 MB camera photo) before upload, and retries network
+  failures with backoff, asking for a fresh URL if the old one has expired.
+
+### D-024 Local and CI object storage: moto
+
+MinIO no longer publishes images on Docker Hub, so local development and CI use
+moto (`motoserver/moto`), an S3-compatible server. It keeps files in memory (they
+vanish when it restarts). Production uses a real S3-compatible service; the code
+only speaks the S3 API, so AWS S3, DigitalOcean Spaces, Cloudflare R2, Backblaze
+B2 or self-hosted MinIO all work. **Choose one before launch** (data residency:
+there is no AWS region in Nigeria; Cape Town or Europe are the nearest).
+
+### D-025 Driver application lifecycle and eligibility
+
+- Statuses: `onboarding` → `pending_review` → `approved` or `rejected` (driver
+  fixes and resubmits); `suspended` is reserved for Phase 6.
+- Name, NIN, vehicle and payout account can be edited only while `onboarding` or
+  `rejected`. After approval, changes go through support (Phase 6); changing a
+  payout account gets extra verification in Phase 5 (a common fraud route).
+- An admin approves each required document, then the driver. Approval of the
+  driver is refused unless every required document has an approved, in-date copy.
+- **Can go online** is computed live from: account active, driver approved,
+  active vehicle in an enabled category, and every required document approved
+  and not past its expiry date. An expired licence blocks driving immediately; the
+  hourly sweep that marks documents `expired` only keeps stored statuses tidy.
+- An expiry date is the last valid day, in Nigerian time.
+- Approved drivers can upload renewals at any time; their current approval keeps
+  them driving until it expires. Renewals appear in the review queue.
+
+### D-026 Document requirements are data
+
+`document_types` and `vehicle_category_document_requirements` hold which
+documents each vehicle type needs, so they can change without a code release
+(admin screens in Phase 6). Defaults:
+
+| Document                                                       | Car | Keke Napep | Taxi | Motorcycle |
+| -------------------------------------------------------------- | --- | ---------- | ---- | ---------- |
+| Profile photo, national ID, driver's licence                   | ✓   | ✓          | ✓    | ✓          |
+| Vehicle licence/registration, photos front and back, insurance | ✓   | ✓          | ✓    | ✓          |
+| Photo of the inside, roadworthiness certificate                | ✓   |            | ✓    |            |
+| Operating permit                                               |     | ✓          | ✓    | ✓          |
+
+Licence, vehicle licence, insurance, roadworthiness and permits must have an
+expiry date; the licence must have its number.
+
+### D-027 Identity numbers
+
+NIN, licence numbers and payout account numbers are encrypted (D-015) and shown
+only by their last 4 digits, to drivers and admins alike. The NIN also gets a
+keyed hash (`LOOKUP_HASH_SECRET`) with a unique index, so one NIN cannot register
+two driver accounts. Reviewers compare the last 4 digits with the uploaded image.
+
+### D-028 Review rules
+
+- Nobody can review their own driver application.
+- Two reviewers acting on the same document at once: one wins, the other gets
+  `INVALID_STATE` (row lock). Overturning an approval needs an explicit
+  `withdrawApproval: true`, so one reviewer cannot silently undo another.
+- A rejection reason is shown to the driver; write it for them.
+- The driver gets an SMS (in their language) when approved or sent back. SMS
+  failures are logged and do not undo the decision; the app shows the status too.
+
+### D-029 Review queue
+
+Contains applications waiting on a reviewer: submitted (`pending_review`, since
+submission) and approved drivers with new uploads (renewals, since the oldest
+upload). Oldest first. Applications being filled in or sent back are waiting on
+the driver and are not listed (they are under "All drivers").
+
+### D-030 Admin dashboard security
+
+- The browser never holds API tokens. The dashboard's own server keeps them in an
+  encrypted (AES-256-GCM), httpOnly, `SameSite=Strict` cookie and calls the API
+  for the browser through an allow-listed proxy (`/api/proxy/v1/...`).
+- State-changing requests need a custom header and a same-host `Origin`
+  (cross-site forgery protection on top of `SameSite=Strict`).
+- Each page gets a Content-Security-Policy with a fresh nonce; only this site's
+  scripts run, and images/frames are limited to the storage origin.
+- Token refreshes are de-duplicated per server process. With several dashboard
+  servers, the API's 60-second refresh grace (D-009) covers the rare overlap.
+- Set the API's `TRUST_PROXY_HOPS` to count the dashboard server, so audit logs
+  record the admin's IP rather than the dashboard's.
+
+### D-031 Driver app
+
+Expo SDK 58, built as development builds (background location comes in Phase 4).
+Tokens in the phone's secure keystore (`expo-secure-store`). Signing in to the
+driver app starts the driver application. Language follows the phone (Hausa if
+the phone is set to Hausa), switchable on every main screen. Offline banner from
+`@react-native-community/netinfo`. **Not yet run on a phone or emulator** (none in
+the build environment): it type-checks, its logic is unit-tested, and Metro
+bundles it for Android in CI. Bundle identifiers `com.rideswithme.driver` are
+placeholders until the company domain and store accounts are known.

@@ -63,8 +63,8 @@ tested backups; rate limits on OTP, login and booking.
 
 | Phase                    | Scope                                                                                        | Status                       |
 | ------------------------ | -------------------------------------------------------------------------------------------- | ---------------------------- |
-| 1 Foundation             | Monorepo, Docker, database, migrations, phone OTP auth, roles, shared packages, CI           | **Built, awaiting approval** |
-| 2 Driver onboarding      | Driver registration, document upload, admin verification queue                               |                              |
+| 1 Foundation             | Monorepo, Docker, database, migrations, phone OTP auth, roles, shared packages, CI           | Approved                     |
+| 2 Driver onboarding      | Driver registration, document upload, admin verification queue                               | **Built, awaiting approval** |
 | 3 Core ride flow         | Location search, fare estimate, ride request, matching, state machine, cash                  |                              |
 | 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness                                 |                              |
 | 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              |                              |

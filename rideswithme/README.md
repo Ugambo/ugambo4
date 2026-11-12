@@ -3,76 +3,93 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** Phase 1 (foundation) is built: monorepo, database and migrations,
-phone-OTP authentication, roles and permissions with admin two-factor
-authentication, audit log, shared packages, Docker and CI. The mobile and web apps
-start in Phase 2. See [documentation/PRD.md](documentation/PRD.md) for the plan.
+**Status:** Phase 2 (driver onboarding) is built and awaiting approval:
+
+- **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
+  admin two-factor authentication, audit log, Docker and CI.
+- **Phase 2:** driver registration in the driver app, document upload to private
+  storage, and the admin dashboard's verification queue.
+
+The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
 ## Requirements
 
 - Node.js 22 (`.nvmrc`) and pnpm 10 (`corepack enable` sets it up)
-- Docker, for PostgreSQL + PostGIS and Redis. Or install PostgreSQL 16 with
-  PostGIS 3 and Redis 7 yourself.
+- Docker, for PostgreSQL + PostGIS, Redis and S3-compatible storage. Or run
+  PostgreSQL 16 with PostGIS 3, Redis 7 and any S3-compatible server yourself.
+- For the driver app on a phone: an Android or iOS development build (see
+  `apps/driver-mobile/README.md`).
 
 ## Run it locally
 
 ```bash
 cd rideswithme
 pnpm install
-docker compose up -d postgres redis        # databases (creates rideswithme and rideswithme_test)
+docker compose up -d postgres redis s3     # databases and storage
 
 cp apps/api/.env.example apps/api/.env
 # Fill in the secrets; each line in .env.example says how to generate it:
-#   JWT_ACCESS_SECRET, OTP_PEPPER       openssl rand -hex 32
-#   FIELD_ENCRYPTION_KEYS               echo "k1:$(openssl rand -base64 32)"
+#   JWT_ACCESS_SECRET, OTP_PEPPER, LOOKUP_HASH_SECRET   openssl rand -hex 32
+#   FIELD_ENCRYPTION_KEYS                               echo "k1:$(openssl rand -base64 32)"
+#   S3_* already point at the local storage on port 9000
 
 pnpm build
 DATABASE_URL=postgres://rideswithme:rideswithme@localhost:5432/rideswithme pnpm db:migrate
-pnpm dev:api                                # http://localhost:3000, reloads on change
+pnpm dev:api                                # http://localhost:3000
 ```
 
-Sign in from the command line. With `SMS_PROVIDER=console` the code appears in the
-API log:
+### First admin and the admin dashboard
 
 ```bash
-curl -X POST localhost:3000/v1/auth/otp/request -H 'Content-Type: application/json' \
-  -d '{"phone":"0803 123 4567"}'
-curl -X POST localhost:3000/v1/auth/otp/verify -H 'Content-Type: application/json' \
-  -d '{"phone":"08031234567","code":"<from log>","acceptedPolicyVersion":"2026-11"}'
-```
-
-Create the first super admin (creates the account if needed), then sign in and set
-up an authenticator app via `/v1/auth/mfa/totp/setup` and `/activate`:
-
-```bash
+# Creates the account if needed; they then sign in with an SMS code and set up an authenticator app.
 pnpm --filter @rideswithme/api cli grant-role --phone 08031234567 --role super_admin
+
+cp apps/admin-dashboard/.env.example apps/admin-dashboard/.env.local   # set ADMIN_SESSION_SECRET
+pnpm --filter @rideswithme/admin-dashboard dev                         # http://localhost:3001
 ```
 
-Whole stack in containers (migrations run first): `docker compose --profile app up --build`.
+With `SMS_PROVIDER=console` the sign-in code appears in the API log.
+
+### Driver app
+
+```bash
+cp apps/driver-mobile/.env.example apps/driver-mobile/.env   # API address as seen from the phone
+pnpm --filter @rideswithme/driver-mobile start               # needs a development build installed
+```
+
+### Everything in containers
+
+`docker compose --profile app up --build` runs migrations, the API and the admin
+dashboard (create `apps/api/.env` and `apps/admin-dashboard/.env.local` first).
 
 ## Commands
 
 Run from `rideswithme/`.
 
-| Command                                              | What it does                                                                                   |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm build`                                         | Build all packages and the API                                                                 |
-| `pnpm test`                                          | Unit and integration tests (needs PostgreSQL + Redis; uses `rideswithme_test` and Redis db 15) |
-| `pnpm typecheck` / `pnpm lint` / `pnpm format:check` | Static checks (CI runs all of these)                                                           |
-| `pnpm db:migrate` / `pnpm db:status`                 | Apply or list migrations (`DATABASE_URL`)                                                      |
-| `pnpm dev:api`                                       | API with reload, reading `apps/api/.env`                                                       |
+| Command                                                 | What it does                                                           |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm build`                                            | Build all packages and apps                                            |
+| `pnpm test`                                             | Unit and integration tests (needs PostgreSQL, Redis and S3; see below) |
+| `pnpm typecheck` / `pnpm lint` / `pnpm format:check`    | Static checks (CI runs all of these)                                   |
+| `pnpm --filter @rideswithme/admin-dashboard e2e`        | Browser tests of the admin dashboard against a real API (build first)  |
+| `pnpm --filter @rideswithme/driver-mobile bundle:check` | Bundles the driver app for Android with Metro                          |
+| `pnpm db:migrate` / `pnpm db:status`                    | Apply or list migrations (`DATABASE_URL`)                              |
+| `pnpm dev:api`                                          | API with reload, reading `apps/api/.env`                               |
 
-Tests use `TEST_DATABASE_URL` (default
-`postgres://rwm:rwm@localhost:5432/rideswithme_test`) and `TEST_REDIS_URL` (default
-`redis://localhost:6379/15`). With the compose databases, set
+Integration tests use `TEST_DATABASE_URL` (default
+`postgres://rwm:rwm@localhost:5432/rideswithme_test`), `TEST_REDIS_URL` (default
+`redis://localhost:6379/15`) and `TEST_S3_ENDPOINT` (default
+`http://127.0.0.1:9000`). With the compose services, set
 `TEST_DATABASE_URL=postgres://rideswithme:rideswithme@localhost:5432/rideswithme_test`.
-The test database is wiped and rebuilt from migrations on every run.
+The test database is wiped and rebuilt from migrations on every run. The admin
+end-to-end tests use `E2E_DATABASE_URL` (a database they drop and recreate) and
+`E2E_REDIS_URL` in the same way.
 
 ## Layout
 
 ```
-apps/            api (built); passenger-mobile, driver-mobile, passenger-web,
-                 admin-dashboard, fleet-portal (later phases)
+apps/            api, admin-dashboard, driver-mobile (built);
+                 passenger-mobile, passenger-web, fleet-portal (later phases)
 packages/        shared-types, validation, api-client, ui-components, utilities
 infrastructure/  database (migrations + runner), docker, deployment
 documentation/   PRD, ARCHITECTURE, DATABASE, API_DOCUMENTATION, DECISIONS

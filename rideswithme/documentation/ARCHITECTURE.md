@@ -3,15 +3,16 @@
 ## Components
 
 ```
- passenger-mobile ─┐                                   ┌─ PostgreSQL 16 + PostGIS
- driver-mobile ────┤   HTTPS (REST /v1)                │   (system of record)
- passenger-web ────┼──────────────────────►  api  ─────┤
- admin-dashboard ──┤   Socket.IO (Phase 4)  (NestJS)   ├─ Redis
- fleet-portal ─────┘                                   │   (OTP, rate limits, live positions, locks)
-                                                       ├─ SMS gateway (Termii, behind SmsProvider)
-                                                       ├─ Paystack (Phase 5)
-                                                       ├─ Google Maps (Phase 3)
-                                                       └─ S3-compatible storage, private (Phase 2)
+ passenger-mobile ─┐                                         ┌─ PostgreSQL 16 + PostGIS
+ driver-mobile ────┤   HTTPS (REST /v1)                      │   (system of record)
+ passenger-web ────┼────────────────────────────►  api  ─────┤
+ fleet-portal ─────┤   Socket.IO (Phase 4)        (NestJS)   ├─ Redis
+                   │                                 ▲       │   (OTP, rate limits, live positions, locks)
+ admin browser ──► admin-dashboard server ───────────┘       ├─ SMS gateway (Termii, behind SmsProvider)
+                   (Next.js; holds the admin's tokens)       ├─ Paystack (Phase 5)
+                                                             ├─ Google Maps (Phase 3)
+ driver-mobile ──── signed PUT (upload) ───────────────────► └─ S3-compatible storage, private
+ admin browser ──── signed GET (60 s view) ────────────────►
 ```
 
 One API process type, stateless, horizontally scalable. All durable state is in
@@ -22,19 +23,21 @@ PostgreSQL; Redis holds only data that can expire or be rebuilt.
 pnpm workspaces + Turborepo. `pnpm turbo run build` builds packages in dependency
 order.
 
-| Path                                                              | Purpose                                                          | State          |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------- | -------------- |
-| `apps/api`                                                        | NestJS API                                                       | Phase 1 built  |
-| `apps/passenger-mobile`, `apps/driver-mobile`                     | Expo apps (development builds)                                   | Phases 2–4     |
-| `apps/passenger-web`, `apps/admin-dashboard`, `apps/fleet-portal` | Next.js apps                                                     | Phases 2, 3, 6 |
-| `packages/shared-types`                                           | Response types, role/permission keys, error codes                | Built          |
-| `packages/validation`                                             | zod request schemas, Nigerian phone normalisation                | Built          |
-| `packages/api-client`                                             | Typed fetch client with token refresh                            | Built          |
-| `packages/ui-components`                                          | Design tokens (colours, type, spacing, radius); components later | Tokens built   |
-| `packages/utilities`                                              | Money in kobo, English/Hausa message catalogues                  | Built          |
-| `infrastructure/database`                                         | SQL migrations and migration runner                              | Built          |
-| `infrastructure/docker`                                           | API/migration image, Postgres init                               | Built          |
-| `infrastructure/deployment`                                       | Production deployment                                            | Phase 8        |
+| Path                                          | Purpose                                                          | State                                 |
+| --------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------- |
+| `apps/api`                                    | NestJS API                                                       | Phases 1-2 built                      |
+| `apps/admin-dashboard`                        | Next.js admin dashboard (driver verification so far)             | Phase 2 built; full dashboard Phase 6 |
+| `apps/driver-mobile`                          | Expo driver app (onboarding so far)                              | Phase 2 built; trips Phases 3-4       |
+| `apps/passenger-mobile`, `apps/passenger-web` | Passenger apps                                                   | Phase 3                               |
+| `apps/fleet-portal`                           | Next.js fleet portal                                             | Phase 6                               |
+| `packages/shared-types`                       | Response types, role/permission keys, error codes, driver types  | Built                                 |
+| `packages/validation`                         | zod request schemas, Nigerian phone, NIN, plate, NUBAN           | Built                                 |
+| `packages/api-client`                         | Typed fetch client with token refresh, used by every app         | Built                                 |
+| `packages/ui-components`                      | Design tokens (colours, type, spacing, radius); components later | Tokens built                          |
+| `packages/utilities`                          | Money in kobo, English/Hausa message catalogues                  | Built                                 |
+| `infrastructure/database`                     | SQL migrations and migration runner                              | Built                                 |
+| `infrastructure/docker`                       | API, migration and admin dashboard images; Postgres init         | Built                                 |
+| `infrastructure/deployment`                   | Production deployment                                            | Phase 8                               |
 
 Dependency rule: apps depend on packages; packages never depend on apps;
 `shared-types` depends on nothing.
@@ -82,6 +85,44 @@ app                         api                              Redis / Postgres
 ```
 
 Details and trade-offs: DECISIONS D-008 to D-012.
+
+### Driver documents
+
+```
+driver app                      api                                   storage (private bucket)
+ │ POST documents/uploads ─────► checks type, size, rate ─► file_uploads row
+ │ ◄── signed PUT URL (10 min, exact type and size, encrypted at rest)
+ │ PUT file ───────────────────────────────────────────────────────────► object
+ │ POST documents {uploadId} ──► HEAD + first bytes: size and real type ◄─┘
+ │                               driver_documents row (pending), audit
+admin dashboard
+ │ view ───────────────────────► audit "viewed" ─► signed GET URL (60 s) ─► browser shows it
+ │ approve / reject ───────────► row lock, audit; driver approval needs every
+                                 required document approved and in date; SMS
+```
+
+Whether a driver may go online is computed on every read from their status,
+vehicle and documents (DECISIONS D-025), so an expired licence blocks driving
+without waiting for a background job.
+
+## Admin dashboard (`apps/admin-dashboard`)
+
+Next.js 16 (App Router). The browser talks only to the dashboard's own server:
+
+- `/api/auth/*` signs in (SMS code) and out. The API's tokens go into an
+  encrypted, httpOnly, SameSite=Strict cookie, never to page scripts.
+- `/api/proxy/v1/...` forwards allow-listed API calls with the admin's token,
+  refreshing it when needed. Pages use the shared typed `api-client` against it.
+- `src/proxy.ts` (Next 16's name for middleware) redirects signed-out visitors and
+  sets a per-request nonce Content-Security-Policy.
+- Text comes from English/Hausa catalogues; design tokens become CSS variables.
+
+## Driver app (`apps/driver-mobile`)
+
+Expo SDK 58 with Expo Router. Screens: sign-in, application checklist, name/NIN,
+vehicle, payout account, one screen per document (camera, gallery, PDF). Logic
+that matters (checklist, day-first dates, upload with retry) is plain TypeScript
+with unit tests; screens use the shared `api-client`, validation and tokens.
 
 ## Cross-cutting rules
 

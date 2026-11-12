@@ -34,12 +34,13 @@ pnpm db:status      # list applied and pending migrations
 
 ## Applied migrations
 
-| Migration                   | Contents                                                                              |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| 0001_extensions             | `postgis`, `citext`; helper functions `set_updated_at()` and `forbid_update_delete()` |
-| 0002_identity               | users, roles, permissions, role_permissions, user_roles, user_sessions, user_consents |
-| 0003_audit_logs             | audit_logs (append-only)                                                              |
-| 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                  |
+| Migration                   | Contents                                                                                                                                     |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0001_extensions             | `postgis`, `citext`; helper functions `set_updated_at()` and `forbid_update_delete()`                                                        |
+| 0002_identity               | users, roles, permissions, role_permissions, user_roles, user_sessions, user_consents                                                        |
+| 0003_audit_logs             | audit_logs (append-only)                                                                                                                     |
+| 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                                                                         |
+| 0005_driver_onboarding      | vehicle_categories, document_types, requirements per category, driver_profiles, vehicles, file_uploads, driver_documents; driver permissions |
 
 ## Identity domain
 
@@ -77,14 +78,14 @@ audit_logs.actor_user_id ──> users
 
 Seeded roles and permissions:
 
-| Role          | MFA | Privileged | Permissions                                                         |
-| ------------- | --- | ---------- | ------------------------------------------------------------------- |
-| passenger     | no  | no         | none                                                                |
-| driver        | no  | no         | none (driver permissions arrive in Phase 2)                         |
-| fleet_manager | yes | no         | none yet (Phase 6, scoped to one fleet)                             |
-| support_agent | yes | yes        | users.read                                                          |
-| admin         | yes | yes        | users.read, users.manage, roles.read, roles.assign, audit_logs.read |
-| super_admin   | yes | yes        | all                                                                 |
+| Role          | MFA | Privileged | Permissions                                                                                                               |
+| ------------- | --- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| passenger     | no  | no         | none                                                                                                                      |
+| driver        | no  | no         | none: drivers act on their own application, checked by ownership, not permission                                          |
+| fleet_manager | yes | no         | none yet (Phase 6, scoped to one fleet)                                                                                   |
+| support_agent | yes | yes        | users.read, drivers.read                                                                                                  |
+| admin         | yes | yes        | users.read, users.manage, roles.read, roles.assign, audit_logs.read, drivers.read, drivers.documents_view, drivers.verify |
+| super_admin   | yes | yes        | all                                                                                                                       |
 
 ### user_sessions
 
@@ -108,17 +109,69 @@ and target.
 
 Actions recorded so far: `admin.user.role_assigned`, `admin.user.role_removed`,
 `admin.user.suspended`, `admin.user.reactivated`, `auth.mfa.enabled`,
-`auth.mfa.verified`, `auth.mfa.reset`, `auth.session.refresh_token_reused`.
+`auth.mfa.verified`, `auth.mfa.reset`, `auth.session.refresh_token_reused`,
+`driver.registration.started`, `driver.document.uploaded`,
+`driver.application.submitted`, `admin.driver_document.viewed`,
+`admin.driver_document.approved`, `admin.driver_document.rejected`,
+`admin.driver.approved`, `admin.driver.rejected`, `driver_document.expired`.
+
+## Drivers domain (Phase 2)
+
+```
+users 1───1 driver_profiles 1───* vehicles *───1 vehicle_categories *───* document_types
+                    │                                (vehicle_category_document_requirements)
+                    └──* driver_documents ───1 file_uploads
+```
+
+### vehicle_categories
+
+`key` (`car`, `keke_napep`, `taxi`, `motorcycle`), name, description, passenger
+`seats`, `is_enabled` (car and Keke Napep on at launch), `sort_order`.
+
+### document_types and vehicle_category_document_requirements
+
+Each document kind: `scope` (`driver` or `vehicle`), `media` (`photo` = JPEG/PNG,
+`document` = also PDF), `requires_expiry`, `requires_number`. The requirement table
+says which kinds each category needs (defaults in DECISIONS D-026).
+
+### driver_profiles
+
+One per driver, keyed by `user_id`. `status` (`onboarding`, `pending_review`,
+`approved`, `rejected`, `suspended`), NIN (encrypted, keyed lookup hash with a
+unique index, last 4), payout bank code / encrypted account number / last 4 /
+account name, `submitted_at`, `reviewed_at`, `reviewed_by`, `rejection_reason`,
+`approved_at`. Check constraints keep the NIN and payout fields all-or-nothing and
+require a reason on rejection.
+
+### vehicles
+
+`driver_user_id`, category, `plate_number` (upper case letters and digits, unique
+among active vehicles), make, model, colour, year, `status` (`active`/`retired`).
+At most one active vehicle per driver. Fleets (Phase 6) will own vehicles too.
+
+### file_uploads
+
+An upload the API authorised: owner, purpose, object key, declared type and size,
+`pending`/`completed`, expiry. A document can only be created from a pending
+upload of the same user, once.
+
+### driver_documents
+
+One row per upload (history is kept). Type, vehicle (for vehicle documents),
+`status` (`pending`, `approved`, `rejected`, `expired`), object key, verified
+content type and size, encrypted document number and last 4, `expires_on` (last
+valid day, Nigerian time), reviewer, review time, rejection reason. Indexed for
+the latest per driver and type, the pending queue, and the expiry sweep.
 
 ## Not in the database
 
-- One-time codes, rate-limit counters: Redis, with expiry.
+- One-time codes, rate-limit counters, job locks: Redis, with expiry.
+- Document files: private S3-compatible storage (keys in `driver_documents.object_key`).
 - Live driver positions (Phase 4): Redis.
 
 ## Planned domains
 
-Tables listed in the brief for later phases (passenger_profiles, driver_profiles,
-driver_documents, vehicles, vehicle_categories, fleets, service_areas,
+Tables listed in the brief for later phases (passenger_profiles, fleets, service_areas,
 saved_places, rides, ride_requests, ride_events, driver_locations,
 trip_locations partitioned by date, fare_rules, fare_quotes, commissions,
 payments, wallets, wallet_transactions, bus_*, emergency_alerts,
