@@ -13,7 +13,7 @@ import { ErrorState, InlineError, Loading } from '@/components/states';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import type { MessageKey } from '@/lib/messages';
-import { useResource } from '@/lib/use-resource';
+import { useResource } from '@rideswithme/web-core/client';
 import { useMe } from '../../shell';
 
 type Action =

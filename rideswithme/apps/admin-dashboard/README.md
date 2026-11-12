@@ -13,7 +13,8 @@ pnpm build && pnpm e2e       # Playwright tests against a real API (see e2e/env.
 
 How it is secured: the browser never sees API tokens. They live in an encrypted
 httpOnly cookie on this app's server, which forwards allow-listed calls to the API
-(`src/server/`, `src/app/api/`). See documentation/DECISIONS.md D-030.
+(`src/server/`, `src/app/api/`), using `@rideswithme/web-core`, shared with the
+passenger website. See documentation/DECISIONS.md D-030.
 
 All text is in `src/lib/messages.ts` (English and Hausa). The Playwright run saves
 screenshots of each screen to `e2e/.output/screenshots/`.

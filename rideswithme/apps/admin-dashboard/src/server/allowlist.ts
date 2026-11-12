@@ -1,13 +1,13 @@
-/** API paths the browser may reach through this server's proxy. Everything else is refused. */
-const ALLOWED = [
+import { isAllowedPath } from '@rideswithme/web-core';
+
+/** API paths the admin's browser may reach through this server's proxy. Everything else is refused. */
+export const ADMIN_API_ALLOW = [
   /^v1\/me$/,
   /^v1\/auth\/mfa\/totp\/(setup|activate|verify)$/,
   /^v1\/auth\/sessions(\/[0-9a-f-]{36})?$/,
-  /^v1\/admin\/(users|roles|audit-logs|drivers)(\/.*)?$/,
+  /^v1\/auth\/realtime-ticket$/,
+  /^v1\/admin\/(users|roles|audit-logs|drivers|rides|service-areas|fare-rules)(\/.*)?$/,
   /^v1\/vehicle-categories$/,
 ];
 
-export function isAllowedApiPath(path: string): boolean {
-  if (path.includes('..') || path.includes('//')) return false;
-  return ALLOWED.some((re) => re.test(path));
-}
+export const isAllowedApiPath = (path: string) => isAllowedPath(path, ADMIN_API_ALLOW);

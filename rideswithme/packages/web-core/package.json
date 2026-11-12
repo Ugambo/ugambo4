@@ -1,0 +1,40 @@
+{
+  "name": "@rideswithme/web-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Session, token refresh and API proxy for the Next.js apps (server, standard Request/Response), plus shared browser helpers (./client)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rideswithme/api-client": "workspace:*",
+    "@rideswithme/shared-types": "workspace:*",
+    "@rideswithme/utilities": "workspace:*",
+    "jose": "^6.2.17"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    }
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "react": "19.3.1"
+  }
+}

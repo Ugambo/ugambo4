@@ -7,7 +7,7 @@ import type { MeResponse } from '@rideswithme/shared-types';
 import { ErrorState, Loading } from '@/components/states';
 import { api, auth, isSignedOut } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { useResource } from '@/lib/use-resource';
+import { useResource } from '@rideswithme/web-core/client';
 
 const MeContext = createContext<MeResponse | null>(null);
 export const useMe = () => useContext(MeContext);

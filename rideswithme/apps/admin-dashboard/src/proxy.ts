@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { contentSecurityPolicy } from '@rideswithme/web-core';
 
 const SESSION_COOKIE = 'rwm_admin_session';
 
@@ -15,21 +16,13 @@ export function proxy(request: NextRequest) {
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-  const isDev = process.env.NODE_ENV === 'development';
-  const storage = process.env.STORAGE_ORIGIN ?? '';
-  const csp = [
-    "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    `img-src 'self' blob: data: ${storage}`,
-    `frame-src ${storage || "'none'"}`,
-    "font-src 'self'",
-    "connect-src 'self'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-  ].join('; ');
+  const storage = process.env.STORAGE_ORIGIN;
+  const csp = contentSecurityPolicy({
+    nonce,
+    dev: process.env.NODE_ENV === 'development',
+    imgSrc: storage ? [storage] : [],
+    frameSrc: storage ? [storage] : [],
+  });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);

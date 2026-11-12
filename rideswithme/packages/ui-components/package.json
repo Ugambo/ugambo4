@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "web"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -28,7 +29,8 @@
     "./native": {
       "types": "./dist/native/index.d.ts",
       "default": "./dist/native/index.js"
-    }
+    },
+    "./web.css": "./web/base.css"
   },
   "peerDependencies": {
     "react": "*",

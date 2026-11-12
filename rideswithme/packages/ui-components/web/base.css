@@ -1,3 +1,4 @@
+/* Base styles shared by the RideswithMe web apps. Colours etc. come from CSS variables set by cssVariables(). */
 *,
 *::before,
 *::after {
