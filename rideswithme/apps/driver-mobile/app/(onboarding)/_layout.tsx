@@ -25,6 +25,8 @@ export default function OnboardingLayout() {
         <Stack.Screen name="vehicle" options={{ title: t('vehicle.title') }} />
         <Stack.Screen name="payout" options={{ title: t('payout.title') }} />
         <Stack.Screen name="document/[type]" options={{ title: '' }} />
+        <Stack.Screen name="drive" options={{ title: t('drive.title') }} />
+        <Stack.Screen name="earnings" options={{ title: t('earnings.title') }} />
       </Stack>
     </OnboardingProvider>
   );

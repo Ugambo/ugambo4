@@ -132,7 +132,11 @@ export default function Home() {
         return view.eligibility.canGoOnline ? (
           <Card tone="ok">
             <Body>{t('home.approved')}</Body>
-            <Body muted>{t('home.goOnlineSoon')}</Body>
+            <Link href="/drive" asChild>
+              <Pressable accessibilityRole="button" style={styles.drive}>
+                <Text style={styles.driveText}>{t('drive.start')} →</Text>
+              </Pressable>
+            </Link>
           </Card>
         ) : (
           <Card tone="bad">
@@ -180,4 +184,12 @@ const styles = StyleSheet.create({
   rowTitle: { flex: 1, fontSize: typography.size.md, fontWeight: '600', color: colors.text },
   reason: { fontSize: typography.size.md, fontWeight: '700', color: colors.text },
   submit: { gap: spacing[2] },
+  drive: {
+    minHeight: 56,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driveText: { fontSize: typography.size.lg, fontWeight: '800', color: colors.onPrimary },
 });

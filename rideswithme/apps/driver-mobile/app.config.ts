@@ -24,6 +24,13 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-localization',
     [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          'RideswithMe shares your location with passengers and the dispatcher while you are online.',
+      },
+    ],
+    [
       'expo-image-picker',
       {
         cameraPermission:
