@@ -1,0 +1,55 @@
+# Local development stack.
+#   docker compose up -d postgres redis      databases only; run the API on your machine with pnpm dev:api
+#   docker compose --profile app up --build  everything, including migrations and the API
+name: rideswithme
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: rideswithme
+      POSTGRES_PASSWORD: rideswithme
+      POSTGRES_DB: rideswithme
+    ports: ['5432:5432']
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rideswithme -d rideswithme']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ['6379:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    profiles: [app]
+    build: { context: ., dockerfile: infrastructure/docker/api.Dockerfile, target: migrate }
+    environment:
+      DATABASE_URL: postgres://rideswithme:rideswithme@postgres:5432/rideswithme
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    profiles: [app]
+    build: { context: ., dockerfile: infrastructure/docker/api.Dockerfile, target: api }
+    env_file: apps/api/.env
+    environment:
+      DATABASE_URL: postgres://rideswithme:rideswithme@postgres:5432/rideswithme
+      REDIS_URL: redis://redis:6379/0
+      # The compose stack is for development, so the console SMS provider is allowed.
+      NODE_ENV: development
+    ports: ['3000:3000']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+volumes:
+  postgres-data:
