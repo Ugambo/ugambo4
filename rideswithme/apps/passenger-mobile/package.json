@@ -9,7 +9,7 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src app",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "bundle:check": "expo export --platform android --output-dir .expo-export-check"
   },
   "dependencies": {

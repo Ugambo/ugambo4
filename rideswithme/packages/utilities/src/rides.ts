@@ -1,4 +1,12 @@
-import type { DriverPosition, RideStatus, RideView } from '@rideswithme/shared-types';
+/** Passenger-side ride rules shared by the passenger app and website. */
+import {
+  ACTIVE_RIDE_STATUSES,
+  type DriverPosition,
+  type LatLng,
+  type Place,
+  type RideStatus,
+  type RideView,
+} from '@rideswithme/shared-types';
 
 /** What the home screen shows for the passenger's current ride. */
 export type RidePhase =
@@ -71,4 +79,52 @@ export function scheduleSlots(now: Date, hours = 24): Date[] {
   const slots: Date[] = [];
   for (let t = first; t <= now.getTime() + hours * 3_600_000; t += step) slots.push(new Date(t));
   return slots;
+}
+
+/** A place as the fare and booking endpoints accept it (no null fields). */
+export function toPlaceInput(p: Place): {
+  location: LatLng;
+  address: string;
+  name?: string;
+  placeId?: string;
+} {
+  return {
+    location: p.location,
+    address: p.address,
+    ...(p.name && { name: p.name }),
+    ...(p.placeId && { placeId: p.placeId }),
+  };
+}
+
+/** What the passenger's screen shows: the ride in front of them, and rides scheduled for later. */
+export interface PassengerRides {
+  current: RideView | null;
+  scheduled: RideView[];
+}
+
+/**
+ * Applies a live `ride:updated` event. A scheduled ride stays in the scheduled
+ * list until it starts searching; the current ride is replaced by its own update,
+ * or by any other ride once it has finished (so the receipt is not lost to an
+ * unrelated update while it is on screen).
+ */
+export function applyRideUpdate(state: PassengerRides, updated: RideView): PassengerRides {
+  const scheduled = state.scheduled.filter((r) => r.id !== updated.id);
+  if (updated.status === 'requested')
+    return { current: state.current, scheduled: [...scheduled, updated] };
+  const current = state.current;
+  const replace =
+    !current || current.id === updated.id || !ACTIVE_RIDE_STATUSES.includes(current.status);
+  return { current: replace ? updated : current, scheduled };
+}
+
+/** Applies the passenger's active rides from the API (on load and after reconnecting). */
+export function applyActiveRides(state: PassengerRides, rides: RideView[]): PassengerRides {
+  const current = state.current;
+  return {
+    scheduled: rides.filter((r) => r.status === 'requested'),
+    current:
+      rides.find((r) => r.status !== 'requested') ??
+      (current && !ACTIVE_RIDE_STATUSES.includes(current.status) ? current : null),
+  };
 }

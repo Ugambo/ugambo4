@@ -17,7 +17,6 @@ import {
   type DriverPosition,
   ACTIVE_RIDE_STATUSES,
   type FareEstimateResponse,
-  type Place,
   type RideView,
   type SavedPlace,
 } from '@rideswithme/shared-types';
@@ -30,34 +29,40 @@ import { Body, Button, Card, ErrorText, Title } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { api, useOnReconnect, useRealtimeEvent } from '@/lib/session';
 import {
+  applyActiveRides,
+  applyRideUpdate,
   canCancel,
   cancellationFeeNow,
+  type PassengerRides,
   positionAge,
   ridePhase,
   scheduleSlots,
-} from '@/lib/trip-logic';
+  toPlaceInput,
+} from '@rideswithme/utilities';
 import { useTripDraft } from '@/lib/trip-draft';
 
 /** Live updates do the work; this slow poll only covers missed events. */
 const FALLBACK_POLL_MS = 30_000;
 
 /** API place input: drop empty optional fields. */
-function toPlaceInput(p: Place) {
-  return {
-    location: p.location,
-    address: p.address,
-    ...(p.name && { name: p.name }),
-    ...(p.placeId && { placeId: p.placeId }),
-  };
-}
-
 export default function Home() {
   const { t } = useI18n();
   const draft = useTripDraft();
   const { height } = useWindowDimensions();
   const [expanded, setExpanded] = useState(true);
-  const [ride, setRide] = useState<RideView | null>(null);
-  const [scheduled, setScheduled] = useState<RideView[]>([]);
+  const [rides, setRides] = useState<PassengerRides>({ current: null, scheduled: [] });
+  const ride = rides.current;
+  const scheduled = rides.scheduled;
+  const setRide = useCallback(
+    (next: RideView | null | ((current: RideView | null) => RideView | null)) =>
+      setRides((s) => ({ ...s, current: typeof next === 'function' ? next(s.current) : next })),
+    [],
+  );
+  const setScheduled = useCallback(
+    (next: (scheduled: RideView[]) => RideView[]) =>
+      setRides((s) => ({ ...s, scheduled: next(s.scheduled) })),
+    [],
+  );
   const [saved, setSaved] = useState<SavedPlace[]>([]);
   const [locating, setLocating] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);
@@ -75,12 +80,7 @@ export default function Home() {
 
   const loadActive = useCallback(async () => {
     const rides = await api.rides.active();
-    setScheduled(rides.filter((r) => r.status === 'requested'));
-    setRide(
-      (current) =>
-        rides.find((r) => r.status !== 'requested') ??
-        (current && !ACTIVE_RIDE_STATUSES.includes(current.status) ? current : null),
-    );
+    setRides((state) => applyActiveRides(state, rides));
   }, []);
 
   useEffect(() => {
@@ -144,18 +144,7 @@ export default function Home() {
   // Live: the ride's status and the driver's position as they change.
   useRealtimeEvent<RideView>(
     'ride:updated',
-    useCallback((updated: RideView) => {
-      if (updated.status === 'requested') {
-        setScheduled((s) => [...s.filter((x) => x.id !== updated.id), updated]);
-        return;
-      }
-      setScheduled((s) => s.filter((x) => x.id !== updated.id));
-      setRide((current) =>
-        !current || current.id === updated.id || !ACTIVE_RIDE_STATUSES.includes(current.status)
-          ? updated
-          : current,
-      );
-    }, []),
+    useCallback((updated: RideView) => setRides((state) => applyRideUpdate(state, updated)), []),
   );
   useRealtimeEvent<{ rideId: string; position: DriverPosition }>(
     'driver:position',

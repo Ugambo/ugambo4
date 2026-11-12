@@ -24,3 +24,12 @@ describe('i18n', () => {
     expect(translate('ha', 'sms.otp', { code: '123456', minutes: 5 })).toContain('minti 5');
   });
 });
+
+describe('passenger ride text', () => {
+  it('has a non-empty Hausa string for every English key', async () => {
+    const { passengerMessages } = await import('./passenger-messages');
+    for (const key of Object.keys(passengerMessages.en) as (keyof typeof passengerMessages.en)[]) {
+      expect(passengerMessages.ha[key], key).toBeTruthy();
+    }
+  });
+});

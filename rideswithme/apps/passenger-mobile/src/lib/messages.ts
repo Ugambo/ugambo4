@@ -1,11 +1,14 @@
+import { passengerMessages } from '@rideswithme/utilities';
+
 /**
- * Passenger app text (shared sign-in and common text come from @rideswithme/mobile-core).
+ * Passenger app text. Ride text shared with the website comes from
+ * @rideswithme/utilities; sign-in and common text from @rideswithme/mobile-core.
  * Every key must exist in Hausa (the type enforces it). Hausa needs native-speaker review.
  */
 const en = {
+  ...passengerMessages.en,
   'signIn.title': 'Ride with RideswithMe',
   'signIn.subtitle': 'Sign in with your phone number to book cars and Keke Napep.',
-
   'home.whereTo': 'Where to?',
   'home.pickup': 'Pickup',
   'home.yourLocation': 'Your location',
@@ -15,94 +18,17 @@ const en = {
   'home.history': 'Your rides',
   'home.account': 'Account',
   'home.sheetHandle': 'Show more or less',
-
-  'saved.home': 'Home',
-  'saved.work': 'Work',
-  'saved.setHome': 'Set home',
-  'saved.setWork': 'Set work',
-
-  'search.pickupPlaceholder': 'Pickup point',
-  'search.destinationPlaceholder': 'Search destination',
-  'search.useCurrent': 'Use my current location',
-  'search.noResults': 'No places found. Try another name.',
-  'search.typeMore': 'Type at least 2 letters.',
-
-  'choose.title': 'Choose a ride',
-  'choose.eta': '{minutes} min away',
-  'choose.noDrivers': 'No drivers nearby yet',
-  'choose.seats': '{seats} seats',
-  'choose.cash': 'Cash',
-  'choose.payment': 'Payment',
-  'choose.when': 'When',
-  'choose.now': 'Now',
-  'choose.request': 'Request {category} · {price}',
-  'choose.schedule': 'Schedule {category} for {time}',
-  'choose.priceNote':
-    'Price fixed when you request. Waiting over a few minutes at pickup adds a small charge.',
-  'choose.pickTime': 'Pick a time',
-
-  'ride.searching': 'Finding you a driver…',
-  'ride.searchingHint': 'This usually takes under a minute.',
-  'ride.driverComing': '{name} is on the way',
-  'ride.driverHere': '{name} has arrived',
-  'ride.driverHereHint': 'Please meet your driver at the pickup point.',
-  'ride.onTrip': 'On the way to your destination',
-  'ride.completed': 'You have arrived',
-  'ride.payCash': 'Pay {amount} in cash',
-  'ride.cancelled': 'This ride was cancelled',
-  'ride.cancelledByDriver': 'Your driver had to cancel. Please request another ride.',
-  'ride.noDriver': 'No driver was available. Please try again in a few minutes.',
-  'ride.scheduled': 'Scheduled for {time}',
-  'ride.cancel': 'Cancel ride',
-  'ride.cancelConfirm': 'Cancel this ride?',
-  'ride.cancelFee': 'A cancellation fee of {amount} applies.',
-  'ride.keep': 'Keep ride',
-  'ride.done': 'Done',
-  'ride.newDriver': 'New driver',
-  'ride.plate': 'Plate',
-  'ride.call': 'Call',
-  'ride.message': 'Message',
-  'ride.contactSoon': 'Calling and messaging your driver are coming soon.',
-  'ride.lastUpdated': 'Driver location last updated {seconds}s ago',
-  'ride.fare': 'Fare',
-
-  'receipt.title': 'Receipt',
-  'receipt.base': 'Base fare',
-  'receipt.distance': 'Distance',
-  'receipt.time': 'Time',
-  'receipt.peak': 'Busy-time surcharge',
-  'receipt.bookingFee': 'Booking fee',
-  'receipt.minimum': 'Minimum fare top-up',
-  'receipt.rounding': 'Rounding',
-  'receipt.waiting': 'Waiting at pickup',
-  'receipt.cancellationFee': 'Cancellation fee',
-  'receipt.total': 'Total',
-  'receipt.paidCash': 'Paid in cash',
-
-  'history.title': 'Your rides',
-  'history.empty': 'No rides yet.',
-
   'account.title': 'Account',
   'account.savedPlaces': 'Saved places',
   'account.notSet': 'Not set',
-
-  'status.requested': 'Scheduled',
-  'status.searching': 'Finding driver',
-  'status.driver_assigned': 'Driver on the way',
-  'status.driver_arrived': 'Driver arrived',
-  'status.in_progress': 'On trip',
-  'status.completed': 'Completed',
-  'status.cancelled_by_passenger': 'Cancelled',
-  'status.cancelled_by_driver': 'Cancelled by driver',
-  'status.no_driver_found': 'No driver found',
-} as const;
+};
 
 export type MessageKey = keyof typeof en;
 
 const ha: Record<MessageKey, string> = {
+  ...passengerMessages.ha,
   'signIn.title': 'Tafi da RideswithMe',
   'signIn.subtitle': 'Shiga da lambar wayarku don yin odar mota da Keke Napep.',
-
   'home.whereTo': 'Ina za ku?',
   'home.pickup': 'Wurin ɗauka',
   'home.yourLocation': 'Wurin da kuke',
@@ -111,86 +37,9 @@ const ha: Record<MessageKey, string> = {
   'home.history': 'Tafiye-tafiyenku',
   'home.account': 'Asusu',
   'home.sheetHandle': 'Nuna ƙari ko ƙasa',
-
-  'saved.home': 'Gida',
-  'saved.work': 'Wurin aiki',
-  'saved.setHome': 'Saita gida',
-  'saved.setWork': 'Saita wurin aiki',
-
-  'search.pickupPlaceholder': 'Wurin ɗauka',
-  'search.destinationPlaceholder': 'Nemi inda za ku',
-  'search.useCurrent': 'Yi amfani da wurin da nake yanzu',
-  'search.noResults': 'Ba a sami wuri ba. Gwada wani suna.',
-  'search.typeMore': 'Rubuta aƙalla haruffa 2.',
-
-  'choose.title': 'Zaɓi abin hawa',
-  'choose.eta': 'Minti {minutes} daga nan',
-  'choose.noDrivers': 'Babu direba kusa tukuna',
-  'choose.seats': 'Kujeru {seats}',
-  'choose.cash': 'Kuɗi hannu',
-  'choose.payment': 'Biya',
-  'choose.when': 'Yaushe',
-  'choose.now': 'Yanzu',
-  'choose.request': 'Nemi {category} · {price}',
-  'choose.schedule': 'Tsara {category} na {time}',
-  'choose.priceNote':
-    'Farashin ya tsaya idan kun nema. Jira fiye da ’yan mintuna a wurin ɗauka yana ƙara ɗan kuɗi.',
-  'choose.pickTime': 'Zaɓi lokaci',
-
-  'ride.searching': 'Ana nemo muku direba…',
-  'ride.searchingHint': 'Yawanci bai wuce minti ɗaya ba.',
-  'ride.driverComing': '{name} yana kan hanya',
-  'ride.driverHere': '{name} ya iso',
-  'ride.driverHereHint': 'Da fatan ku sami direbanku a wurin ɗauka.',
-  'ride.onTrip': 'Kuna kan hanyar zuwa inda za ku',
-  'ride.completed': 'Kun iso',
-  'ride.payCash': 'Biya {amount} da kuɗi hannu',
-  'ride.cancelled': 'An soke wannan tafiya',
-  'ride.cancelledByDriver': 'Direbanku ya soke. Da fatan ku nemi wata tafiya.',
-  'ride.noDriver': 'Babu direban da ya samu. Da fatan a sake gwadawa bayan ’yan mintuna.',
-  'ride.scheduled': 'An tsara na {time}',
-  'ride.cancel': 'Soke tafiya',
-  'ride.cancelConfirm': 'Soke wannan tafiya?',
-  'ride.cancelFee': 'Za a caji kuɗin soke tafiya na {amount}.',
-  'ride.keep': 'Ci gaba da tafiya',
-  'ride.done': 'An gama',
-  'ride.newDriver': 'Sabon direba',
-  'ride.plate': 'Lambar mota',
-  'ride.call': 'Kira',
-  'ride.message': 'Saƙo',
-  'ride.contactSoon': 'Kira da aika saƙo ga direbanku za su zo nan ba da jimawa ba.',
-  'ride.lastUpdated': 'An sabunta wurin direba daƙiƙa {seconds} da suka wuce',
-  'ride.fare': 'Kuɗin tafiya',
-
-  'receipt.title': 'Rasiti',
-  'receipt.base': 'Kuɗin farko',
-  'receipt.distance': 'Nisa',
-  'receipt.time': 'Lokaci',
-  'receipt.peak': 'Ƙarin lokacin cunkoso',
-  'receipt.bookingFee': 'Kuɗin oda',
-  'receipt.minimum': 'Ƙarin mafi ƙarancin kuɗi',
-  'receipt.rounding': 'Kammalawa',
-  'receipt.waiting': 'Jira a wurin ɗauka',
-  'receipt.cancellationFee': 'Kuɗin soke tafiya',
-  'receipt.total': 'Jimilla',
-  'receipt.paidCash': 'An biya da kuɗi hannu',
-
-  'history.title': 'Tafiye-tafiyenku',
-  'history.empty': 'Babu tafiya tukuna.',
-
   'account.title': 'Asusu',
   'account.savedPlaces': 'Wuraren da aka adana',
   'account.notSet': 'Ba a saita ba',
-
-  'status.requested': 'An tsara',
-  'status.searching': 'Ana neman direba',
-  'status.driver_assigned': 'Direba yana zuwa',
-  'status.driver_arrived': 'Direba ya iso',
-  'status.in_progress': 'Ana tafiya',
-  'status.completed': 'An kammala',
-  'status.cancelled_by_passenger': 'An soke',
-  'status.cancelled_by_driver': 'Direba ya soke',
-  'status.no_driver_found': 'Ba a sami direba ba',
 };
 
 export const messages = { en, ha };
