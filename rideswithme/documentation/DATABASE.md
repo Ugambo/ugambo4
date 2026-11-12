@@ -1,0 +1,126 @@
+# Database
+
+PostgreSQL 16 with PostGIS 3.4. Migrations are plain SQL in
+`infrastructure/database/migrations`, applied in order by
+`infrastructure/database/src/migrator.ts`.
+
+## Working with migrations
+
+```bash
+pnpm db:migrate     # apply pending migrations (uses DATABASE_URL)
+pnpm db:status      # list applied and pending migrations
+```
+
+- Name files `NNNN_short_name.sql`, the next number after the last file.
+- Never edit a migration that has been applied anywhere; the runner rejects
+  changed checksums. Write a new migration.
+- Each file runs in one transaction. Start a file with `-- migrate:no-transaction`
+  for statements that cannot run in a transaction (`CREATE INDEX CONCURRENTLY`).
+- Update `apps/api/src/database/types.ts` to match.
+
+## Conventions
+
+- `uuid` primary keys from `gen_random_uuid()`.
+- `timestamptz` everywhere, stored in UTC.
+- Money is `bigint` kobo (from Phase 3). Never `numeric`/`float` in application code.
+- `created_at` / `updated_at` on mutable tables; `set_updated_at()` trigger keeps
+  `updated_at` current.
+- Status columns use PostgreSQL enums or `CHECK` constraints, so invalid states
+  cannot be stored.
+- Personal data is anonymised, not deleted, so money and audit records keep their
+  references (see DECISIONS D-013).
+- Sensitive values (TOTP secrets now; ID numbers and payout accounts later) are
+  encrypted by the application before they reach the database (D-015).
+
+## Applied migrations
+
+| Migration                   | Contents                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| 0001_extensions             | `postgis`, `citext`; helper functions `set_updated_at()` and `forbid_update_delete()` |
+| 0002_identity               | users, roles, permissions, role_permissions, user_roles, user_sessions, user_consents |
+| 0003_audit_logs             | audit_logs (append-only)                                                              |
+| 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                  |
+
+## Identity domain
+
+```
+users 1───* user_roles *───1 roles 1───* role_permissions *───1 permissions
+  │
+  ├──* user_sessions
+  └──* user_consents
+audit_logs.actor_user_id ──> users
+```
+
+### users
+
+| Column                                            | Type                                | Notes                                                |
+| ------------------------------------------------- | ----------------------------------- | ---------------------------------------------------- |
+| id                                                | uuid PK                             |                                                      |
+| phone_e164                                        | text, unique when not null          | E.164. Null only for deleted (anonymised) accounts   |
+| phone_verified_at                                 | timestamptz                         | Set on first successful OTP                          |
+| email                                             | citext, unique when not null        | Case-insensitive                                     |
+| email_verified_at                                 | timestamptz                         | Null until email verification exists (DECISIONS B-4) |
+| full_name                                         | text (1–120)                        |                                                      |
+| preferred_language                                | enum `en`/`ha`                      | Drives SMS language                                  |
+| status                                            | enum `active`/`suspended`/`deleted` |                                                      |
+| suspended_reason                                  | text                                |                                                      |
+| totp_secret_encrypted                             | text                                | AES-256-GCM, bound to the row                        |
+| totp_enabled_at                                   | timestamptz                         | Null while enrolment is pending                      |
+| totp_last_used_step                               | bigint                              | Replay protection                                    |
+| last_login_at, created_at, updated_at, deleted_at | timestamptz                         |                                                      |
+
+### roles, permissions, role_permissions, user_roles
+
+`roles.requires_mfa` makes holders pass TOTP before using any permission.
+`roles.is_privileged` means managing that role needs `roles.assign_privileged`.
+`user_roles.granted_by` records who granted it (null when granted by the system).
+
+Seeded roles and permissions:
+
+| Role          | MFA | Privileged | Permissions                                                         |
+| ------------- | --- | ---------- | ------------------------------------------------------------------- |
+| passenger     | no  | no         | none                                                                |
+| driver        | no  | no         | none (driver permissions arrive in Phase 2)                         |
+| fleet_manager | yes | no         | none yet (Phase 6, scoped to one fleet)                             |
+| support_agent | yes | yes        | users.read                                                          |
+| admin         | yes | yes        | users.read, users.manage, roles.read, roles.assign, audit_logs.read |
+| super_admin   | yes | yes        | all                                                                 |
+
+### user_sessions
+
+One row per signed-in device. Stores the SHA-256 of the current refresh token and
+of the previous one (for reuse detection), `rotated_at`, device name, platform,
+last IP and user agent, `mfa_verified_at`, idle and absolute expiry, and
+`revoked_at` with a reason (`logout`, `revoked_by_user`, `revoked_by_admin`,
+`refresh_token_reuse`, `account_suspended`, `account_deleted`, `mfa_reset`).
+
+### user_consents
+
+One row per accepted policy version per user, with IP, user agent and
+`withdrawn_at`. Unique on (user, type, version).
+
+### audit_logs
+
+`actor_type` (`user`/`system`), `actor_user_id`, dotted `action`
+(e.g. `admin.user.role_assigned`), `target_type`/`target_id`, `metadata` jsonb, IP,
+user agent, request id. UPDATE and DELETE raise an error. Indexed by time, actor
+and target.
+
+Actions recorded so far: `admin.user.role_assigned`, `admin.user.role_removed`,
+`admin.user.suspended`, `admin.user.reactivated`, `auth.mfa.enabled`,
+`auth.mfa.verified`, `auth.mfa.reset`, `auth.session.refresh_token_reused`.
+
+## Not in the database
+
+- One-time codes, rate-limit counters: Redis, with expiry.
+- Live driver positions (Phase 4): Redis.
+
+## Planned domains
+
+Tables listed in the brief for later phases (passenger_profiles, driver_profiles,
+driver_documents, vehicles, vehicle_categories, fleets, service_areas,
+saved_places, rides, ride_requests, ride_events, driver_locations,
+trip_locations partitioned by date, fare_rules, fare_quotes, commissions,
+payments, wallets, wallet_transactions, bus_*, emergency_alerts,
+incident_reports, ratings, reviews, promotions, notifications, support_tickets)
+are added by the phase that first needs them.
