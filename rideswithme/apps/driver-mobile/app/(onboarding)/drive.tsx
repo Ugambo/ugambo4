@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -213,6 +213,11 @@ export default function Drive() {
     });
 
   function confirmComplete(r: DriverRideView) {
+    // Paid in the app (wallet or card): nothing to collect.
+    if (r.paymentMethod !== 'cash') {
+      void step((id) => api.trips.complete(id, 0));
+      return;
+    }
     const amount = formatKobo(cashToCollect(r));
     Alert.alert(t('trip.collectConfirm', { amount }), undefined, [
       { text: t('trip.notYet'), style: 'cancel' },
@@ -283,9 +288,18 @@ export default function Drive() {
                   ? t(`blocker.${b.code}` as MessageKey, {
                       document: t(`docType.${b.documentType}` as MessageKey),
                     })
-                  : t(`blocker.${b.code}` as MessageKey)}
+                  : b.code === 'WALLET_DEBT'
+                    ? t('blocker.WALLET_DEBT', { amount: formatKobo(b.owedKobo) })
+                    : t(`blocker.${b.code}` as MessageKey)}
               </Body>
             ))}
+            {blockers.some((b) => b.code === 'WALLET_DEBT') && (
+              <Button
+                title={t('wallet.topUp')}
+                variant="secondary"
+                onPress={() => router.push('/earnings')}
+              />
+            )}
           </Card>
         )}
         <Button
@@ -395,7 +409,9 @@ export default function Drive() {
         />
         <Card tone="ok">
           <Text style={styles.collect}>
-            {t('trip.collect', { amount: formatKobo(cashToCollect(r)) })}
+            {r.paymentMethod === 'cash'
+              ? t('trip.collect', { amount: formatKobo(cashToCollect(r)) })
+              : t('trip.paidInApp')}
           </Text>
         </Card>
         <Button title={t('trip.complete')} onPress={() => confirmComplete(r)} busy={busy} />
