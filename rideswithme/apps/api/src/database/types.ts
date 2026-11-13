@@ -153,6 +153,8 @@ export interface DriverProfilesTable {
   payout_account_number_encrypted: string | null;
   payout_account_last4: string | null;
   payout_account_name: string | null;
+  payout_recipient_code: string | null;
+  payout_account_changed_at: Timestamp | null;
   submitted_at: Timestamp | null;
   reviewed_at: Timestamp | null;
   reviewed_by: string | null;
@@ -295,6 +297,7 @@ export interface RidesTable {
   commission_kobo: ColumnType<string | null, number | null | undefined, number | null>;
   cancellation_fee_kobo: ColumnType<string, number | undefined, number>;
   payment_method: PaymentMethod;
+  card_id: string | null;
   search_started_at: Timestamp | null;
   search_deadline: Timestamp | null;
   search_radius_meters: ColumnType<number, number | undefined, number>;
@@ -351,17 +354,33 @@ export interface RideEventsTable {
   created_at: CreatedAt;
 }
 
+export type PaymentPurpose = 'ride_fare' | 'cancellation_fee' | 'wallet_topup' | 'card_link';
+export type PaymentStatus =
+  'pending' | 'succeeded' | 'collected' | 'outstanding' | 'failed' | 'abandoned';
+export type ProviderName = 'paystack' | 'fake';
+export type WalletKind = 'passenger' | 'driver';
+
 export interface PaymentsTable {
   id: Generated<string>;
-  ride_id: string;
+  ride_id: string | null;
   payer_id: string;
   method: PaymentMethod;
-  purpose: 'ride_fare' | 'cancellation_fee';
+  purpose: PaymentPurpose;
   amount_kobo: Kobo;
-  status: 'pending' | 'collected' | 'outstanding' | 'failed';
+  status: PaymentStatus;
   collected_by: string | null;
   collected_at: Timestamp | null;
+  wallet_kind: WalletKind | null;
+  provider: ProviderName | null;
+  provider_reference: string | null;
+  card_id: string | null;
+  fee_kobo: ColumnType<string, number | undefined, number>;
+  outstanding_kobo: ColumnType<string, number | undefined, number>;
+  refunded_kobo: ColumnType<string, number | undefined, number>;
+  failure_reason: string | null;
+  paid_at: Timestamp | null;
   created_at: CreatedAt;
+  updated_at: ColumnType<Date, never, never>;
 }
 
 export interface CommissionsTable {
@@ -377,7 +396,162 @@ export interface CommissionsTable {
     'pending_settlement' | undefined,
     'pending_settlement' | 'settled' | 'waived'
   >;
+  journal_id: string | null;
   created_at: CreatedAt;
+}
+
+export type LedgerAccountKind = 'passenger' | 'driver' | 'system';
+export type SystemAccountKey =
+  | 'paystack_balance'
+  | 'passenger_receivables'
+  | 'provider_fees'
+  | 'platform_revenue'
+  | 'ride_holds'
+  | 'payouts_in_transit'
+  | 'refunds_in_transit';
+
+export interface WalletsTable {
+  id: Generated<string>;
+  owner_id: string | null;
+  kind: LedgerAccountKind;
+  system_key: SystemAccountKey | null;
+  normal_side: 'debit' | 'credit';
+  currency: ColumnType<'NGN', 'NGN' | undefined, never>;
+  /** Written only by the database trigger that posts ledger lines. */
+  balance_kobo: ColumnType<string, never, never>;
+  min_balance_kobo: ColumnType<string | null, number | null | undefined, never>;
+  created_at: CreatedAt;
+}
+
+export type JournalKind =
+  | 'wallet_topup'
+  | 'ride_hold'
+  | 'ride_hold_release'
+  | 'ride_settlement'
+  | 'cash_commission'
+  | 'cancellation_fee'
+  | 'card_charge'
+  | 'outstanding_collection'
+  | 'payout'
+  | 'payout_completed'
+  | 'payout_returned'
+  | 'refund'
+  | 'refund_completed'
+  | 'refund_returned'
+  | 'chargeback'
+  | 'adjustment'
+  | 'opening_balance';
+
+export interface LedgerJournalsTable {
+  id: Generated<string>;
+  kind: JournalKind;
+  reference: string;
+  ride_id: string | null;
+  payment_id: string | null;
+  payout_id: string | null;
+  refund_id: string | null;
+  dispute_id: string | null;
+  memo: string | null;
+  created_by: string | null;
+  tx_id: ColumnType<string, never, never>;
+  created_at: CreatedAt;
+}
+
+export interface WalletTransactionsTable {
+  id: Generated<string>;
+  seq: ColumnType<string, never, never>;
+  journal_id: string;
+  wallet_id: string;
+  /** Debit positive, credit negative. */
+  amount_kobo: Kobo;
+  /** Set by the posting trigger. */
+  balance_after_kobo: ColumnType<string, never, never>;
+  created_at: CreatedAt;
+}
+
+export interface PaymentCardsTable {
+  id: Generated<string>;
+  user_id: string;
+  authorization_code_encrypted: string;
+  signature: string;
+  brand: string;
+  last4: string;
+  exp_month: number;
+  exp_year: number;
+  bank: string | null;
+  created_at: CreatedAt;
+  removed_at: Timestamp | null;
+}
+
+export type PayoutStatus = 'pending' | 'processing' | 'succeeded' | 'failed' | 'reversed';
+
+export interface PayoutsTable {
+  id: Generated<string>;
+  driver_id: string;
+  amount_kobo: Kobo;
+  fee_kobo: ColumnType<string, number | undefined, number>;
+  status: ColumnType<PayoutStatus, PayoutStatus | undefined, PayoutStatus>;
+  bank_code: string;
+  account_last4: string;
+  account_name: string;
+  provider: ProviderName;
+  provider_reference: string;
+  transfer_code: string | null;
+  failure_reason: string | null;
+  requested_at: ColumnType<Date, Date | string | undefined, never>;
+  completed_at: Timestamp | null;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export type DisputeStatus = 'open' | 'refunded' | 'rejected' | 'won' | 'lost';
+
+export interface PaymentDisputesTable {
+  id: Generated<string>;
+  ride_id: string | null;
+  payment_id: string | null;
+  source: 'passenger' | 'provider';
+  raised_by: string | null;
+  status: ColumnType<DisputeStatus, DisputeStatus | undefined, DisputeStatus>;
+  reason: string;
+  details: string | null;
+  amount_kobo: ColumnType<string | null, number | null | undefined, number | null>;
+  provider_dispute_id: string | null;
+  resolution_note: string | null;
+  resolved_by: string | null;
+  resolved_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export type RefundStatus = 'pending' | 'succeeded' | 'failed';
+
+export interface RefundsTable {
+  id: Generated<string>;
+  payment_id: string;
+  amount_kobo: Kobo;
+  destination: 'wallet' | 'card';
+  funded_by: 'platform' | 'driver';
+  status: RefundStatus;
+  reason: string;
+  dispute_id: string | null;
+  provider_reference: string | null;
+  failure_reason: string | null;
+  created_by: string;
+  created_at: CreatedAt;
+  completed_at: Timestamp | null;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export interface PaymentWebhookEventsTable {
+  id: Generated<string>;
+  provider: ProviderName;
+  event: string;
+  event_key: string;
+  payload: ColumnType<unknown, string, never>;
+  received_at: CreatedAt;
+  processed_at: Timestamp | null;
+  attempts: ColumnType<number, number | undefined, number>;
+  last_error: string | null;
 }
 
 export interface SavedPlacesTable {
@@ -429,4 +603,12 @@ export interface Database {
   saved_places: SavedPlacesTable;
   idempotency_keys: IdempotencyKeysTable;
   trip_locations: TripLocationsTable;
+  wallets: WalletsTable;
+  ledger_journals: LedgerJournalsTable;
+  wallet_transactions: WalletTransactionsTable;
+  payment_cards: PaymentCardsTable;
+  payouts: PayoutsTable;
+  payment_disputes: PaymentDisputesTable;
+  refunds: RefundsTable;
+  payment_webhook_events: PaymentWebhookEventsTable;
 }

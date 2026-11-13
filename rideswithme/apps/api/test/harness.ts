@@ -80,6 +80,9 @@ export async function resetState(h: Harness) {
   await sql`TRUNCATE audit_logs, user_consents, user_sessions, user_roles, users CASCADE`.execute(
     h.db,
   );
+  // The cascade also empties the ledger, including the platform's own accounts.
+  await sql`TRUNCATE wallets, payment_webhook_events CASCADE`.execute(h.db);
+  await sql`SELECT ensure_system_wallets()`.execute(h.db);
   await h.redis.flushdb();
   h.sms.messages = [];
 }
