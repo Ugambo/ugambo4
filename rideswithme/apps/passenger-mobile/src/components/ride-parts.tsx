@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { FareQuoteOption, RideView } from '@rideswithme/shared-types';
 import { colors, radius, spacing, typography } from '@rideswithme/ui-components';
-import { formatKobo } from '@rideswithme/utilities';
+import { formatKobo, paymentSummary } from '@rideswithme/utilities';
 import { Body } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import type { MessageKey } from '@/lib/messages';
@@ -162,6 +162,9 @@ export function StatusLabel({ ride }: { ride: RideView }) {
 }
 
 const styles = StyleSheet.create({
+  paymentLine: { fontSize: typography.size.md, color: colors.textMuted },
+  payAction: { fontSize: typography.size.xl, fontWeight: '800', color: colors.success },
+  payBad: { fontSize: typography.size.md, fontWeight: '700', color: colors.danger },
   vehicle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -228,3 +231,37 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: typography.size.lg, fontWeight: '800', color: colors.text },
   totalValue: { fontSize: typography.size.lg, fontWeight: '800', color: colors.text },
 });
+
+/** How the ride was paid (shared rule: paymentSummary). `past` on receipts. */
+export function PaymentLine({ ride, past = false }: { ride: RideView; past?: boolean }) {
+  const { t } = useI18n();
+  const summary = paymentSummary(ride, past);
+  return (
+    <>
+      {summary && (
+        <Text
+          style={[
+            styles.paymentLine,
+            summary.tone === 'action' && styles.payAction,
+            summary.tone === 'bad' && styles.payBad,
+          ]}
+        >
+          {t(summary.key, {
+            amount: formatKobo(summary.amountKobo ?? 0),
+            card: summary.card
+              ? t('pay.card', {
+                  brand: summary.card.brand.toUpperCase(),
+                  last4: summary.card.last4,
+                })
+              : '',
+          })}
+        </Text>
+      )}
+      {ride.payment.refundedKobo > 0 && (
+        <Body muted>
+          {t('receipt.refunded', { amount: formatKobo(ride.payment.refundedKobo) })}
+        </Body>
+      )}
+    </>
+  );
+}

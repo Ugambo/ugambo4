@@ -25,6 +25,7 @@ export default function MainLayout() {
         <Stack.Screen name="rides/index" options={{ title: t('history.title') }} />
         <Stack.Screen name="rides/[id]" options={{ title: t('receipt.title') }} />
         <Stack.Screen name="account" options={{ title: t('account.title') }} />
+        <Stack.Screen name="wallet" options={{ title: t('wallet.title') }} />
       </Stack>
     </TripDraftProvider>
   );

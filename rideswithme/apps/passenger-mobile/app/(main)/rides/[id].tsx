@@ -2,15 +2,14 @@ import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import type { RideView } from '@rideswithme/shared-types';
 import { formatDistance, formatDuration } from '@rideswithme/mobile-core';
-import { FareLines, StatusLabel } from '@/components/ride-parts';
+import { DisputeSection } from '@/components/dispute-section';
+import { FareLines, PaymentLine, StatusLabel } from '@/components/ride-parts';
 import { Body, Card, ErrorView, Loading, Screen, Title } from '@/components/ui';
-import { useI18n } from '@/lib/i18n';
 import { api } from '@/lib/session';
 
 /** Receipt for one ride. */
 export default function Receipt() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t } = useI18n();
   const [ride, setRide] = useState<RideView | null>(null);
   const [error, setError] = useState<unknown>(null);
   const load = useCallback(() => {
@@ -40,8 +39,9 @@ export default function Receipt() {
       )}
       <Card>
         <FareLines ride={ride} />
-        {ride.status === 'completed' && <Body muted>{t('receipt.paidCash')}</Body>}
+        <PaymentLine ride={ride} past />
       </Card>
+      <DisputeSection ride={ride} onRaised={load} />
     </Screen>
   );
 }

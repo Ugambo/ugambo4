@@ -5,3 +5,5 @@ export * from './messages';
 export * from '@rideswithme/api-client/realtime';
 export * from './session';
 export * from './sign-in-screen';
+export * from './checkout';
+export * from './payment-wait';

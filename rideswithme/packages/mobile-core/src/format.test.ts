@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDistance, formatDuration, formatTime, secondsSince } from './format';
+import { formatDateTime, formatDistance, formatDuration, formatTime, secondsSince } from './format';
 
 describe('format', () => {
   it('formats distances', () => {
@@ -17,5 +17,11 @@ describe('format', () => {
   });
   it('never returns negative ages', () => {
     expect(secondsSince(new Date(Date.now() + 5000).toISOString())).toBe(0);
+  });
+});
+
+describe('formatDateTime', () => {
+  it('shows Nigerian date and time', () => {
+    expect(formatDateTime('2026-11-12T23:30:00Z')).toBe('13/11/2026 00:30');
   });
 });

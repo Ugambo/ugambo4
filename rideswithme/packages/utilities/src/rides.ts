@@ -128,3 +128,44 @@ export function applyActiveRides(state: PassengerRides, rides: RideView[]): Pass
       (current && !ACTIVE_RIDE_STATUSES.includes(current.status) ? current : null),
   };
 }
+
+/** What to say about how a ride was (or is being) paid. Null when there is nothing to say yet. */
+export interface PaymentSummary {
+  key:
+    | 'receipt.owed'
+    | 'ride.payCash'
+    | 'receipt.paidCash'
+    | 'receipt.paidWallet'
+    | 'receipt.cardPending'
+    | 'receipt.paidCard';
+  /** Amounts in kobo; `card` is { brand, last4 } for 'receipt.paidCard'. */
+  amountKobo?: number;
+  card?: { brand: string; last4: string };
+  tone: 'bad' | 'action' | 'info';
+}
+
+/** `past`: on a receipt (cash was paid) rather than at the end of the trip (pay the driver now). */
+export function paymentSummary(
+  ride: Pick<RideView, 'status' | 'payment' | 'fare'>,
+  past = false,
+): PaymentSummary | null {
+  const p = ride.payment;
+  if (p.status === 'outstanding')
+    return { key: 'receipt.owed', amountKobo: p.outstandingKobo, tone: 'bad' };
+  if (p.method === 'cash' && ride.status === 'completed') {
+    return past
+      ? { key: 'receipt.paidCash', tone: 'info' }
+      : {
+          key: 'ride.payCash',
+          amountKobo: ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo,
+          tone: 'action',
+        };
+  }
+  if (p.method === 'wallet' && p.status === 'succeeded')
+    return { key: 'receipt.paidWallet', tone: 'info' };
+  if (p.method === 'card' && p.status === 'pending')
+    return { key: 'receipt.cardPending', tone: 'info' };
+  if (p.method === 'card' && p.status === 'succeeded' && p.card)
+    return { key: 'receipt.paidCard', card: p.card, tone: 'info' };
+  return null;
+}

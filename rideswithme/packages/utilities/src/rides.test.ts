@@ -7,6 +7,7 @@ import {
   cancellationFeeNow,
   type PassengerRides,
   positionAge,
+  paymentSummary,
   ridePhase,
   scheduleSlots,
   toPlaceInput,
@@ -128,5 +129,59 @@ describe('passenger ride updates', () => {
       address: 'X',
       location: { lat: 1, lng: 2 },
     });
+  });
+});
+
+describe('paymentSummary', () => {
+  const ride = (payment: Partial<RideView['payment']>, status: RideView['status'] = 'completed') =>
+    ({
+      status,
+      fare: { finalTotalKobo: 205_000, quotedTotalKobo: 200_000 },
+      payment: {
+        method: 'cash',
+        status: null,
+        card: null,
+        outstandingKobo: 0,
+        refundedKobo: 0,
+        disputed: false,
+        ...payment,
+      },
+    }) as RideView;
+
+  it('asks for cash at the end of the trip and records it on the receipt', () => {
+    expect(paymentSummary(ride({ status: 'collected' }))).toEqual({
+      key: 'ride.payCash',
+      amountKobo: 205_000,
+      tone: 'action',
+    });
+    expect(paymentSummary(ride({ status: 'collected' }), true)).toEqual({
+      key: 'receipt.paidCash',
+      tone: 'info',
+    });
+  });
+
+  it('describes wallet and card payments, and anything still owed', () => {
+    expect(paymentSummary(ride({ method: 'wallet', status: 'succeeded' }))?.key).toBe(
+      'receipt.paidWallet',
+    );
+    expect(paymentSummary(ride({ method: 'card', status: 'pending' }))?.key).toBe(
+      'receipt.cardPending',
+    );
+    expect(
+      paymentSummary(
+        ride({ method: 'card', status: 'succeeded', card: { brand: 'visa', last4: '4081' } }),
+      ),
+    ).toMatchObject({
+      key: 'receipt.paidCard',
+      card: { last4: '4081' },
+    });
+    expect(
+      paymentSummary(ride({ method: 'card', status: 'outstanding', outstandingKobo: 5_000 })),
+    ).toEqual({
+      key: 'receipt.owed',
+      amountKobo: 5_000,
+      tone: 'bad',
+    });
+    expect(paymentSummary(ride({ status: null }, 'in_progress'))).toBeNull();
   });
 });

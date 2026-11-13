@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { Link, router } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -18,12 +18,14 @@ import {
   ACTIVE_RIDE_STATUSES,
   type FareEstimateResponse,
   type RideView,
+  type SavedCardView,
   type SavedPlace,
+  type WalletView,
 } from '@rideswithme/shared-types';
 import { colors, radius, spacing, typography } from '@rideswithme/ui-components';
 import { BottomSheet, OfflineBanner } from '@rideswithme/ui-components/native';
 import { formatKobo } from '@rideswithme/utilities';
-import { DriverCard, FareLines, VehicleRow } from '@/components/ride-parts';
+import { DriverCard, FareLines, PaymentLine, VehicleRow } from '@/components/ride-parts';
 import { RideMap } from '@/components/ride-map';
 import { Body, Button, Card, ErrorText, Title } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
@@ -64,6 +66,10 @@ export default function Home() {
     [],
   );
   const [saved, setSaved] = useState<SavedPlace[]>([]);
+  const [wallet, setWallet] = useState<WalletView | null>(null);
+  const [cards, setCards] = useState<SavedCardView[]>([]);
+  /** 'cash', 'wallet' or 'card:<id>'. */
+  const [pay, setPay] = useState('cash');
   const [locating, setLocating] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);
   const [estimate, setEstimate] = useState<FareEstimateResponse | null>(null);
@@ -87,6 +93,17 @@ export default function Home() {
     void loadActive().catch(() => undefined);
     api.places.saved().then(setSaved, () => undefined);
   }, [loadActive]);
+
+  // Wallet balance, money owed and saved cards, fresh whenever this screen comes back into view.
+  useFocusEffect(
+    useCallback(() => {
+      api.wallet.get().then(setWallet, () => undefined);
+      api.payments.cards().then(
+        (c) => setCards(c.filter((card) => !card.expired)),
+        () => undefined,
+      );
+    }, []),
+  );
 
   // Pickup defaults to the phone's location unless the passenger chose one.
   useEffect(() => {
@@ -187,7 +204,9 @@ export default function Home() {
       const booked = await api.rides.book(
         {
           quoteId: option.quoteId,
-          paymentMethod: 'cash',
+          ...(pay.startsWith('card:')
+            ? { paymentMethod: 'card' as const, cardId: pay.slice(5) }
+            : { paymentMethod: pay as 'cash' | 'wallet' }),
           ...(when && { scheduledFor: when.toISOString() }),
         },
         bookingKey.current,
@@ -253,6 +272,11 @@ export default function Home() {
           <Link href="/rides" asChild>
             <Pressable accessibilityRole="button" style={styles.roundButton}>
               <Text style={styles.roundText}>{t('home.history')}</Text>
+            </Pressable>
+          </Link>
+          <Link href="/wallet" asChild>
+            <Pressable accessibilityRole="button" style={styles.roundButton}>
+              <Text style={styles.roundText}>{t('wallet.title')}</Text>
             </Pressable>
           </Link>
           <Link href="/account" asChild>
@@ -355,10 +379,44 @@ export default function Home() {
             ))}
           </View>
         )}
-        <View style={styles.optionRow}>
-          <Text style={styles.optionLabel}>{t('choose.payment')}</Text>
-          <Text style={styles.optionValue}>💵 {t('choose.cash')}</Text>
-        </View>
+        <Text style={styles.optionLabel}>{t('choose.payWith')}</Text>
+        <ScrollView horizontal contentContainerStyle={styles.slots}>
+          {[
+            { value: 'cash', label: `💵 ${t('pay.cash')}` },
+            {
+              value: 'wallet',
+              label: `👛 ${t('pay.wallet', { amount: formatKobo(wallet?.balanceKobo ?? 0) })}`,
+            },
+            ...cards.map((c) => ({
+              value: `card:${c.id}`,
+              label: `💳 ${t('pay.card', { brand: c.brand.toUpperCase(), last4: c.last4 })}`,
+            })),
+          ].map((o) => (
+            <Pressable
+              key={o.value}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: pay === o.value }}
+              style={[styles.chip, pay === o.value && styles.chipSelected]}
+              onPress={() => setPay(o.value)}
+            >
+              <Text style={styles.chipText}>{o.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.totalKobo && (
+          <Body muted>{t('pay.walletShort')}</Body>
+        )}
+        {wallet && wallet.owedKobo > 0 && (
+          <Card tone="bad">
+            <Body bold>{t('wallet.owed', { amount: formatKobo(wallet.owedKobo) })}</Body>
+            <Body>{t('wallet.owedHint')}</Body>
+            <Button
+              title={t('wallet.topUp')}
+              variant="secondary"
+              onPress={() => router.push('/wallet')}
+            />
+          </Card>
+        )}
         <Pressable
           accessibilityRole="button"
           style={styles.optionRow}
@@ -410,7 +468,7 @@ export default function Home() {
               : t('common.loading')
           }
           onPress={() => void request()}
-          disabled={!option}
+          disabled={!option || (wallet?.owedKobo ?? 0) > 0}
           busy={busy}
         />
         <Button
@@ -449,12 +507,8 @@ export default function Home() {
         {phase === 'completed' && (
           <>
             <Title>{t('ride.completed')}</Title>
-            <Card tone="ok">
-              <Text style={styles.payCash}>
-                {t('ride.payCash', {
-                  amount: formatKobo(ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo),
-                })}
-              </Text>
+            <Card tone={ride.payment.status === 'outstanding' ? 'bad' : 'ok'}>
+              <PaymentLine ride={ride} />
             </Card>
             <FareLines ride={ride} />
           </>
@@ -463,7 +517,12 @@ export default function Home() {
           <>
             <Title>{t('ride.cancelled')}</Title>
             {ride.status === 'cancelled_by_driver' && <Body>{t('ride.cancelledByDriver')}</Body>}
-            {ride.fare.cancellationFeeKobo > 0 && <FareLines ride={ride} />}
+            {ride.fare.cancellationFeeKobo > 0 && (
+              <>
+                <FareLines ride={ride} />
+                <PaymentLine ride={ride} />
+              </>
+            )}
           </>
         )}
         {phase === 'no_driver' && (
@@ -541,5 +600,4 @@ const styles = StyleSheet.create({
   optionLabel: { fontSize: typography.size.md, color: colors.textMuted },
   optionValue: { fontSize: typography.size.md, fontWeight: '700', color: colors.text },
   slots: { gap: spacing[2], paddingVertical: spacing[1] },
-  payCash: { fontSize: typography.size.xl, fontWeight: '800', color: colors.success },
 });

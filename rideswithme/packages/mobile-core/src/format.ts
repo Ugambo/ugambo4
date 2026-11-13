@@ -22,3 +22,10 @@ export function formatTime(iso: string): string {
   const d = new Date(Date.parse(iso) + 3_600_000);
   return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
+
+/** Day, month and clock time in Nigeria, e.g. "13/11/2026 14:05" (no Intl needed). */
+export function formatDateTime(iso: string): string {
+  const d = new Date(Date.parse(iso) + 3_600_000);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${formatTime(iso)}`;
+}

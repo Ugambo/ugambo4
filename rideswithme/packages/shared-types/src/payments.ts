@@ -12,7 +12,12 @@ export interface WalletView {
   /** Held for rides in progress. */
   heldKobo: number;
   /** cardCheckKobo: charged (into the wallet) when a card is saved. */
-  limits: { topUpMinKobo: number; topUpMaxKobo: number; maxBalanceKobo: number; cardCheckKobo: number };
+  limits: {
+    topUpMinKobo: number;
+    topUpMaxKobo: number;
+    maxBalanceKobo: number;
+    cardCheckKobo: number;
+  };
 }
 
 export type WalletEntryKind =
