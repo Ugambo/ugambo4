@@ -40,6 +40,7 @@ export function testConfig(overrides: Record<string, string> = {}): AppConfig {
     // Tests drive the dispatcher by calling tick() themselves.
     DISPATCH_INTERVAL_MS: '0',
     MAINTENANCE_INTERVAL_MINUTES: '0',
+    PAYMENT_RECONCILE_INTERVAL_MINUTES: '0',
     ...overrides,
   });
 }

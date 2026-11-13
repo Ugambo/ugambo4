@@ -179,9 +179,17 @@ export class DriverOnboardingService {
   async setPayoutAccount(userId: string, input: PayoutAccount): Promise<DriverOnboardingView> {
     await this.db.transaction().execute(async (trx) => {
       await this.lockEditable(trx, userId);
+      const before = await trx
+        .selectFrom('driver_profiles')
+        .select('payout_account_last4')
+        .where('user_id', '=', userId)
+        .executeTakeFirstOrThrow();
       await trx
         .updateTable('driver_profiles')
         .set({
+          // Replacing an account pauses payouts for a while (account takeover protection).
+          ...(before.payout_account_last4 && { payout_account_changed_at: new Date() }),
+          payout_recipient_code: null,
           payout_bank_code: input.bankCode,
           payout_account_number_encrypted: this.encryption.encrypt(
             input.accountNumber,

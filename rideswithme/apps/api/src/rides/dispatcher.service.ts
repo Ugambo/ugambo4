@@ -18,6 +18,7 @@ import { PresenceService } from './presence.service';
 import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { recordRideEvent } from './ride-events';
 import { RideService } from './ride.service';
+import { RidePaymentsService } from '../payments/ride-payments.service';
 
 /** Search radius grows each time nobody suitable is found nearby. */
 const RADIUS_STEPS_METERS = [3_000, 5_000, 8_000];
@@ -47,6 +48,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
     private readonly rides: RideService,
     private readonly idempotency: IdempotencyService,
     private readonly notifier: RealtimeNotifier,
+    private readonly ridePayments: RidePaymentsService,
   ) {}
 
   onModuleInit() {
@@ -280,9 +282,18 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
           ),
         ),
       )
-      .returning('id')
+      .returning(['id', 'passenger_id', 'payment_method'])
       .execute();
     for (const r of rows) {
+      // A wallet hold goes back at once (the reconciliation job catches any missed).
+      if (r.payment_method === 'wallet') {
+        await this.db
+          .transaction()
+          .execute((trx) => this.ridePayments.release(trx, r.id, r.passenger_id))
+          .catch((err: unknown) =>
+            this.logger.error({ err, rideId: r.id }, 'Could not return wallet hold'),
+          );
+      }
       await recordRideEvent(this.db, {
         rideId: r.id,
         eventType: 'no_driver_found',

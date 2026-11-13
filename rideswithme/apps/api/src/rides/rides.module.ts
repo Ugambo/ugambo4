@@ -5,6 +5,7 @@ import { RealtimeAuthService } from '../realtime/realtime-auth.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { UsersModule } from '../users/users.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { LocationService } from './location.service';
 import { MaintenanceService } from './maintenance.service';
 import { TripLocationsService } from './trip-locations.service';
@@ -18,7 +19,7 @@ import { RideService } from './ride.service';
 import { RidesController } from './rides.controller';
 
 @Module({
-  imports: [DriversModule, AuthModule, UsersModule],
+  imports: [DriversModule, AuthModule, UsersModule, PaymentsModule],
   controllers: [RidesController, DriverTripsController, AdminRidesController],
   providers: [
     PresenceService,

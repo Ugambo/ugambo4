@@ -30,9 +30,15 @@ export const createRideSchema = z
   .object({
     quoteId: z.string().uuid(),
     paymentMethod: z.enum(PAYMENT_METHODS).default('cash'),
+    /** Required when paying by card: one of the passenger's saved cards. */
+    cardId: z.string().uuid().optional(),
     scheduledFor: z.string().datetime({ offset: true }).optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => (v.paymentMethod === 'card') === !!v.cardId, {
+    message: 'Choose a saved card to pay by card (and only then)',
+    path: ['cardId'],
+  });
 export type CreateRideInput = z.input<typeof createRideSchema>;
 
 export const passengerCancelSchema = z

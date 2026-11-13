@@ -113,6 +113,47 @@ export const configSchema = z
     MAINTENANCE_INTERVAL_MINUTES: z.coerce.number().int().min(0).max(1440).default(360),
 
     DOCUMENT_EXPIRY_SWEEP_MINUTES: z.coerce.number().int().min(0).max(1440).default(60),
+
+    // Payments (amounts in kobo).
+    PAYMENT_PROVIDER: z.enum(['fake', 'paystack']).default('fake'),
+    /** The API's public address (the fake provider's checkout page lives there). */
+    PUBLIC_API_URL: z.string().url().default('http://localhost:3000'),
+    /** Paystack needs an email per payment; users without one get <user id>@this domain. */
+    PAYMENT_PLACEHOLDER_EMAIL_DOMAIN: z.string().default('customers.rideswithme.ng'),
+    PAYSTACK_SECRET_KEY: z.string().optional(),
+    PAYSTACK_BASE_URL: z.string().url().default('https://api.paystack.co'),
+    /** Comma-separated source IPs webhooks must come from (Paystack publishes them). Empty = any. */
+    PAYSTACK_WEBHOOK_IPS: z
+      .string()
+      .default('')
+      .transform((s) =>
+        s
+          .split(',')
+          .map((x) => x.trim())
+          .filter(Boolean),
+      ),
+    /** Where the checkout page sends the payer back: the website, and the apps (a deep link). */
+    PAYMENT_RETURN_URL_WEB: z.string().url().default('http://localhost:3002/wallet'),
+    PAYMENT_RETURN_URL_APP: z.string().default('rideswithme://wallet'),
+    PAYMENT_RETURN_URL_DRIVER_APP: z.string().default('rideswithme-driver://wallet'),
+    WALLET_TOPUP_MIN_KOBO: z.coerce.number().int().min(100).default(10_000),
+    WALLET_TOPUP_MAX_KOBO: z.coerce.number().int().min(100).default(10_000_000),
+    /** Largest balance a passenger wallet may hold (CBN tier-1 style limit). */
+    WALLET_MAX_BALANCE_KOBO: z.coerce.number().int().min(100).default(30_000_000),
+    /** Charged when a card is saved and credited to the wallet, so nothing is lost. */
+    CARD_LINK_AMOUNT_KOBO: z.coerce.number().int().min(5_000).max(100_000).default(5_000),
+    /** A driver owing more than this (commission on cash trips) cannot go online. */
+    DRIVER_DEBT_LIMIT_KOBO: z.coerce.number().int().min(0).default(500_000),
+    PAYOUT_MIN_KOBO: z.coerce.number().int().min(100).default(100_000),
+    PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS: z.coerce.number().int().min(0).max(720).default(24),
+    /** How often to ask the provider about payments, payouts and refunds still pending (minutes). 0 = off. */
+    PAYMENT_RECONCILE_INTERVAL_MINUTES: z.coerce.number().int().min(0).max(1440).default(5),
+    /** Ask about something only once it has been pending this long (minutes). */
+    PAYMENT_RECONCILE_AFTER_MINUTES: z.coerce.number().int().min(1).max(1440).default(10),
+    /** Unpaid checkouts are marked abandoned after this long (hours). */
+    PAYMENT_ABANDON_AFTER_HOURS: z.coerce.number().int().min(1).max(168).default(24),
+    /** How long after a ride a passenger can report a problem with what they paid (days). */
+    DISPUTE_WINDOW_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   })
   .superRefine((c, ctx) => {
     if (!c.FIELD_ENCRYPTION_KEYS.has(c.FIELD_ENCRYPTION_ACTIVE_KEY_ID)) {
@@ -155,6 +196,27 @@ export const configSchema = z
         code: z.ZodIssueCode.custom,
         path: ['MAPS_PROVIDER'],
         message: 'The fake maps provider is not allowed in production',
+      });
+    }
+    if (c.PAYMENT_PROVIDER === 'paystack' && !c.PAYSTACK_SECRET_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['PAYSTACK_SECRET_KEY'],
+        message: 'Required when PAYMENT_PROVIDER=paystack',
+      });
+    }
+    if (c.NODE_ENV === 'production' && c.PAYMENT_PROVIDER === 'fake') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['PAYMENT_PROVIDER'],
+        message: 'The fake payment provider is not allowed in production',
+      });
+    }
+    if (c.WALLET_TOPUP_MIN_KOBO > c.WALLET_TOPUP_MAX_KOBO) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['WALLET_TOPUP_MIN_KOBO'],
+        message: 'Must not exceed WALLET_TOPUP_MAX_KOBO',
       });
     }
     if (c.NODE_ENV === 'production' && c.SMS_PROVIDER === 'console') {

@@ -15,7 +15,13 @@ export async function configureApp(app: INestApplication, config: AppConfig) {
   // Needed so req.ip is the client, not the reverse proxy, for rate limits and audit logs.
   express.set('trust proxy', config.TRUST_PROXY_HOPS);
   express.disable('x-powered-by');
-  express.useBodyParser('json', { limit: '100kb' });
+  express.useBodyParser('json', {
+    limit: '100kb',
+    // Webhook signatures are checked against the exact bytes received.
+    verify: (req: { url?: string; rawBody?: Buffer }, _res: unknown, buf: Buffer) => {
+      if (req.url?.startsWith('/v1/webhooks/')) req.rawBody = buf;
+    },
+  });
   app.use(helmet());
   app.enableCors({
     origin: config.CORS_ORIGINS.length ? config.CORS_ORIGINS : false,

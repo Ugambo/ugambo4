@@ -14,6 +14,7 @@ import {
 } from '@rideswithme/shared-types';
 import { AppException } from '../common/app-exception';
 import { isExpired } from '../common/dates';
+import { APP_CONFIG, type AppConfig } from '../config/config';
 import { DB } from '../database/database.module';
 import type { Database, DriverDocumentsTable } from '../database/types';
 import type { Selectable } from 'kysely';
@@ -37,7 +38,10 @@ export interface DriverState {
  */
 @Injectable()
 export class DriverViewService {
-  constructor(@Inject(DB) private readonly db: Kysely<Database>) {}
+  constructor(
+    @Inject(DB) private readonly db: Kysely<Database>,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
+  ) {}
 
   async listCategories(): Promise<VehicleCategorySummary[]> {
     const rows = await this.db
@@ -159,8 +163,22 @@ export class DriverViewService {
         gaps.push({ code: 'DOCUMENT', documentType: r.key });
     }
 
+    const wallet = await trx
+      .selectFrom('wallets')
+      .select('balance_kobo')
+      .where('owner_id', '=', userId)
+      .where('kind', '=', 'driver')
+      .executeTakeFirst();
+    const owed = Math.max(0, -Number(wallet?.balance_kobo ?? 0));
+
     const blockers: OnlineBlocker[] = [];
     if (profile.account_status !== 'active') blockers.push({ code: 'ACCOUNT_NOT_ACTIVE' });
+    if (owed > this.config.DRIVER_DEBT_LIMIT_KOBO)
+      blockers.push({
+        code: 'WALLET_DEBT',
+        owedKobo: owed,
+        limitKobo: this.config.DRIVER_DEBT_LIMIT_KOBO,
+      });
     if (profile.status !== 'approved') blockers.push({ code: 'DRIVER_NOT_APPROVED' });
     if (!vehicleRow) blockers.push({ code: 'NO_ACTIVE_VEHICLE' });
     else if (!vehicleRow.category_enabled) blockers.push({ code: 'VEHICLE_CATEGORY_DISABLED' });

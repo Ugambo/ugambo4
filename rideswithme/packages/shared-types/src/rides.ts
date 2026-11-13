@@ -1,3 +1,5 @@
+import type { RidePaymentView } from './payments';
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -118,6 +120,7 @@ export interface RideView {
   actualDistanceMeters: number | null;
   scheduledFor: string | null;
   paymentMethod: PaymentMethod;
+  payment: RidePaymentView;
   fare: RideFareView;
   driver: {
     firstName: string;

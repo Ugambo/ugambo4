@@ -5,6 +5,7 @@ import {
   type DriverRideView,
   ErrorCode,
   type LatLng,
+  type PaymentMethod,
   type Paginated,
   type RideStatus,
   type RideView,
@@ -31,6 +32,7 @@ import { type RideRow, RideViewService } from './ride-view.service';
 import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { PresenceService } from './presence.service';
 import { TripLocationsService } from './trip-locations.service';
+import { RidePaymentsService } from '../payments/ride-payments.service';
 
 const MAX_SCHEDULED_PER_PASSENGER = 3;
 
@@ -50,17 +52,13 @@ export class RideService {
     private readonly storage: ObjectStorageService,
     private readonly notifier: RealtimeNotifier,
     private readonly tripLocations: TripLocationsService,
+    private readonly ridePayments: RidePaymentsService,
   ) {}
 
   // --- Passenger ---
 
   async book(passengerId: string, input: CreateRideInput, now = new Date()): Promise<RideView> {
-    if ((input.paymentMethod ?? 'cash') !== 'cash') {
-      throw new AppException(
-        ErrorCode.PAYMENT_METHOD_UNAVAILABLE,
-        'Only cash is available for now',
-      );
-    }
+    const method: PaymentMethod = input.paymentMethod ?? 'cash';
     const q = await this.db
       .selectFrom('fare_quotes as q')
       .innerJoin('vehicle_categories as c', 'c.id', 'q.vehicle_category_id')
@@ -134,6 +132,7 @@ export class RideService {
     const pickup = { lat: q.pickup_lat, lng: q.pickup_lng };
 
     const rideId = await this.db.transaction().execute(async (trx) => {
+      await this.ridePayments.checkBooking(trx, passengerId, method, input.cardId ?? null);
       if (scheduledFor) {
         const { n } = await trx
           .selectFrom('rides')
@@ -166,7 +165,8 @@ export class RideService {
             scheduled_for: scheduledFor,
             fare_snapshot: JSON.stringify(snapshot),
             quoted_total_kobo: koboFromDb(q.total_kobo),
-            payment_method: 'cash',
+            payment_method: method,
+            card_id: method === 'card' ? (input.cardId ?? null) : null,
             search_started_at: scheduledFor ? null : now,
             search_deadline: scheduledFor
               ? null
@@ -189,6 +189,8 @@ export class RideService {
         }
         throw err;
       }
+      if (method === 'wallet')
+        await this.ridePayments.hold(trx, ride.id, passengerId, koboFromDb(q.total_kobo));
       const actor = { actorType: 'passenger' as const, actorId: passengerId };
       await recordRideEvent(trx, {
         rideId: ride.id,
@@ -292,7 +294,7 @@ export class RideService {
         .where('id', '=', rideId)
         .execute();
       const offers = await this.withdrawOffers(trx, rideId);
-      if (fee > 0) await this.recordOutstandingFee(trx, rideId, passengerId, fee);
+      await this.ridePayments.settleCancellation(trx, ride, fee, snapshot.rule.commissionBps);
       await recordRideEvent(trx, {
         rideId,
         eventType: 'cancelled',
@@ -305,6 +307,7 @@ export class RideService {
       return offers;
     });
     for (const o of withdrawn) await this.notifier.offerClosed(o.driver_id, o.id, 'withdrawn');
+    await this.ridePayments.chargePendingCards(rideId);
     await this.notifier.rideChanged(rideId);
     return this.getForPassenger(passengerId, rideId);
   }
@@ -534,12 +537,12 @@ export class RideService {
   }
 
   /**
-   * Completes a cash ride: the final fare is the booked price plus any waiting
-   * charge. Records the cash payment and the commission the driver owes
-   * (settled from their wallet in Phase 5).
+   * Completes a ride: the final fare is the booked price plus any waiting
+   * charge. Pays the driver and the platform and takes the fare as the
+   * passenger chose (cash, wallet or card; a card is charged once this commits).
    */
   async complete(driverId: string, rideId: string, cashCollectedKobo: number, now = new Date()) {
-    return this.driverStep(driverId, rideId, 'completed', now, async (trx, ride) => {
+    const view = await this.driverStep(driverId, rideId, 'completed', now, async (trx, ride) => {
       const snapshot = ride.fare_snapshot as FareSnapshot;
       const final = koboFromDb(ride.quoted_total_kobo) + koboFromDb(ride.waiting_charge_kobo);
       const split = splitFare(snapshot.rule, final);
@@ -557,38 +560,42 @@ export class RideService {
         })
         .where('id', '=', rideId)
         .execute();
-      await trx
-        .insertInto('payments')
-        .values({
-          ride_id: rideId,
-          payer_id: ride.passenger_id,
-          method: 'cash',
-          purpose: 'ride_fare',
-          amount_kobo: final,
-          status: 'collected',
-          collected_by: driverId,
-          collected_at: now,
-        })
-        .execute();
-      await trx
-        .insertInto('commissions')
-        .values({
-          ride_id: rideId,
-          driver_id: driverId,
-          fare_kobo: final,
-          booking_fee_kobo: split.bookingFeeKobo,
-          commission_bps: snapshot.rule.commissionBps,
-          commission_kobo: split.commissionKobo,
-        })
-        .execute();
+      await this.ridePayments.settleCompletion(
+        trx,
+        ride,
+        driverId,
+        final,
+        split,
+        snapshot.rule.commissionBps,
+        now,
+      );
+      const cash = ride.payment_method === 'cash';
       return {
         finalTotalKobo: final,
-        cashCollectedKobo,
-        cashShortKobo: Math.max(0, final - cashCollectedKobo),
+        paymentMethod: ride.payment_method,
+        ...(cash && {
+          cashCollectedKobo,
+          cashShortKobo: Math.max(0, final - cashCollectedKobo),
+        }),
         drivenMeters: driven,
         ...split,
       };
     });
+    await this.chargeCardsAndNotify(rideId);
+    return view;
+  }
+
+  /** After a card ride ends: charge the card, then tell both sides the outcome. */
+  private async chargeCardsAndNotify(rideId: string) {
+    const before = await this.db
+      .selectFrom('payments')
+      .select('id')
+      .where('ride_id', '=', rideId)
+      .where('status', '=', 'pending')
+      .executeTakeFirst();
+    if (!before) return;
+    await this.ridePayments.chargePendingCards(rideId);
+    await this.notifier.rideChanged(rideId);
   }
 
   /**
@@ -630,8 +637,16 @@ export class RideService {
         })
         .where('id', '=', rideId)
         .execute();
-      if (fee > 0) await this.recordOutstandingFee(trx, rideId, ride.passenger_id, fee);
+      await this.ridePayments.settleCancellation(
+        trx,
+        ride,
+        fee,
+        (ride.fare_snapshot as FareSnapshot).rule.commissionBps,
+      );
       return { reason: input.reason, note: input.note ?? null, feeKobo: fee };
+    }).then(async (view) => {
+      await this.chargeCardsAndNotify(rideId);
+      return view;
     });
   }
 
@@ -690,6 +705,8 @@ export class RideService {
         'started_at',
         'quoted_total_kobo',
         'waiting_charge_kobo',
+        'payment_method',
+        'card_id',
         latOf('pickup').as('pickup_lat'),
         lngOf('pickup').as('pickup_lng'),
       ])
@@ -712,26 +729,6 @@ export class RideService {
       .where('ride_id', '=', rideId)
       .where('status', '=', 'offered')
       .returning(['id', 'driver_id'])
-      .execute();
-  }
-
-  /** Cash fees cannot be taken on the spot; they are recorded and collected from the wallet in Phase 5. */
-  private async recordOutstandingFee(
-    trx: Kysely<Database>,
-    rideId: string,
-    payerId: string,
-    amount: number,
-  ) {
-    await trx
-      .insertInto('payments')
-      .values({
-        ride_id: rideId,
-        payer_id: payerId,
-        method: 'cash',
-        purpose: 'cancellation_fee',
-        amount_kobo: amount,
-        status: 'outstanding',
-      })
       .execute();
   }
 

@@ -14,6 +14,7 @@ import { DatabaseModule } from './database/database.module';
 import { DriversModule } from './drivers/drivers.module';
 import { HealthModule } from './health/health.module';
 import { MapsModule } from './maps/maps.module';
+import { PaymentsModule } from './payments/payments.module';
 import { RedisModule } from './redis/redis.module';
 import { RidesModule } from './rides/rides.module';
 import { SmsModule } from './sms/sms.module';
@@ -67,6 +68,7 @@ export class AppModule {
         AdminModule,
         DriversModule,
         MapsModule,
+        PaymentsModule,
         RidesModule,
         HealthModule,
       ],

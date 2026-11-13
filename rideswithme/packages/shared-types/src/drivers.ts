@@ -85,7 +85,9 @@ export type OnlineBlocker =
   | { code: 'NO_ACTIVE_VEHICLE' }
   | { code: 'VEHICLE_CATEGORY_DISABLED' }
   | { code: 'DOCUMENT_NOT_APPROVED'; documentType: DocumentType }
-  | { code: 'DOCUMENT_EXPIRED'; documentType: DocumentType };
+  | { code: 'DOCUMENT_EXPIRED'; documentType: DocumentType }
+  /** Owes more commission (from cash trips) than allowed; top up the driver wallet. */
+  | { code: 'WALLET_DEBT'; owedKobo: number; limitKobo: number };
 
 export interface DriverVehicleView {
   id: string;

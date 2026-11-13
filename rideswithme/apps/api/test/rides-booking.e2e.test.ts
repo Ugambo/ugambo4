@@ -104,7 +104,7 @@ describe('booking', () => {
       .post('/v1/rides')
       .set('Authorization', p.auth)
       .set('Idempotency-Key', key)
-      .send({ quoteId, paymentMethod: 'card' })
+      .send({ quoteId, paymentMethod: 'wallet' })
       .expect(422);
     expect(misuse.body.error.code).toBe('IDEMPOTENCY_CONFLICT');
   });
@@ -148,7 +148,7 @@ describe('booking', () => {
     expect(events.map((e) => e.event_type)).toEqual(['ride_requested', 'search_started']);
   });
 
-  it('refuses expired quotes, non-cash payment and a second active ride', async () => {
+  it('refuses expired quotes, an unknown card and a second active ride', async () => {
     const p = await passenger(h);
     const est = await estimate(h, p.auth);
     await h.db
@@ -168,9 +168,9 @@ describe('booking', () => {
       .post('/v1/rides')
       .set('Authorization', p.auth)
       .set('Idempotency-Key', randomUUID())
-      .send({ quoteId: est.options[1]!.quoteId, paymentMethod: 'card' })
+      .send({ quoteId: est.options[1]!.quoteId, paymentMethod: 'card', cardId: randomUUID() })
       .expect(422);
-    expect(card.body.error.code).toBe('PAYMENT_METHOD_UNAVAILABLE');
+    expect(card.body.error.code).toBe('CARD_NOT_FOUND');
 
     await book(h, p.auth);
     const quoteId = (await estimate(h, p.auth)).options[0]!.quoteId;
@@ -326,10 +326,18 @@ describe('a complete cash trip', () => {
     });
     const commission = await h.db.selectFrom('commissions').selectAll().executeTakeFirstOrThrow();
     expect(commission).toMatchObject({
-      status: 'pending_settlement',
+      status: 'settled',
       commission_kobo: String(e.commissionKobo),
       booking_fee_kobo: '10000',
     });
+    // The driver kept the cash; the booking fee and commission come out of their wallet.
+    const wallet = await h.db
+      .selectFrom('wallets')
+      .select('balance_kobo')
+      .where('owner_id', '=', d.userId)
+      .where('kind', '=', 'driver')
+      .executeTakeFirstOrThrow();
+    expect(Number(wallet.balance_kobo)).toBe(-(e.commissionKobo + 10_000));
 
     const events = await h.db
       .selectFrom('ride_events')

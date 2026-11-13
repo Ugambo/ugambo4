@@ -43,13 +43,27 @@ const en = {
   'error.OUTSIDE_SERVICE_AREA': 'RideswithMe is not available at this pickup point yet.',
   'error.QUOTE_EXPIRED': 'This price has expired. Check the price again.',
   'error.PAYMENT_METHOD_UNAVAILABLE':
-    'This payment method is not available yet. Please pay with cash.',
+    'This payment method is not available. Please choose another way to pay.',
   'error.RIDE_ALREADY_ACTIVE': 'You already have a ride in progress.',
   'error.OFFER_UNAVAILABLE': 'This ride request is no longer available.',
   'error.DRIVER_NOT_ELIGIBLE': 'You cannot go online yet. Check your documents.',
   'error.IDEMPOTENCY_KEY_REQUIRED': 'Something went wrong. Please try again.',
   'error.IDEMPOTENCY_CONFLICT': 'This request is already being processed.',
   'error.MAPS_UNAVAILABLE': 'Maps are not available right now. Please try again shortly.',
+  'error.WALLET_INSUFFICIENT_FUNDS':
+    'Your wallet balance is too low. Top up or choose another way to pay.',
+  'error.WALLET_LIMIT_EXCEEDED': 'This would take your wallet over its limit.',
+  'error.OUTSTANDING_BALANCE':
+    'You have an unpaid balance. Please pay it before booking another ride.',
+  'error.CARD_NOT_FOUND': 'We could not find that card. Choose another card or add it again.',
+  'error.PAYMENT_PROVIDER_UNAVAILABLE':
+    'Card payments are not available right now. Please try again shortly.',
+  'error.PAYOUT_UNAVAILABLE': 'You cannot withdraw this amount right now.',
+  'error.PAYOUT_ACCOUNT_RECENTLY_CHANGED':
+    'Withdrawals are paused for 24 hours after changing your bank account.',
+  'error.REFUND_NOT_ALLOWED': 'This refund cannot be made.',
+  'error.DISPUTE_EXISTS': 'You have already reported a problem with this ride.',
+  'error.WEBHOOK_SIGNATURE_INVALID': 'Invalid signature.',
   'error.ROUTE_NOT_FOUND': 'We could not find a route between these places.',
   'sms.driver_approved':
     'Your RideswithMe driver account is approved. Open the RideswithMe Driver app to go online.',
@@ -96,7 +110,7 @@ const ha: Record<MessageKey, string> = {
   'error.OUTSIDE_SERVICE_AREA': 'RideswithMe bai samu a wannan wurin ɗauka ba tukuna.',
   'error.QUOTE_EXPIRED': 'Wannan farashi ya ƙare. Sake duba farashin.',
   'error.PAYMENT_METHOD_UNAVAILABLE':
-    'Wannan hanyar biya ba ta samu ba tukuna. Da fatan a biya da kuɗi hannu.',
+    'Wannan hanyar biya ba ta samuwa. Da fatan a zaɓi wata hanyar biya.',
   'error.RIDE_ALREADY_ACTIVE': 'Kuna da tafiya da ke gudana tuni.',
   'error.OFFER_UNAVAILABLE': 'Wannan bukatar tafiya ba ta samuwa yanzu.',
   'error.DRIVER_NOT_ELIGIBLE': 'Ba za ku iya fara aiki ba tukuna. Duba takardunku.',
@@ -104,6 +118,20 @@ const ha: Record<MessageKey, string> = {
   'error.IDEMPOTENCY_CONFLICT': 'Ana sarrafa wannan bukata tuni.',
   'error.MAPS_UNAVAILABLE':
     'Taswira ba ta samu yanzu. Da fatan a sake gwadawa nan ba da jimawa ba.',
+  'error.WALLET_INSUFFICIENT_FUNDS':
+    'Kuɗin walat ɗinku bai isa ba. Ƙara kuɗi ko zaɓi wata hanyar biya.',
+  'error.WALLET_LIMIT_EXCEEDED': 'Wannan zai wuce iyakar walat ɗinku.',
+  'error.OUTSTANDING_BALANCE':
+    'Kuna da bashin da ba a biya ba. Da fatan ku biya kafin ku nemi wata tafiya.',
+  'error.CARD_NOT_FOUND': 'Ba mu sami wannan kati ba. Zaɓi wani kati ko sake ƙara shi.',
+  'error.PAYMENT_PROVIDER_UNAVAILABLE':
+    'Biyan kuɗi da kati ba ya samuwa yanzu. Da fatan a sake gwadawa nan ba da jimawa ba.',
+  'error.PAYOUT_UNAVAILABLE': 'Ba za ku iya cire wannan kuɗin yanzu ba.',
+  'error.PAYOUT_ACCOUNT_RECENTLY_CHANGED':
+    'An dakatar da cire kuɗi na awa 24 bayan canza asusun bankinku.',
+  'error.REFUND_NOT_ALLOWED': 'Ba za a iya mayar da wannan kuɗin ba.',
+  'error.DISPUTE_EXISTS': 'Kun riga kun bayar da rahoton matsala game da wannan tafiya.',
+  'error.WEBHOOK_SIGNATURE_INVALID': 'Sa hannu ba daidai ba ne.',
   'error.ROUTE_NOT_FOUND': 'Ba mu sami hanya tsakanin waɗannan wurare ba.',
   'sms.driver_approved':
     'An amince da asusun direbanku na RideswithMe. Buɗe manhajar RideswithMe Driver don fara aiki.',

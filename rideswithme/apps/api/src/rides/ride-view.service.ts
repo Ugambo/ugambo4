@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Kysely } from 'kysely';
+import { type Kysely, sql } from 'kysely';
 import {
   ACTIVE_RIDE_STATUSES,
   type DriverRideView,
@@ -36,6 +36,7 @@ export class RideViewService {
       .innerJoin('users as p', 'p.id', 'r.passenger_id')
       .leftJoin('users as d', 'd.id', 'r.driver_id')
       .leftJoin('vehicles as v', 'v.id', 'r.vehicle_id')
+      .leftJoin('payment_cards as pc', 'pc.id', 'r.card_id')
       .selectAll('r')
       .select([
         latOf('r.pickup').as('pickup_lat'),
@@ -50,6 +51,20 @@ export class RideViewService {
         'v.model',
         'v.colour',
         'v.plate_number',
+        'pc.brand as card_brand',
+        'pc.last4 as card_last4',
+        sql<
+          string | null
+        >`(SELECT status FROM payments WHERE ride_id = r.id ORDER BY created_at DESC LIMIT 1)`.as(
+          'payment_status',
+        ),
+        sql<string>`(SELECT coalesce(sum(outstanding_kobo), 0) FROM payments WHERE ride_id = r.id AND status = 'outstanding')`.as(
+          'payment_outstanding',
+        ),
+        sql<string>`(SELECT coalesce(sum(refunded_kobo), 0) FROM payments WHERE ride_id = r.id)`.as(
+          'payment_refunded',
+        ),
+        sql<boolean>`EXISTS (SELECT 1 FROM payment_disputes WHERE ride_id = r.id)`.as('disputed'),
       ])
       .where('r.id', '=', rideId)
       .executeTakeFirst();
@@ -75,6 +90,17 @@ export class RideViewService {
       actualDistanceMeters: row.actual_distance_meters,
       scheduledFor: row.scheduled_for?.toISOString() ?? null,
       paymentMethod: row.payment_method as PaymentMethod,
+      payment: {
+        method: row.payment_method as PaymentMethod,
+        status: row.payment_status as RideView['payment']['status'],
+        card:
+          row.card_brand && row.card_last4
+            ? { brand: row.card_brand, last4: row.card_last4 }
+            : null,
+        outstandingKobo: koboFromDb(row.payment_outstanding),
+        refundedKobo: koboFromDb(row.payment_refunded),
+        disputed: row.disputed,
+      },
       fare: {
         cancellationPolicy: {
           feeKobo: snapshot.rule.cancellationFeeKobo,
