@@ -9,6 +9,12 @@ describe('passenger proxy allowlist', () => {
     'v1/rides/active',
     'v1/rides/0b1c6f0e-3a4b-4c5d-8e9f-0a1b2c3d4e5f/cancel',
     'v1/places/details/fake:kano-airport',
+    'v1/wallet',
+    'v1/wallet/topups',
+    'v1/wallet/transactions',
+    'v1/payments/0b1c6f0e-3a4b-4c5d-8e9f-0a1b2c3d4e5f',
+    'v1/payment-cards',
+    'v1/rides/0b1c6f0e-3a4b-4c5d-8e9f-0a1b2c3d4e5f/dispute',
   ])('allows %s', (p) => expect(isAllowedPassengerPath(p)).toBe(true));
   it.each([
     'v1/admin/users',
@@ -16,5 +22,9 @@ describe('passenger proxy allowlist', () => {
     'v1/auth/refresh',
     'v1/auth/realtime-ticket',
     'v1/rides/x/../../admin',
+    'v1/driver/payouts',
+    'v1/driver/wallet',
+    'v1/admin/payments',
+    'v1/webhooks/paystack',
   ])('refuses %s', (p) => expect(isAllowedPassengerPath(p)).toBe(false));
 });

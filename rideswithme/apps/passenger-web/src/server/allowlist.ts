@@ -9,7 +9,10 @@ export const PASSENGER_API_ALLOW = [
   /^v1\/places\/details\/[A-Za-z0-9:_-]{1,300}$/,
   /^v1\/fares\/estimate$/,
   /^v1\/rides(\/active)?$/,
-  /^v1\/rides\/[0-9a-f-]{36}(\/(cancel|driver-photo))?$/,
+  /^v1\/rides\/[0-9a-f-]{36}(\/(cancel|driver-photo|dispute))?$/,
+  /^v1\/wallet(\/(transactions|topups))?$/,
+  /^v1\/payments\/[0-9a-f-]{36}$/,
+  /^v1\/payment-cards(\/[0-9a-f-]{36})?$/,
   /^v1\/vehicle-categories$/,
 ];
 

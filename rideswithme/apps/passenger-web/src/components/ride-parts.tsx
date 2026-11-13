@@ -158,3 +158,39 @@ export function StatusPill({ status }: { status: RideView['status'] }) {
   const { t } = useI18n();
   return <span className={`pill ${STATUS_TONE[status]}`}>{t(`status.${status}`)}</span>;
 }
+
+/** How the ride was paid: cash to collect, wallet, card (being charged or paid), or still owed. */
+export function PaymentLine({ ride, past = false }: { ride: RideView; past?: boolean }) {
+  const { t } = useI18n();
+  const p = ride.payment;
+  const total = ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo;
+  let text: string | null = null;
+  let tone = 'muted';
+  if (p.status === 'outstanding') {
+    text = t('receipt.owed', { amount: formatKobo(p.outstandingKobo) });
+    tone = 'notice notice-bad';
+  } else if (p.method === 'cash' && ride.status === 'completed') {
+    text = past ? t('receipt.paidCash') : t('ride.payCash', { amount: formatKobo(total) });
+    tone = past ? 'muted' : 'pay-cash';
+  } else if (p.method === 'wallet' && p.status === 'succeeded') {
+    text = t('receipt.paidWallet');
+  } else if (p.method === 'card' && p.status === 'pending') {
+    text = t('receipt.cardPending');
+  } else if (p.method === 'card' && p.status === 'succeeded' && p.card) {
+    text = t('receipt.paidCard', {
+      card: t('pay.card', { brand: p.card.brand.toUpperCase(), last4: p.card.last4 }),
+    });
+  }
+  return (
+    <>
+      {text && (
+        <p className={tone} data-testid={tone === 'pay-cash' ? 'pay-cash' : 'payment-line'}>
+          {text}
+        </p>
+      )}
+      {p.refundedKobo > 0 && (
+        <p className="small">{t('receipt.refunded', { amount: formatKobo(p.refundedKobo) })}</p>
+      )}
+    </>
+  );
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, newIdempotencyKey } from '@rideswithme/api-client';
 import {
@@ -8,7 +9,9 @@ import {
   type FareEstimateResponse,
   type Place,
   type RideView,
+  type SavedCardView,
   type SavedPlace,
+  type WalletView,
 } from '@rideswithme/shared-types';
 import {
   applyActiveRides,
@@ -43,6 +46,10 @@ export function Book() {
   const [pricing, setPricing] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  const [wallet, setWallet] = useState<WalletView | null>(null);
+  const [cards, setCards] = useState<SavedCardView[]>([]);
+  /** 'cash', 'wallet' or 'card:<id>'. */
+  const [pay, setPay] = useState('cash');
   // Same key for every retry of one booking attempt, so a retry never books twice.
   const bookingKey = useRef(newIdempotencyKey());
   const ride = rides.current;
@@ -52,14 +59,20 @@ export function Book() {
     setRides((state) => applyActiveRides(state, active));
   }, []);
 
+  const loadMoney = useCallback(async () => {
+    const [w, c] = await Promise.all([api().wallet.get(), api().payments.cards()]);
+    setWallet(w);
+    setCards(c.filter((card) => !card.expired));
+  }, []);
+
   useEffect(() => {
-    loadActive()
+    Promise.all([loadActive(), loadMoney()])
       .catch(setError)
       .finally(() => setLoaded(true));
     api()
       .places.saved()
       .then(setSaved, () => undefined);
-  }, [loadActive]);
+  }, [loadActive, loadMoney]);
 
   useRealtimeEvent<RideView>(
     'ride:updated',
@@ -132,12 +145,11 @@ export function Book() {
     setRequesting(true);
     setError(null);
     try {
+      const payment = pay.startsWith('card:')
+        ? { paymentMethod: 'card' as const, cardId: pay.slice(5) }
+        : { paymentMethod: pay as 'cash' | 'wallet' };
       const booked = await api().rides.book(
-        {
-          quoteId: option.quoteId,
-          paymentMethod: 'cash',
-          ...(when !== 'now' && { scheduledFor: when }),
-        },
+        { quoteId: option.quoteId, ...payment, ...(when !== 'now' && { scheduledFor: when }) },
         bookingKey.current,
       );
       bookingKey.current = newIdempotencyKey();
@@ -160,7 +172,10 @@ export function Book() {
       <LiveRide
         ride={ride}
         onChange={(r) => setRides((state) => applyRideUpdate(state, r))}
-        onDone={() => setRides((state) => ({ ...state, current: null }))}
+        onDone={() => {
+          setRides((state) => ({ ...state, current: null }));
+          void loadMoney().catch(() => undefined);
+        }}
       />
     );
   }
@@ -232,17 +247,41 @@ export function Book() {
                 </select>
               </div>
               <div className="field">
-                <span className="label">{t('choose.payment')}</span>
-                <span className="payment">💵 {t('choose.cash')}</span>
+                <label htmlFor="pay">{t('choose.payWith')}</label>
+                <select id="pay" value={pay} onChange={(e) => setPay(e.target.value)}>
+                  <option value="cash">{t('pay.cash')}</option>
+                  <option value="wallet">
+                    {t('pay.wallet', { amount: formatKobo(wallet?.balanceKobo ?? 0) })}
+                  </option>
+                  {cards.map((c) => (
+                    <option key={c.id} value={`card:${c.id}`}>
+                      {t('pay.card', { brand: c.brand.toUpperCase(), last4: c.last4 })}
+                    </option>
+                  ))}
+                </select>
+                {cards.length === 0 && (
+                  <Link href="/wallet" className="small">
+                    {t('pay.addCard')}
+                  </Link>
+                )}
               </div>
             </div>
             <p className="small muted">{t('choose.priceNote')}</p>
+            {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.totalKobo && (
+              <p className="notice notice-wait">{t('pay.walletShort')}</p>
+            )}
+            {wallet && wallet.owedKobo > 0 && (
+              <div className="notice notice-bad" data-testid="owed">
+                <strong>{t('wallet.owed', { amount: formatKobo(wallet.owedKobo) })}</strong>{' '}
+                <Link href="/wallet">{t('wallet.topUp')}</Link>
+              </div>
+            )}
             <InlineError error={error} />
             {option && (
               <button
                 type="button"
                 className="btn btn-accent btn-block btn-large"
-                disabled={requesting}
+                disabled={requesting || (wallet?.owedKobo ?? 0) > 0}
                 onClick={() => void request()}
               >
                 {requesting

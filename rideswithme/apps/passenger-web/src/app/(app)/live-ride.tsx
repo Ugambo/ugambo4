@@ -9,7 +9,7 @@ import {
   positionAge,
   ridePhase,
 } from '@rideswithme/utilities';
-import { DriverCard, FareLines } from '@/components/ride-parts';
+import { DriverCard, FareLines, PaymentLine } from '@/components/ride-parts';
 import { RouteSketch } from '@/components/route-sketch';
 import { api } from '@/lib/api';
 import { InlineError, useI18n } from '@/lib/i18n';
@@ -105,16 +105,11 @@ export function LiveRide({
           </div>
         </dl>
 
-        {phase === 'completed' && (
-          <p className="pay-cash" data-testid="pay-cash">
-            {t('ride.payCash', {
-              amount: formatKobo(ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo),
-            })}
-          </p>
+        {(phase === 'completed' || ride.payment.status === 'outstanding') && (
+          <PaymentLine ride={ride} />
         )}
         <h2>{phase === 'completed' ? t('receipt.title') : t('ride.fare')}</h2>
         <FareLines ride={ride} />
-        {phase === 'completed' && <p className="small muted">{t('receipt.paidCash')}</p>}
 
         <InlineError error={error} />
         {canCancel(ride.status) &&

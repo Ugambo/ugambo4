@@ -8,6 +8,7 @@ export const WEB_URL = 'http://127.0.0.1:3202';
 export const POLICY_VERSION = '2026-11';
 export const PASSENGER_PHONE = '+2348035550001';
 export const DRIVER_PHONE = '+2348035550002';
+export const PAYING_PASSENGER_PHONE = '+2348035550003';
 export const DRIVER_FILE = path.join(OUT, 'driver.json');
 
 const s3 = process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:9000';
@@ -49,6 +50,9 @@ export function apiEnv(): Record<string, string> {
     DOCUMENT_EXPIRY_SWEEP_MINUTES: '0',
     MAPS_PROVIDER: 'fake',
     CORS_ORIGINS: WEB_URL,
+    PAYMENT_PROVIDER: 'fake',
+    PUBLIC_API_URL: API_URL,
+    PAYMENT_RETURN_URL_WEB: `${WEB_URL}/wallet`,
   };
 }
 

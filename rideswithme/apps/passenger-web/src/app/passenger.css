@@ -191,6 +191,7 @@
 }
 .chips {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--s-2);
   margin-bottom: var(--s-3);
 }
@@ -397,4 +398,55 @@
   .ride-row .pill {
     display: none;
   }
+}
+
+/* Wallet */
+.wallet-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--s-4);
+  align-items: start;
+}
+.wallet-layout > .card:first-child {
+  grid-row: span 2;
+}
+.wallet-balance {
+  font-size: 40px;
+  font-weight: 800;
+  margin: 0 0 var(--s-2);
+  font-variant-numeric: tabular-nums;
+}
+.topup h2 {
+  margin-top: var(--s-4);
+}
+.cards li,
+.entries li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.entry-main {
+  display: grid;
+}
+.money-in {
+  color: var(--c-success);
+  font-weight: 700;
+}
+.dispute-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--s-3);
+}
+.dispute-form legend {
+  font-weight: 600;
+  margin-bottom: var(--s-2);
+}
+.radio-row {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+  min-height: 36px;
 }

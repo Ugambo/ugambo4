@@ -415,6 +415,7 @@ export class PaymentsService {
         topUpMinKobo: this.config.WALLET_TOPUP_MIN_KOBO,
         topUpMaxKobo: this.config.WALLET_TOPUP_MAX_KOBO,
         maxBalanceKobo: this.config.WALLET_MAX_BALANCE_KOBO,
+        cardCheckKobo: this.config.CARD_LINK_AMOUNT_KOBO,
       },
     };
   }

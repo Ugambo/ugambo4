@@ -1,4 +1,12 @@
 import type {
+  CheckoutView,
+  DisputeView,
+  DriverWalletView,
+  PaymentView,
+  PayoutView,
+  SavedCardView,
+  WalletEntryView,
+  WalletView,
   DriverAvailabilityView,
   DriverOfferView,
   DriverPosition,
@@ -31,6 +39,10 @@ import type {
   VerifyOtpResponse,
 } from '@rideswithme/shared-types';
 import type {
+  AddCardInput,
+  PayoutRequestInput,
+  RaiseDisputeInput,
+  TopUpInput,
   AvailabilityInput,
   CreateRideInput,
   DriverCancelInput,
@@ -303,6 +315,50 @@ export function createApiClient(options: ApiClientOptions) {
         }),
       driverPhoto: (id: string) =>
         request<DocumentViewUrl>(`/v1/rides/${encodeURIComponent(id)}/driver-photo`),
+      /** Reports a problem with what was paid for a ride (once per ride). */
+      dispute: (id: string, input: RaiseDisputeInput) =>
+        request<DisputeView>(`/v1/rides/${encodeURIComponent(id)}/dispute`, {
+          method: 'POST',
+          body: input,
+        }),
+      getDispute: (id: string) =>
+        request<DisputeView>(`/v1/rides/${encodeURIComponent(id)}/dispute`),
+    },
+    wallet: {
+      get: () => request<WalletView>('/v1/wallet'),
+      transactions: (cursor?: string) =>
+        request<Paginated<WalletEntryView>>('/v1/wallet/transactions', { query: { cursor } }),
+      /** Open checkoutUrl, then check the payment with payments.get(id, true). */
+      topUp: (input: TopUpInput, idempotencyKey: string) =>
+        request<CheckoutView>('/v1/wallet/topups', { method: 'POST', body: input, idempotencyKey }),
+    },
+    payments: {
+      /** With refresh, a pending payment is checked with the payment provider first. */
+      get: (id: string, refresh = false) =>
+        request<PaymentView>(`/v1/payments/${encodeURIComponent(id)}`, {
+          query: { refresh: refresh ? '1' : undefined },
+        }),
+      cards: () => request<SavedCardView[]>('/v1/payment-cards'),
+      addCard: (input: AddCardInput, idempotencyKey: string) =>
+        request<CheckoutView>('/v1/payment-cards', { method: 'POST', body: input, idempotencyKey }),
+      removeCard: (id: string) =>
+        request<void>(`/v1/payment-cards/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    },
+    driverWallet: {
+      get: () => request<DriverWalletView>('/v1/driver/wallet'),
+      transactions: (cursor?: string) =>
+        request<Paginated<WalletEntryView>>('/v1/driver/wallet/transactions', {
+          query: { cursor },
+        }),
+      topUp: (input: TopUpInput, idempotencyKey: string) =>
+        request<CheckoutView>('/v1/driver/wallet/topups', {
+          method: 'POST',
+          body: input,
+          idempotencyKey,
+        }),
+      payouts: () => request<PayoutView[]>('/v1/driver/payouts'),
+      requestPayout: (input: PayoutRequestInput, idempotencyKey: string) =>
+        request<PayoutView>('/v1/driver/payouts', { method: 'POST', body: input, idempotencyKey }),
     },
     places: {
       autocomplete: (q: string, near?: { lat: number; lng: number }, sessionToken?: string) =>

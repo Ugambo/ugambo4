@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useResource } from '@rideswithme/web-core/client';
-import { DriverCard, FareLines, StatusPill } from '@/components/ride-parts';
+import { DisputeSection } from '@/components/dispute-section';
+import { DriverCard, FareLines, PaymentLine, StatusPill } from '@/components/ride-parts';
 import { RouteSketch } from '@/components/route-sketch';
 import { api } from '@/lib/api';
 import { ErrorState, Loading, useI18n } from '@/lib/i18n';
@@ -53,7 +54,8 @@ export default function RidePage() {
         </dl>
         {r.driver && <DriverCard ride={r} />}
         <FareLines ride={r} />
-        {r.status === 'completed' && <p className="small muted">{t('receipt.paidCash')}</p>}
+        <PaymentLine ride={r} past />
+        <DisputeSection ride={r} onRaised={() => void ride.reload()} />
       </section>
       <section className="map-panel">
         <RouteSketch pickup={r.pickup} dropoff={r.dropoff} polyline={r.route.polyline} />
