@@ -66,8 +66,8 @@ tested backups; rate limits on OTP, login and booking.
 | 1 Foundation             | Monorepo, Docker, database, migrations, phone OTP auth, roles, shared packages, CI           | Approved                                  |
 | 2 Driver onboarding      | Driver registration, document upload, admin verification queue                               | Approved                                  |
 | 3 Core ride flow         | Location search, fare estimate, ride request, matching, state machine, cash                  | Approved (passenger web moved to Phase 4) |
-| 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness; passenger web booking          | Approved              |
-| 5 Payments               | Paystack, wallets, commission, payouts, refunds | In progress |
+| 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness; passenger web booking          | Approved                                  |
+| 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              | **Built, awaiting approval**              |
 | 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                |                                           |
 | 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          |                                           |
 | 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds |                                           |
@@ -77,7 +77,7 @@ tested backups; rate limits on OTP, login and booking.
 1. Launch area: one city, as a service-area polygon.
 2. Vehicles at launch: car and Keke Napep; others by configuration.
 3. Commission: percentage per vehicle category.
-4. Payments: cash first; wallet and Paystack in Phase 5.
+4. Payments: cash, wallet and Paystack card payments (Phase 5).
 5. Buses: third-party operators; RideswithMe takes a service fee.
 
 Further questions raised while building are listed at the top of `DECISIONS.md`.

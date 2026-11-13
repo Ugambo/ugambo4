@@ -34,15 +34,16 @@ pnpm db:status      # list applied and pending migrations
 
 ## Applied migrations
 
-| Migration                   | Contents                                                                                                                                                    |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0001_extensions             | `postgis`, `citext`; helper functions `set_updated_at()` and `forbid_update_delete()`                                                                       |
-| 0002_identity               | users, roles, permissions, role_permissions, user_roles, user_sessions, user_consents                                                                       |
-| 0003_audit_logs             | audit_logs (append-only)                                                                                                                                    |
-| 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                                                                                        |
-| 0005_driver_onboarding      | vehicle_categories, document_types, requirements per category, driver_profiles, vehicles, file_uploads, driver_documents; driver permissions                |
-| 0006_core_ride_flow         | service_areas, fare_rules, fare_quotes, rides, ride_requests (offers), ride_events, payments, commissions, saved_places, idempotency_keys; ride permissions |
-| 0007_trip_locations         | trip_locations (partitioned by day) with partition create/drop functions; rides.actual_distance_meters                                                      |
+| Migration                   | Contents                                                                                                                                                                                                                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0001_extensions             | `postgis`, `citext`; helper functions `set_updated_at()` and `forbid_update_delete()`                                                                                                                                                                                            |
+| 0002_identity               | users, roles, permissions, role_permissions, user_roles, user_sessions, user_consents                                                                                                                                                                                            |
+| 0003_audit_logs             | audit_logs (append-only)                                                                                                                                                                                                                                                         |
+| 0004_seed_roles_permissions | system roles and Phase 1 permissions                                                                                                                                                                                                                                             |
+| 0005_driver_onboarding      | vehicle_categories, document_types, requirements per category, driver_profiles, vehicles, file_uploads, driver_documents; driver permissions                                                                                                                                     |
+| 0006_core_ride_flow         | service_areas, fare_rules, fare_quotes, rides, ride_requests (offers), ride_events, payments, commissions, saved_places, idempotency_keys; ride permissions                                                                                                                      |
+| 0007_trip_locations         | trip_locations (partitioned by day) with partition create/drop functions; rides.actual_distance_meters                                                                                                                                                                           |
+| 0008_payments               | wallets, ledger_journals, wallet_transactions (double-entry ledger with database-enforced rules), payment_cards, payouts, refunds, payment_disputes, payment_webhook_events; payments extended; payment permissions; Phase 3 commissions and unpaid fees brought into the ledger |
 
 ## Identity domain
 
@@ -216,6 +217,49 @@ rides 1──1 commissions               (owed by the driver for cash rides)
 - **rides.actual_distance_meters:** distance driven between start and completion,
   from readings with accuracy of 50 m or better.
 
+## Payments (Phase 5)
+
+- **wallets:** every account: one per user and kind (`passenger`, `driver`) and the
+  platform's own (`system_key`: paystack_balance, passenger_receivables,
+  provider_fees, platform_revenue, ride_holds, payouts_in_transit,
+  refunds_in_transit). `normal_side` says whether debits or credits increase it;
+  `balance_kobo` is in that direction and is written only by the posting trigger
+  (an UPDATE that changes it is refused). `min_balance_kobo` is 0 for passenger
+  wallets and NULL (no minimum) otherwise. Created by `ensure_system_wallets()`.
+- **ledger_journals:** one per money movement: `kind`, unique `reference` (the
+  business event, for idempotency), links to the ride, payment, payout, refund or
+  dispute, `memo`, `created_by`, and the creating transaction id. Append-only.
+- **wallet_transactions:** the journal lines: `amount_kobo` (debit positive, credit
+  negative, never zero) and `balance_after_kobo`, ordered by `seq`. Append-only.
+  `wallet_transactions_post()` (before insert) locks the wallet, enforces its
+  minimum (SQLSTATE `RWM01`), updates the balance and records it; a deferred
+  constraint trigger checks at commit that every journal touched sums to zero with
+  at least two lines (`RWM02`); lines may only be added in the journal's own
+  transaction. `ledger_balance_mismatches()` lists wallets whose balance differs
+  from the sum of their lines.
+- **payments:** extended for top-ups (`wallet_topup`, `card_link`, with
+  `wallet_kind`) and provider payments: `provider`, unique `provider_reference`
+  (our payment id), `card_id`, `fee_kobo`, `outstanding_kobo` (still owed),
+  `refunded_kobo`, `failure_reason`, `paid_at`. Statuses: pending, succeeded,
+  collected (cash), outstanding, failed, abandoned.
+- **payment_cards:** saved cards: Paystack authorization code (field-encrypted),
+  card `signature` (one live card per user and signature), brand, last 4, expiry,
+  bank, `removed_at`. `rides.card_id` is set exactly when a ride is paid by card.
+- **payouts:** driver withdrawals: amount, fee, status (pending, processing,
+  succeeded, failed, reversed), a snapshot of the bank account, unique
+  `provider_reference`, `transfer_code`. `driver_profiles` gains
+  `payout_recipient_code` and `payout_account_changed_at`.
+- **refunds:** amount, destination (wallet or card), who funds it (platform or
+  driver), status, reason, dispute, provider reference, who made it. A payment's
+  `refunded_kobo` can never exceed its amount (CHECK).
+- **payment_disputes:** passenger reports (one per ride) and provider chargebacks
+  (unique `provider_dispute_id`): reason, details, amount, status (open, refunded,
+  rejected, won, lost), resolution note, who resolved it and when.
+- **payment_webhook_events:** every correctly signed webhook, unique per
+  (provider, event key), with its payload, processing time, attempts and last error.
+- **commissions:** now settled into the ledger at completion; `journal_id` links the
+  journal that moved the money.
+
 ## Not in the database
 
 - One-time codes, rate-limit counters, job locks, cached routes: Redis, with expiry.
@@ -226,7 +270,7 @@ rides 1──1 commissions               (owed by the driver for cash rides)
 
 ## Planned domains
 
-Tables listed in the brief for later phases (passenger_profiles, fleets, wallets, wallet_transactions, bus_*, emergency_alerts,
+Tables listed in the brief for later phases (passenger_profiles, fleets, bus_*, emergency_alerts,
 incident_reports, ratings, reviews, promotions, notifications, support_tickets)
 are added by the phase that first needs them. `driver_locations` is not needed:
 the live position is in Redis and the history in `trip_locations` (DECISIONS D-042).

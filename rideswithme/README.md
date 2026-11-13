@@ -3,7 +3,7 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** Phase 4 (real-time tracking) is built and awaiting approval:
+**Status:** Phase 5 (payments) is built and awaiting approval:
 
 - **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
   admin two-factor authentication, audit log, Docker and CI.
@@ -15,6 +15,11 @@ bus seats, for passengers, drivers, admins and fleet operators.
 - **Phase 4:** live updates over Socket.IO, driver background location with an
   offline buffer on the phone, trip location history, "last updated" for old
   positions, and the passenger website (booking, live trip, receipts, history).
+- **Phase 5:** a double-entry wallet ledger; Paystack (card and bank transfer) behind
+  a provider interface with signed webhooks; wallet top-ups and saved cards; paying
+  for rides by cash, wallet or card; commission on cash trips from the driver's
+  wallet; driver withdrawals; refunds, fare disputes and chargebacks; a
+  reconciliation job.
 
 The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
@@ -57,6 +62,15 @@ pnpm --filter @rideswithme/admin-dashboard dev                         # http://
 ```
 
 With `SMS_PROVIDER=console` the sign-in code appears in the API log.
+
+### Payments in development
+
+With `PAYMENT_PROVIDER=fake` (the default) no money moves: top-ups and saved cards
+open a test checkout page on the API (`/v1/dev/fake-checkout/...`) with buttons to
+pay, decline or cancel, and webhooks are simulated. For Paystack's test mode set
+`PAYMENT_PROVIDER=paystack` and `PAYSTACK_SECRET_KEY` (a `sk_test_...` key), point
+the Paystack dashboard's webhook URL at `<public API URL>/v1/webhooks/paystack`
+(e.g. through a tunnel), and see `apps/api/.env.example` for the other settings.
 
 ### Passenger and driver apps
 

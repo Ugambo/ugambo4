@@ -4,7 +4,9 @@ Next.js 16 site where passengers book rides from a browser: sign in with an SMS
 code, search pickup and destination (or use the browser's location), compare
 prices, book now or schedule, follow the ride live (status, driver, plate, where
 the driver is, "last updated" when their position is old), cancel, and see
-receipts and past rides. English and Hausa.
+receipts and past rides. Since Phase 5: a wallet (top-ups through the payment
+page, saved cards, activity), paying for rides by cash, wallet or card, anything
+still owed, and reporting a problem with a fare. English and Hausa.
 
 ```bash
 cp .env.example .env.local   # API_URL, API_PUBLIC_URL, PASSENGER_SESSION_SECRET, POLICY_VERSION, STORAGE_ORIGIN
@@ -27,6 +29,9 @@ How it works:
   page refetches on reconnect, and checks every 30 seconds as a fallback.
 - **Ride rules and text** (cancellation fee, stale positions, ride statuses,
   receipts) are shared with the passenger app through `@rideswithme/utilities`.
+- **Payments** happen on the provider's page (Paystack, or the API's test page in
+  development). It sends the payer back to `/wallet?reference=…`, and the page then
+  asks the API how the payment went; the return itself proves nothing.
 - **The map** is a to-scale sketch of pickup, destination, route and driver
   (`src/components/route-sketch.tsx`). A street map needs a Google Maps
   JavaScript key; see documentation/DECISIONS.md D-045.

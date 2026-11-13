@@ -60,7 +60,17 @@ client: `@rideswithme/api-client`.
 | STORAGE_UNAVAILABLE                                        | 503       | Object storage unreachable; retry                                      |
 | OUTSIDE_SERVICE_AREA / ROUTE_NOT_FOUND                     | 422       | Pickup outside every area / no route                                   |
 | QUOTE_EXPIRED                                              | 422       | Ask for a new estimate                                                 |
-| PAYMENT_METHOD_UNAVAILABLE                                 | 422       | Only cash until Phase 5                                                |
+| PAYMENT_METHOD_UNAVAILABLE                                 | 422       | Payment method not offered                                             |
+| WALLET_INSUFFICIENT_FUNDS                                  | 422       | Wallet balance too low (booking by wallet, adjustment)                 |
+| WALLET_LIMIT_EXCEEDED                                      | 422       | Top-up would pass the wallet's maximum balance                         |
+| OUTSTANDING_BALANCE                                        | 402       | Passenger owes money (`details.owedKobo`); top up before booking       |
+| CARD_NOT_FOUND                                             | 422       | Not one of the passenger's saved cards                                 |
+| PAYMENT_PROVIDER_UNAVAILABLE                               | 503       | Paystack unreachable or refused; retry                                 |
+| PAYOUT_UNAVAILABLE                                         | 422       | Below the minimum, above the balance, or a payout already on its way   |
+| PAYOUT_ACCOUNT_RECENTLY_CHANGED                            | 409       | Withdrawals paused after a bank change (`details.pausedUntil`)         |
+| REFUND_NOT_ALLOWED                                         | 422       | More than is refundable, or not refundable that way                    |
+| DISPUTE_EXISTS                                             | 409       | A problem was already reported for this ride                           |
+| WEBHOOK_SIGNATURE_INVALID                                  | 401       | Webhook signature missing or wrong                                     |
 | RIDE_ALREADY_ACTIVE                                        | 409       | One ride at a time                                                     |
 | OFFER_UNAVAILABLE                                          | 409       | Offer expired or taken                                                 |
 | DRIVER_NOT_ELIGIBLE                                        | 403       | `details.blockers`                                                     |
@@ -423,21 +433,22 @@ the nearest available driver (`null` when none is near).
 
 ### Booking and the passenger's rides
 
-| Method | Path                         | Notes                                                                                                                                                                                                                                                                                                        |
-| ------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| POST   | `/v1/rides`                  | **`Idempotency-Key` header required.** `{ quoteId, paymentMethod: "cash", scheduledFor? }` → `201 RideView`. `scheduledFor` 15 minutes to 7 days ahead. Errors: `QUOTE_EXPIRED`, `PAYMENT_METHOD_UNAVAILABLE` (only cash for now), `RIDE_ALREADY_ACTIVE`, `IDEMPOTENCY_KEY_REQUIRED`, `IDEMPOTENCY_CONFLICT` |
-| GET    | `/v1/rides/active`           | Current ride and scheduled rides                                                                                                                                                                                                                                                                             |
-| GET    | `/v1/rides`                  | History, newest first, `cursor` paging                                                                                                                                                                                                                                                                       |
-| GET    | `/v1/rides/:id`              | `RideView`. Changes also arrive live as `ride:updated`                                                                                                                                                                                                                                                       |
-| POST   | `/v1/rides/:id/cancel`       | `{ reason? }`. Until the trip starts. Free while searching and for 2 minutes after a driver accepts; then the fee in `fare.cancellationPolicy`                                                                                                                                                               |
-| GET    | `/v1/rides/:id/driver-photo` | 60-second link to the assigned driver's approved photo, while the ride is active                                                                                                                                                                                                                             |
+| Method | Path                         | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/v1/rides`                  | **`Idempotency-Key` header required.** `{ quoteId, paymentMethod: "cash" \| "wallet" \| "card", cardId?, scheduledFor? }` → `201 RideView`. `cardId` (a saved card) is required for card and only then. Wallet holds the quoted price at once. `scheduledFor` 15 minutes to 7 days ahead. Errors: `QUOTE_EXPIRED`, `OUTSTANDING_BALANCE`, `WALLET_INSUFFICIENT_FUNDS`, `CARD_NOT_FOUND`, `RIDE_ALREADY_ACTIVE`, `IDEMPOTENCY_KEY_REQUIRED`, `IDEMPOTENCY_CONFLICT` |
+| GET    | `/v1/rides/active`           | Current ride and scheduled rides                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| GET    | `/v1/rides`                  | History, newest first, `cursor` paging                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| GET    | `/v1/rides/:id`              | `RideView`. Changes also arrive live as `ride:updated`                                                                                                                                                                                                                                                                                                                                                                                                             |
+| POST   | `/v1/rides/:id/cancel`       | `{ reason? }`. Until the trip starts. Free while searching and for 2 minutes after a driver accepts; then the fee in `fare.cancellationPolicy`                                                                                                                                                                                                                                                                                                                     |
+| GET    | `/v1/rides/:id/driver-photo` | 60-second link to the assigned driver's approved photo, while the ride is active                                                                                                                                                                                                                                                                                                                                                                                   |
 
 `RideView`: `id`, `status`, `category`, `pickup`, `dropoff`, `route` (distance,
 duration, polyline), `scheduledFor`, `paymentMethod`, `fare` (`quotedTotalKobo`,
 `waitingChargeKobo`, `finalTotalKobo`, `cancellationFeeKobo`,
 `cancellationPolicy`, `breakdown`), `driver` (`firstName`, vehicle make, model,
 colour and plate, `position` with `recordedAt`/`receivedAt` while the ride is
-active, `hasPhoto`), `actualDistanceMeters` (distance driven, from the trip's
+active, `hasPhoto`), `payment` (`method`, `status`, `card` brand and last 4,
+`outstandingKobo`, `refundedKobo`, `disputed`), `actualDistanceMeters` (distance driven, from the trip's
 location history, once completed), and a timestamp per step.
 
 Statuses: `requested` (scheduled) → `searching` → `driver_assigned` →
@@ -449,7 +460,7 @@ Statuses: `requested` (scheduled) → `searching` → `driver_assigned` →
 | Method | Path                            | Notes                                                                                                                                                                                                                                                                                                    |
 | ------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/v1/driver/availability`       | `{ online, blockers, position }`                                                                                                                                                                                                                                                                         |
-| POST   | `/v1/driver/availability`       | `{ online: true, location: { lat, lng, recordedAt, accuracy?, heading?, speed? } }` or `{ online: false }`. `403 DRIVER_NOT_ELIGIBLE` with `blockers`                                                                                                                                                    |
+| POST   | `/v1/driver/availability`       | `{ online: true, location: { lat, lng, recordedAt, accuracy?, heading?, speed? } }` or `{ online: false }`. `403 DRIVER_NOT_ELIGIBLE` with `blockers` (including `WALLET_DEBT` with `owedKobo` and `limitKobo`)                                                                                          |
 | POST   | `/v1/driver/location`           | `{ points: [...] }` (1–500, e.g. buffered while offline) → `{ position, stored }`. The newest reading becomes the position; older ones never move the driver back. Readings taken during a ride are kept as its history (`stored` counts them); readings over 48 h old are dropped. 60 requests a minute |
 | GET    | `/v1/driver/offers/current`     | `{ offer }`: pickup, dropoff, distance to pickup, trip distance and time, fare, estimated earnings, `expiresAt` (15 s)                                                                                                                                                                                   |
 | POST   | `/v1/driver/offers/:id/accept`  | `DriverRideView`. `409 OFFER_UNAVAILABLE` if expired, answered, or another driver got the ride                                                                                                                                                                                                           |
@@ -458,7 +469,7 @@ Statuses: `requested` (scheduled) → `searching` → `driver_assigned` →
 | GET    | `/v1/driver/rides`              | History with `earnings` (fare, booking fee, commission, net)                                                                                                                                                                                                                                             |
 | POST   | `/v1/driver/rides/:id/arrived`  |                                                                                                                                                                                                                                                                                                          |
 | POST   | `/v1/driver/rides/:id/start`    | Adds the waiting charge if the driver waited beyond the free minutes                                                                                                                                                                                                                                     |
-| POST   | `/v1/driver/rides/:id/complete` | `{ cashCollectedKobo }`. Records the cash payment and the commission owed                                                                                                                                                                                                                                |
+| POST   | `/v1/driver/rides/:id/complete` | `{ cashCollectedKobo }` (cash trips; send 0 otherwise). Settles the fare: on cash trips the booking fee and commission come from the driver's wallet; wallet and card trips credit the driver's earnings to it                                                                                           |
 | POST   | `/v1/driver/rides/:id/cancel`   | `{ reason: passenger_no_show\|vehicle_problem\|safety_concern\|other, note? }`. A no-show needs 5 minutes' wait at the pickup and charges the passenger the cancellation fee                                                                                                                             |
 
 Steps out of order return `409 INVALID_STATE`; other drivers' rides return `404`.
@@ -504,6 +515,71 @@ own rides.
 
 Events sent while a client is offline are not replayed: refetch state (for
 example `GET /v1/rides/active`) after reconnecting.
+
+## Payments (Phase 5)
+
+All amounts are kobo. Paying happens on the provider's page: create a checkout,
+open `checkoutUrl` (browser or in-app browser), and when the payer comes back
+check the payment with `GET /v1/payments/:id?refresh=1`. The app's return is never
+taken as proof of payment; the provider's answer is.
+
+### Passenger wallet, cards and disputes
+
+| Method | Path                      | Notes                                                                                                                                                                                         |
+| ------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/wallet`              | `{ balanceKobo, owedKobo, heldKobo, limits }`                                                                                                                                                 |
+| GET    | `/v1/wallet/transactions` | Lines, newest first, `cursor` paging: `{ kind, amountKobo (+ in / − out), balanceAfterKobo, rideId, memo, createdAt }`                                                                        |
+| POST   | `/v1/wallet/topups`       | **`Idempotency-Key` required.** `{ amountKobo, returnTo: "web" \| "app" }` → `201 { payment, checkoutUrl }`. Errors: `VALIDATION_FAILED` (`details.minKobo/maxKobo`), `WALLET_LIMIT_EXCEEDED` |
+| GET    | `/v1/payments/:id`        | The payer's payment. `?refresh=1` asks the provider first if it is still pending                                                                                                              |
+| GET    | `/v1/payment-cards`       | Saved cards: `{ id, brand, last4, expMonth, expYear, bank, expired }`                                                                                                                         |
+| POST   | `/v1/payment-cards`       | **`Idempotency-Key` required.** `{ returnTo }` → checkout for a small charge (₦50) that saves the card and goes into the wallet                                                               |
+| DELETE | `/v1/payment-cards/:id`   | `204`                                                                                                                                                                                         |
+| POST   | `/v1/rides/:id/dispute`   | `{ reason: overcharged \| wrong_route \| ride_did_not_happen \| driver_behaviour \| charged_twice \| other, details? }` → `201 DisputeView`. Once per ride, within 30 days                    |
+| GET    | `/v1/rides/:id/dispute`   | The passenger's report and its outcome                                                                                                                                                        |
+
+Payment statuses: `pending` (waiting for the provider), `succeeded`, `collected`
+(cash), `outstanding` (owed: `outstandingKobo`), `failed`, `abandoned`.
+
+### Driver wallet and payouts
+
+| Method | Path                             | Notes                                                                                                                                                        |
+| ------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/v1/driver/wallet`              | `{ balanceKobo (negative = owed), debtLimitKobo, canGoOnline, payout: { minKobo, availableKobo, pausedUntil, account }, earnings: { today, week }, limits }` |
+| GET    | `/v1/driver/wallet/transactions` | As for passengers                                                                                                                                            |
+| POST   | `/v1/driver/wallet/topups`       | **`Idempotency-Key` required.** As for passengers (to clear what is owed)                                                                                    |
+| GET    | `/v1/driver/payouts`             | `{ id, amountKobo, feeKobo, status: pending \| processing \| succeeded \| failed \| reversed, account, failureReason, requestedAt, completedAt }`            |
+| POST   | `/v1/driver/payouts`             | **`Idempotency-Key` required.** `{ amountKobo }`. Errors: `PAYOUT_UNAVAILABLE`, `PAYOUT_ACCOUNT_RECENTLY_CHANGED`                                            |
+
+`earnings.today` and `.week` (Nigerian time, weeks from Monday): `trips`,
+`earningsKobo` (kept), `commissionKobo`, `bookingFeesKobo`, `cashCollectedKobo`.
+
+### Webhooks
+
+`POST /v1/webhooks/paystack` (public). Set it as the webhook URL in the Paystack
+dashboard. Requests must carry `x-paystack-signature`, the HMAC-SHA512 of the raw
+body with the secret key, or are refused with `401 WEBHOOK_SIGNATURE_INVALID`.
+Handled events: `charge.success`, `transfer.success`, `transfer.failed`,
+`transfer.reversed`, `refund.processed`, `refund.failed`, `charge.dispute.create`,
+`charge.dispute.resolve`; others are stored and ignored. Repeats are ignored.
+
+With `PAYMENT_PROVIDER=fake`, `GET /v1/dev/fake-checkout/:reference` is a test
+payment page (buttons: pay, pay with a card that declines later charges, decline,
+cancel). It answers 404 otherwise.
+
+### Admin
+
+| Method | Path                                     | Permission      | Notes                                                                                                                                       |
+| ------ | ---------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/admin/payments`                     | payments.read   | Filter by `payerId`, `rideId`, `status`                                                                                                     |
+| GET    | `/v1/admin/payments/:id/refunds`         | payments.read   |                                                                                                                                             |
+| POST   | `/v1/admin/payments/:id/refunds`         | payments.refund | **`Idempotency-Key` required.** `{ amountKobo, destination: wallet \| card, fundedBy: platform \| driver, reason, disputeId? }`. Audited    |
+| GET    | `/v1/admin/disputes`                     | payments.read   | `?status=open\|refunded\|rejected\|won\|lost`                                                                                               |
+| POST   | `/v1/admin/disputes/:id/resolve`         | payments.refund | `{ outcome: "refund", amountKobo, destination?, fundedBy?, note }` or `{ outcome: "reject", note }`. Audited                                |
+| GET    | `/v1/admin/payouts`                      | payments.read   | `?status=`                                                                                                                                  |
+| POST   | `/v1/admin/payouts/:id/retry`            | payouts.manage  | Sends a payout that never reached the provider. Audited                                                                                     |
+| GET    | `/v1/admin/users/:id/wallets`            | payments.read   | Both wallets with recent lines                                                                                                              |
+| POST   | `/v1/admin/users/:id/wallet-adjustments` | wallets.adjust  | **`Idempotency-Key` required.** `{ amountKobo (+ credit / − debit), kind: passenger \| driver, reason }`, against platform revenue. Audited |
+| GET    | `/v1/admin/ledger`                       | payments.read   | Platform account balances and the number of wallets whose balance differs from their lines (should be 0)                                    |
 
 ## Command line (operators)
 

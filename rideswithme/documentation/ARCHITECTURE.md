@@ -9,7 +9,7 @@
  fleet-portal ─────┤   Socket.IO /realtime        (NestJS)   ├─ Redis
                    │                                 ▲       │   (OTP, rate limits, live positions, locks)
  admin browser ──► admin-dashboard server ───────────┤       ├─ SMS gateway (Termii, behind SmsProvider)
- passenger browser ► passenger-web server ───────────┘       ├─ Paystack (Phase 5)
+ passenger browser ► passenger-web server ───────────┘       ├─ Paystack (payments, transfers, webhooks)
                    (Next.js; hold the user's tokens;         │
                     browsers open Socket.IO with a ticket)   │
                                                              ├─ Google Maps (Phase 3)
@@ -27,7 +27,7 @@ order.
 
 | Path                        | Purpose                                                                         | State                                 |
 | --------------------------- | ------------------------------------------------------------------------------- | ------------------------------------- |
-| `apps/api`                  | NestJS API                                                                      | Phases 1-4 built                      |
+| `apps/api`                  | NestJS API                                                                      | Phases 1-5 built                      |
 | `apps/admin-dashboard`      | Next.js admin dashboard (driver verification so far)                            | Phase 2 built; full dashboard Phase 6 |
 | `apps/driver-mobile`        | Expo driver app: onboarding, requests, trips, background location               | Phases 2-4 built                      |
 | `apps/passenger-mobile`     | Expo passenger app: map, booking, live trip, receipts                           | Phases 3-4 built                      |
@@ -50,24 +50,25 @@ Dependency rule: apps depend on packages; packages never depend on apps;
 
 ## API structure (`apps/api/src`)
 
-| Module     | Responsibility                                                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `config`   | Reads and validates every environment variable at startup (zod); refuses to start on bad config                                            |
-| `database` | Kysely over a `pg` pool; table types in `types.ts`                                                                                         |
-| `redis`    | ioredis client                                                                                                                             |
-| `common`   | Error type and filter, zod pipe, rate limiter, field encryption, request context, cursors                                                  |
-| `sms`      | `SmsProvider` interface; console and Termii implementations                                                                                |
-| `audit`    | Writes `audit_logs` rows, inside the caller's transaction when given one                                                                   |
-| `auth`     | OTP, sessions and refresh rotation, JWTs, TOTP, global guards                                                                              |
-| `users`    | Current-user profile; role/permission loading                                                                                              |
-| `admin`    | User search, roles, suspension, audit log reading                                                                                          |
-| `health`   | Liveness and readiness                                                                                                                     |
-| `storage`  | Private S3-compatible storage: presigned uploads with content checks, short-lived view links                                               |
-| `drivers`  | Driver applications, documents, eligibility, admin review                                                                                  |
-| `maps`     | `MapsProvider` (Google, or an offline fake): place search, details, reverse geocoding, routes                                              |
-| `pricing`  | Service areas, fare rules, the fare engine and quotes                                                                                      |
-| `rides`    | Booking, matching and dispatch, the ride state machine, cash completion, driver presence, location ingestion and history, partition upkeep |
-| `realtime` | Socket.IO gateway, notifier, connection authentication and session sweep                                                                   |
+| Module     | Responsibility                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config`   | Reads and validates every environment variable at startup (zod); refuses to start on bad config                                                         |
+| `database` | Kysely over a `pg` pool; table types in `types.ts`                                                                                                      |
+| `redis`    | ioredis client                                                                                                                                          |
+| `common`   | Error type and filter, zod pipe, rate limiter, field encryption, request context, cursors                                                               |
+| `sms`      | `SmsProvider` interface; console and Termii implementations                                                                                             |
+| `audit`    | Writes `audit_logs` rows, inside the caller's transaction when given one                                                                                |
+| `auth`     | OTP, sessions and refresh rotation, JWTs, TOTP, global guards                                                                                           |
+| `users`    | Current-user profile; role/permission loading                                                                                                           |
+| `admin`    | User search, roles, suspension, audit log reading                                                                                                       |
+| `health`   | Liveness and readiness                                                                                                                                  |
+| `storage`  | Private S3-compatible storage: presigned uploads with content checks, short-lived view links                                                            |
+| `drivers`  | Driver applications, documents, eligibility, admin review                                                                                               |
+| `maps`     | `MapsProvider` (Google, or an offline fake): place search, details, reverse geocoding, routes                                                           |
+| `pricing`  | Service areas, fare rules, the fare engine and quotes                                                                                                   |
+| `rides`    | Booking, matching and dispatch, the ride state machine, cash completion, driver presence, location ingestion and history, partition upkeep              |
+| `realtime` | Socket.IO gateway, notifier, connection authentication and session sweep                                                                                |
+| `payments` | Ledger, payment provider (Paystack or fake), webhooks, top-ups and cards, ride payments, payouts, refunds, disputes, reconciliation, admin payment APIs |
 
 ### Request lifecycle
 
@@ -206,7 +207,41 @@ httpOnly cookie, refreshes them, and forwards an allow-list of API paths. Pages
 are client components using the shared typed API client. Each request gets a
 nonce-based Content-Security-Policy.
 
+## Payments (Phase 5)
+
+```
+passenger / driver ── POST checkout ──► api ── initialize ──► Paystack (or fake)
+        │                                                        │
+        └── pays on the provider's page ◄── checkoutUrl ──────────┘
+Paystack ── signed webhook ──► /v1/webhooks/paystack ── stored once ──► apply (ledger journal)
+app returns ── GET /v1/payments/:id?refresh=1 ──► api asks the provider (server to server)
+
+ride booked (wallet)  ─► hold: passenger wallet → ride_holds
+ride completed        ─► cash: driver wallet → platform_revenue (booking fee + commission)
+                         wallet: ride_holds (+ wallet) → driver wallet + platform_revenue
+                         card: passenger_receivables → driver wallet + platform_revenue;
+                               then charge the card: Paystack → passenger_receivables
+payout                ─► driver wallet → payouts_in_transit → (transfer succeeds) Paystack
+reconciliation job    ─► pending payments/payouts checked with the provider, holds released,
+                         every wallet's balance checked against its lines
+```
+
+- `apps/api/src/payments`: `LedgerService` is the only way code moves money; the
+  database enforces the rules (DECISIONS D-047). `PaymentProvider` has Paystack
+  and fake implementations. `RidePaymentsService` runs inside the ride's own
+  transaction, so a ride's status and its money always change together.
+- The apps open the provider's page (website: a redirect; phone apps: the system
+  browser through `runCheckout` in `@rideswithme/mobile-core`) and then ask the API
+  for the outcome. How a ride was paid is described by one shared rule
+  (`paymentSummary` in `@rideswithme/utilities`).
+
 ## Planned shape of later phases
 
-- **Payments (Phase 5):** Paystack webhooks verified by signature are the source of
-  truth; wallets are a double-entry ledger with balances derived from it.
+- **Admin and fleet (Phase 6):** dashboard screens on the existing admin APIs
+  (rides, pricing, service areas, payments, refunds, disputes, payouts) and the
+  fleet portal, both on `@rideswithme/web-core`.
+- **Buses (Phase 7):** seats held with short-lived locks and booked in a transaction
+  with a unique constraint per seat and departure, paid through the same ledger.
+- **Safety and launch (Phase 8):** SOS alerts over the realtime connection with
+  priority handling, monitoring (including the ledger and partition checks), backups,
+  load tests and store builds.

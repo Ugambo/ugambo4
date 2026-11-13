@@ -7,24 +7,27 @@ bottom. Each entry says what was decided, why, and how to change it.
 
 These need your answer or awareness. Work continues on the stated assumption.
 
-| #    | Issue                                                                                                                                                                                                                                                         | What I did / propose                                                                                                                                                                                                                                                                                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B-1  | The brief says "an empty repository", but `ugambo/ugambo4` already contains the Explore Katsina WordPress project.                                                                                                                                            | Built RideswithMe in `rideswithme/` (the root folder name the brief uses) and left Explore Katsina untouched. Moving it to its own repository later is a folder copy; CI already only runs on `rideswithme/**` changes.                                                                                 |
-| B-2  | Section 2 refers to the phases as section 14 and the open decisions as section 15. They are sections 15 and 16 (14 is UI direction).                                                                                                                          | Assumed the obvious intent.                                                                                                                                                                                                                                                                             |
-| B-3  | "Masked calling" needs a voice/telephony provider (number proxying). None is in the stack.                                                                                                                                                                    | Proposal: a `VoiceProxyProvider` interface like the SMS one, with a vendor chosen before Phase 3 call buttons ship. Until then the call button can be hidden by configuration. **Needs a vendor decision.**                                                                                             |
-| B-4  | Email is collected at registration but there is no email provider in the stack, so addresses cannot be verified.                                                                                                                                              | Email is stored and marked unverified (`email_verified_at` is null). Verification needs a transactional email vendor. **Needs a vendor decision** (any SMTP or API vendor; behind an interface).                                                                                                        |
-| B-5  | 99.9% availability (about 8.7 hours of downtime a year, maintenance included) is not realistic on a single VPS with Docker: one host failure or one OS upgrade can use most of it.                                                                            | For launch, either (a) two API hosts behind a load balancer plus managed PostgreSQL with point-in-time recovery, or (b) accept a lower target (99.5%) for the single-VPS launch. Decide before Phase 8. The API is already stateless so (a) needs no code change.                                       |
-| B-6  | Bus seats: "unique constraint on schedule + seat" plus holds that expire. A plain unique constraint would block re-selling a seat whose hold expired or whose booking was cancelled.                                                                          | Phase 7 will use a partial unique index over active rows (held or confirmed), with expired holds moved to `expired` by a job and re-checked under a row lock at payment time. Same guarantee, seats become sellable again.                                                                              |
-| B-7  | Hausa uses ƙ, ɗ and ɓ, which force SMS into UCS-2 encoding: 70 characters per segment instead of 160. The Hausa OTP message is two segments, roughly double the cost of the English one.                                                                      | Kept correct spelling. Alternatives: shorten the Hausa message to fit one UCS-2 segment, or send OTP SMS in English for everyone. **Your call.**                                                                                                                                                        |
-| B-8  | The payout form needs the full list of Nigerian banks and fintech accounts (OPay, Moniepoint, PalmPay, Kuda and others that many drivers use), with their codes, and a check that the account name matches. Neither exists until Paystack arrives in Phase 5. | Phase 2 offers 15 major banks (placeholder list in the driver app) and stores what the driver types. Phase 5 replaces the list with Paystack's bank list and verifies the account name before any payout.                                                                                               |
-| B-9  | Nothing in the stack verifies a NIN against NIMC records. Reviewers can only compare the number with the NIN slip by eye.                                                                                                                                     | Proposal: an identity-verification vendor (e.g. Prembly/IdentityPass, Smile ID, VerifyMe, Dojah) behind an interface, checking NIN, name, photo and licence before approval. **Needs a vendor decision**; can be added any time before launch.                                                          |
-| B-10 | Which documents each vehicle type needs is not in the brief (and some permits differ by state).                                                                                                                                                               | Defaults in DECISIONS D-026, editable as data. **Please confirm or correct them**, especially for Keke Napep and motorcycles in the launch city.                                                                                                                                                        |
-| B-11 | CI has not run on GitHub yet: the first run failed within 3 seconds with no logs, which means GitHub never gave it a runner (an account setting, e.g. Actions billing or spending limit, or Actions disabled for this private repository).                    | Check the run at github.com/Ugambo/ugambo4/actions. Everything CI runs also ran locally before each commit.                                                                                                                                                                                             |
-| B-12 | Real maps need Google Maps Platform keys: a server key (Places API (New), Geocoding, Routes) and an Android Maps SDK key for the passenger app's map. None is configured.                                                                                     | Development and tests use an offline fake (demo places, straight-line routes). **Please create the two keys** (restricted by API and by server IP / app signature); they go in `GOOGLE_MAPS_API_KEY` and `GOOGLE_MAPS_ANDROID_API_KEY`. The Google adapter is unit-tested but has not been called live. |
-| B-13 | Fare values are not in the brief.                                                                                                                                                                                                                             | Placeholder fares are seeded for every vehicle type (D-034). **Please supply real base, per-km, per-minute, minimum, booking, waiting and cancellation fees and commission per vehicle type** before launch.                                                                                            |
-| B-14 | The launch city's boundary is needed as a polygon.                                                                                                                                                                                                            | `seed-city` creates a rectangle for development. For launch, send the boundary (GeoJSON, or draw it in Phase 6's admin map) and it is loaded through `PUT /v1/admin/service-areas`.                                                                                                                     |
-| B-15 | Passenger web booking (brief section 5) was planned for Phase 3.                                                                                                                                                                                              | Moved to Phase 4: its trip screens need the live updates Phase 4 adds, and building them on polling first would mean writing them twice. Mobile booking is complete in Phase 3.                                                                                                                         |
-| B-16 | The brief asks for Google Maps; the passenger website needs a browser Maps JavaScript key, which is separate from the server key.                                                                                                                             | Until one is supplied, the website draws a to-scale route sketch (pickup, destination, route, driver) instead of a street map. Adding the map later changes one component. Please provide a browser key restricted to the website's domain.                                                             |
+| #    | Issue                                                                                                                                                                                                                                                         | What I did / propose                                                                                                                                                                                                                                                                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B-1  | The brief says "an empty repository", but `ugambo/ugambo4` already contains the Explore Katsina WordPress project.                                                                                                                                            | Built RideswithMe in `rideswithme/` (the root folder name the brief uses) and left Explore Katsina untouched. Moving it to its own repository later is a folder copy; CI already only runs on `rideswithme/**` changes.                                                                                                                                   |
+| B-2  | Section 2 refers to the phases as section 14 and the open decisions as section 15. They are sections 15 and 16 (14 is UI direction).                                                                                                                          | Assumed the obvious intent.                                                                                                                                                                                                                                                                                                                               |
+| B-3  | "Masked calling" needs a voice/telephony provider (number proxying). None is in the stack.                                                                                                                                                                    | Proposal: a `VoiceProxyProvider` interface like the SMS one, with a vendor chosen before Phase 3 call buttons ship. Until then the call button can be hidden by configuration. **Needs a vendor decision.**                                                                                                                                               |
+| B-4  | Email is collected at registration but there is no email provider in the stack, so addresses cannot be verified.                                                                                                                                              | Email is stored and marked unverified (`email_verified_at` is null). Verification needs a transactional email vendor. **Needs a vendor decision** (any SMTP or API vendor; behind an interface).                                                                                                                                                          |
+| B-5  | 99.9% availability (about 8.7 hours of downtime a year, maintenance included) is not realistic on a single VPS with Docker: one host failure or one OS upgrade can use most of it.                                                                            | For launch, either (a) two API hosts behind a load balancer plus managed PostgreSQL with point-in-time recovery, or (b) accept a lower target (99.5%) for the single-VPS launch. Decide before Phase 8. The API is already stateless so (a) needs no code change.                                                                                         |
+| B-6  | Bus seats: "unique constraint on schedule + seat" plus holds that expire. A plain unique constraint would block re-selling a seat whose hold expired or whose booking was cancelled.                                                                          | Phase 7 will use a partial unique index over active rows (held or confirmed), with expired holds moved to `expired` by a job and re-checked under a row lock at payment time. Same guarantee, seats become sellable again.                                                                                                                                |
+| B-7  | Hausa uses ƙ, ɗ and ɓ, which force SMS into UCS-2 encoding: 70 characters per segment instead of 160. The Hausa OTP message is two segments, roughly double the cost of the English one.                                                                      | Kept correct spelling. Alternatives: shorten the Hausa message to fit one UCS-2 segment, or send OTP SMS in English for everyone. **Your call.**                                                                                                                                                                                                          |
+| B-8  | The payout form needs the full list of Nigerian banks and fintech accounts (OPay, Moniepoint, PalmPay, Kuda and others that many drivers use), with their codes, and a check that the account name matches. Neither exists until Paystack arrives in Phase 5. | Phase 2 offers 15 major banks (placeholder list in the driver app) and stores what the driver types. Phase 5 replaces the list with Paystack's bank list and verifies the account name before any payout.                                                                                                                                                 |
+| B-9  | Nothing in the stack verifies a NIN against NIMC records. Reviewers can only compare the number with the NIN slip by eye.                                                                                                                                     | Proposal: an identity-verification vendor (e.g. Prembly/IdentityPass, Smile ID, VerifyMe, Dojah) behind an interface, checking NIN, name, photo and licence before approval. **Needs a vendor decision**; can be added any time before launch.                                                                                                            |
+| B-10 | Which documents each vehicle type needs is not in the brief (and some permits differ by state).                                                                                                                                                               | Defaults in DECISIONS D-026, editable as data. **Please confirm or correct them**, especially for Keke Napep and motorcycles in the launch city.                                                                                                                                                                                                          |
+| B-11 | CI has not run on GitHub yet: the first run failed within 3 seconds with no logs, which means GitHub never gave it a runner (an account setting, e.g. Actions billing or spending limit, or Actions disabled for this private repository).                    | Check the run at github.com/Ugambo/ugambo4/actions. Everything CI runs also ran locally before each commit.                                                                                                                                                                                                                                               |
+| B-12 | Real maps need Google Maps Platform keys: a server key (Places API (New), Geocoding, Routes) and an Android Maps SDK key for the passenger app's map. None is configured.                                                                                     | Development and tests use an offline fake (demo places, straight-line routes). **Please create the two keys** (restricted by API and by server IP / app signature); they go in `GOOGLE_MAPS_API_KEY` and `GOOGLE_MAPS_ANDROID_API_KEY`. The Google adapter is unit-tested but has not been called live.                                                   |
+| B-13 | Fare values are not in the brief.                                                                                                                                                                                                                             | Placeholder fares are seeded for every vehicle type (D-034). **Please supply real base, per-km, per-minute, minimum, booking, waiting and cancellation fees and commission per vehicle type** before launch.                                                                                                                                              |
+| B-14 | The launch city's boundary is needed as a polygon.                                                                                                                                                                                                            | `seed-city` creates a rectangle for development. For launch, send the boundary (GeoJSON, or draw it in Phase 6's admin map) and it is loaded through `PUT /v1/admin/service-areas`.                                                                                                                                                                       |
+| B-15 | Passenger web booking (brief section 5) was planned for Phase 3.                                                                                                                                                                                              | Moved to Phase 4: its trip screens need the live updates Phase 4 adds, and building them on polling first would mean writing them twice. Mobile booking is complete in Phase 3.                                                                                                                                                                           |
+| B-16 | The brief asks for Google Maps; the passenger website needs a browser Maps JavaScript key, which is separate from the server key.                                                                                                                             | Until one is supplied, the website draws a to-scale route sketch (pickup, destination, route, driver) instead of a street map. Adding the map later changes one component. Please provide a browser key restricted to the website's domain.                                                                                                               |
+| B-17 | Holding passengers' money in a wallet is regulated in Nigeria (CBN rules on stored value and e-money).                                                                                                                                                        | The wallet is built (as the brief asks) with a balance limit like a tier-1 account (₦300,000, `WALLET_MAX_BALANCE_KOBO`), no cash-out for passengers, and a full ledger. **Before launch, confirm with a lawyer whether RideswithMe needs a licence or a licensed partner (e.g. holding the funds through Paystack or a bank) and what KYC tiers apply.** |
+| B-18 | The brief does not say who pays Paystack's fees (1.5% + ₦100 per card payment, ₦10–₦50 per transfer).                                                                                                                                                         | The platform absorbs them: wallets are credited the full amount paid and drivers receive the full payout; fees are recorded in their own account (`provider_fees`) so their cost is visible. Passing fees on would be a change to the top-up and payout amounts. Please confirm.                                                                          |
+| B-19 | Who receives a cancellation fee is not in the brief.                                                                                                                                                                                                          | The driver who was on the way, less the platform's commission at the ride's rate (the same split as a fare). Please confirm, or say if the platform should keep it all.                                                                                                                                                                                   |
 
 ## Decision log
 
@@ -492,3 +495,114 @@ Request/Response, no Next.js dependency) and, at `/client`, their API client,
 translations and loading/error/offline states; base web styles are in
 `@rideswithme/ui-components/web.css`; `@rideswithme/e2e-support` starts the
 services for the websites' browser tests.
+
+### D-047 The ledger
+
+Money is recorded as double entry, as the brief asks: `wallets` holds every
+account (each passenger's and driver's wallet, and the platform's own accounts)
+and `wallet_transactions` holds the lines of each journal, debits positive and
+credits negative. The database, not application code, enforces the rules: a
+journal's lines must sum to zero and there must be at least two; lines can only
+be added in the transaction that created the journal; nothing can be updated or
+deleted; and a wallet's balance changes only through the trigger that inserts a
+line, which locks the wallet and refuses to take a passenger wallet below zero
+(so concurrent spends can never overdraw it). The balance stored on the wallet is
+the running total of its lines, kept by that trigger, and
+`ledger_balance_mismatches()` checks it; the reconciliation job runs the check.
+
+Platform accounts: `paystack_balance` (our money at Paystack), `passenger_receivables`
+(fares and fees passengers still owe), `provider_fees` (Paystack's fees),
+`platform_revenue` (booking fees and commission), `ride_holds` (wallet money held
+for rides in progress), `payouts_in_transit` and `refunds_in_transit`. Every
+journal has a unique reference naming the business event (for example
+`ride:<id>:settle`), so posting the same event twice does nothing. The API locks
+wallets in a fixed order so concurrent journals cannot deadlock.
+
+### D-048 Paystack and the fake provider
+
+Paystack sits behind a `PaymentProvider` interface (checkout, verify, charge a
+saved card, transfer recipients, transfers, refunds, webhook signature and
+parsing). Development and tests use a fake that behaves the same way: it keeps its
+state in Redis, serves a test checkout page at `/v1/dev/fake-checkout/<reference>`,
+uses Paystack's fee schedule, and sends Paystack-shaped webhooks signed with its
+own key into the real webhook handler. The fake is refused in production.
+
+Our payment id is the provider's reference, so every answer maps to one row.
+Results are only ever taken from the provider (a signed webhook, or a
+server-to-server verify or charge call); the app's return from the checkout page
+only prompts the server to ask. A charge whose amount differs from what we asked
+for is never credited and is flagged for a person.
+
+### D-049 Webhooks
+
+`POST /v1/webhooks/paystack` checks the HMAC-SHA512 signature over the exact bytes
+received (the raw body is kept for that route only), and optionally the source IP.
+Each valid event is stored once (`payment_webhook_events`, unique per event) and
+processed idempotently. If processing fails, the event is kept and retried by the
+reconciliation job, and Paystack still gets 200 so it does not keep resending.
+
+### D-050 Paying for rides
+
+- **Cash:** the driver keeps the fare. At completion the booking fee and commission
+  are debited from the driver's wallet, which may go negative. A driver owing more
+  than `DRIVER_DEBT_LIMIT_KOBO` (₦5,000) cannot go online until they top up their
+  wallet.
+- **Wallet:** the quoted price is held at booking (refused if the balance is too
+  low). At completion the final price (including any waiting charge) is taken from
+  the hold, then from the wallet; the rest of the hold goes back.
+- **Card:** a saved card is charged after the trip, outside the ride's transaction.
+  If the provider cannot be reached the payment stays pending and the
+  reconciliation job retries with the same reference.
+- In every case the driver's share and the platform's fees are credited when the
+  trip completes. If the passenger cannot pay (card declined, wallet short), the
+  platform carries the risk and the passenger owes the difference.
+
+### D-051 Money owed
+
+What a passenger owes (a declined card, a wallet shortfall, a cash cancellation
+fee) is recorded as `outstanding` on the payment and as a receivable in the
+ledger. It is taken from the wallet automatically whenever there is money there
+(after every top-up, and at once when it arises), and the passenger cannot book
+another ride until it is paid. If a card payment arrives late for something
+already paid from the wallet, that amount goes back to the wallet.
+
+### D-052 Saving a card
+
+A card is saved by a small checkout (`CARD_LINK_AMOUNT_KOBO`, ₦50) whose amount
+goes into the passenger's wallet, so nothing is lost. Paystack's reusable
+authorization code is stored field-encrypted; the same card saved twice (same
+Paystack signature) stays one card. Cards are never saved from ordinary top-ups.
+
+### D-053 Payouts
+
+Drivers withdraw their positive balance to the bank account from their application
+(`PAYOUT_MIN_KOBO`, one payout at a time). The amount leaves the wallet when
+requested; the transfer is sent after that commits; a failed or reversed transfer
+puts the money back. Withdrawals pause for `PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS` (24)
+after the bank account is replaced, against account takeover. Paystack transfers
+need "Disable OTP for transfers" on the Paystack account; scheduled automatic
+payouts can be added later.
+
+### D-054 Refunds, disputes and chargebacks
+
+Staff with `payments.refund` refund all or part of what was paid for a ride: to the
+wallet (at once) or to the original card (through Paystack). A refund is paid from
+platform revenue or, where the driver was at fault, from the driver's wallet; the
+total can never exceed what was paid. A card refund Paystack refuses outright is
+undone; one that fails later is credited to the wallet instead. Passengers can
+report a problem with a fare once per ride, within `DISPUTE_WINDOW_DAYS` (30);
+staff resolve it with a refund or a written reason. Card chargebacks from Paystack
+are recorded; a lost chargeback is taken from platform revenue (staff can recover it
+from the driver with an adjustment). Refunds, dispute decisions, adjustments and
+payout retries are all in the audit log. Super admins can make manual wallet
+adjustments (`wallets.adjust`) with a reason. The screens for all of this arrive
+with the dashboard in Phase 6; the APIs are ready.
+
+### D-055 Reconciliation
+
+Every `PAYMENT_RECONCILE_INTERVAL_MINUTES` (5), one API copy asks the provider about
+payments and payouts pending longer than `PAYMENT_RECONCILE_AFTER_MINUTES` (10),
+retries card charges and transfers that never reached it, marks checkouts abandoned
+after `PAYMENT_ABANDON_AFTER_HOURS` (24), retries failed webhook processing, returns
+wallet holds left on finished rides, and logs an error if any wallet balance differs
+from its ledger lines.
