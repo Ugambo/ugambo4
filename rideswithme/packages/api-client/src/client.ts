@@ -1,4 +1,15 @@
 import type {
+  AdminRideDetail,
+  DashboardView,
+  DriverFleetView,
+  FareRuleView,
+  FleetDriverView,
+  FleetOverview,
+  FleetSummary,
+  FleetTripView,
+  LiveView,
+  RefundView,
+  ServiceAreaView,
   CheckoutView,
   DisputeView,
   DriverWalletView,
@@ -39,6 +50,15 @@ import type {
   VerifyOtpResponse,
 } from '@rideswithme/shared-types';
 import type {
+  AdminCancelRideInput,
+  CreateFleetInput,
+  FareRuleInput,
+  FleetTripsQuery,
+  ListAdminRidesQuery,
+  RefundInput,
+  ResolveDisputeInput,
+  ServiceAreaInput,
+  WalletAdjustmentInput,
   AddCardInput,
   PayoutRequestInput,
   RaiseDisputeInput,
@@ -265,6 +285,86 @@ export function createApiClient(options: ApiClientOptions) {
         }),
       listAuditLogs: (query: Partial<ListAuditLogsQuery> = {}) =>
         request<Paginated<AuditLogEntry>>('/v1/admin/audit-logs', { query }),
+      dashboard: () => request<DashboardView>('/v1/admin/dashboard'),
+      live: () => request<LiveView>('/v1/admin/live'),
+      rides: {
+        list: (query: Partial<ListAdminRidesQuery> = {}) =>
+          request<Paginated<RideView>>('/v1/admin/rides', { query: { ...query } }),
+        get: (id: string) => request<AdminRideDetail>(`/v1/admin/rides/${encodeURIComponent(id)}`),
+        cancel: (id: string, input: AdminCancelRideInput) =>
+          request<RideView>(`/v1/admin/rides/${encodeURIComponent(id)}/cancel`, {
+            method: 'POST',
+            body: input,
+          }),
+      },
+      pricing: {
+        serviceAreas: () => request<ServiceAreaView[]>('/v1/admin/service-areas'),
+        saveServiceArea: (input: ServiceAreaInput) =>
+          request<ServiceAreaView[]>('/v1/admin/service-areas', { method: 'PUT', body: input }),
+        fareRules: () => request<FareRuleView[]>('/v1/admin/fare-rules'),
+        saveFareRule: (area: string, category: string, input: FareRuleInput) =>
+          request<FareRuleView[]>(
+            `/v1/admin/fare-rules/${encodeURIComponent(area)}/${encodeURIComponent(category)}`,
+            { method: 'PUT', body: input },
+          ),
+      },
+      payments: {
+        list: (query: { payerId?: string; rideId?: string; status?: string } = {}) =>
+          request<PaymentView[]>('/v1/admin/payments', { query: { ...query } }),
+        refunds: (paymentId: string) =>
+          request<RefundView[]>(`/v1/admin/payments/${encodeURIComponent(paymentId)}/refunds`),
+        refund: (paymentId: string, input: RefundInput, idempotencyKey: string) =>
+          request<RefundView>(`/v1/admin/payments/${encodeURIComponent(paymentId)}/refunds`, {
+            method: 'POST',
+            body: input,
+            idempotencyKey,
+          }),
+        disputes: (status?: string) =>
+          request<DisputeView[]>('/v1/admin/disputes', { query: { status } }),
+        resolveDispute: (id: string, input: ResolveDisputeInput) =>
+          request<DisputeView>(`/v1/admin/disputes/${encodeURIComponent(id)}/resolve`, {
+            method: 'POST',
+            body: input,
+          }),
+        payouts: (status?: string) =>
+          request<PayoutView[]>('/v1/admin/payouts', { query: { status } }),
+        retryPayout: (id: string) =>
+          request<PayoutView>(`/v1/admin/payouts/${encodeURIComponent(id)}/retry`, {
+            method: 'POST',
+          }),
+        userWallets: (userId: string) =>
+          request<{
+            passenger: { balanceKobo: number; owedKobo: number; recent: WalletEntryView[] };
+            driver: { balanceKobo: number; recent: WalletEntryView[] };
+          }>(`/v1/admin/users/${encodeURIComponent(userId)}/wallets`),
+        adjustWallet: (userId: string, input: WalletAdjustmentInput, idempotencyKey: string) =>
+          request<{ balanceKobo: number }>(
+            `/v1/admin/users/${encodeURIComponent(userId)}/wallet-adjustments`,
+            { method: 'POST', body: input, idempotencyKey },
+          ),
+        ledger: () =>
+          request<{ accounts: Record<string, number>; mismatchedWallets: number }>(
+            '/v1/admin/ledger',
+          ),
+      },
+      fleets: {
+        list: () => request<FleetSummary[]>('/v1/admin/fleets'),
+        create: (input: CreateFleetInput) =>
+          request<FleetSummary>('/v1/admin/fleets', { method: 'POST', body: input }),
+        get: (id: string) => request<FleetSummary>(`/v1/admin/fleets/${encodeURIComponent(id)}`),
+        drivers: (id: string) =>
+          request<FleetDriverView[]>(`/v1/admin/fleets/${encodeURIComponent(id)}/drivers`),
+        addManager: (id: string, phone: string) =>
+          request<FleetSummary>(`/v1/admin/fleets/${encodeURIComponent(id)}/managers`, {
+            method: 'POST',
+            body: { phone },
+          }),
+        setStatus: (id: string, status: 'active' | 'suspended') =>
+          request<FleetSummary>(
+            `/v1/admin/fleets/${encodeURIComponent(id)}/${status === 'active' ? 'reactivate' : 'suspend'}`,
+            { method: 'POST' },
+          ),
+      },
       drivers: {
         list: (query: Partial<ListDriversQuery> = {}) =>
           request<Paginated<AdminDriverListItem>>('/v1/admin/drivers', { query }),
@@ -323,6 +423,44 @@ export function createApiClient(options: ApiClientOptions) {
         }),
       getDispute: (id: string) =>
         request<DisputeView>(`/v1/rides/${encodeURIComponent(id)}/dispute`),
+    },
+    fleet: {
+      overview: () => request<FleetOverview>('/v1/fleet'),
+      drivers: () => request<FleetDriverView[]>('/v1/fleet/drivers'),
+      driver: (id: string) =>
+        request<FleetDriverView>(`/v1/fleet/drivers/${encodeURIComponent(id)}`),
+      invite: (phone: string) =>
+        request<FleetDriverView>('/v1/fleet/drivers', { method: 'POST', body: { phone } }),
+      remove: (id: string) =>
+        request<void>(`/v1/fleet/drivers/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      vehicles: () =>
+        request<
+          {
+            driver: { userId: string; name: string | null };
+            category: string;
+            make: string;
+            model: string;
+            colour: string;
+            year: number;
+            plateNumber: string;
+          }[]
+        >('/v1/fleet/vehicles'),
+      trips: (query: Partial<FleetTripsQuery> = {}) =>
+        request<Paginated<FleetTripView>>('/v1/fleet/trips', { query: { ...query } }),
+    },
+    driverFleet: {
+      get: () => request<DriverFleetView>('/v1/driver/fleet'),
+      accept: (invitationId: string) =>
+        request<DriverFleetView>(
+          `/v1/driver/fleet-invitations/${encodeURIComponent(invitationId)}/accept`,
+          { method: 'POST' },
+        ),
+      decline: (invitationId: string) =>
+        request<DriverFleetView>(
+          `/v1/driver/fleet-invitations/${encodeURIComponent(invitationId)}/decline`,
+          { method: 'POST' },
+        ),
+      leave: () => request<DriverFleetView>('/v1/driver/fleet/leave', { method: 'POST' }),
     },
     wallet: {
       get: () => request<WalletView>('/v1/wallet'),

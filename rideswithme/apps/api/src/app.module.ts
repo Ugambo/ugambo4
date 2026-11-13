@@ -13,6 +13,7 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { DriversModule } from './drivers/drivers.module';
 import { HealthModule } from './health/health.module';
+import { FleetsModule } from './fleets/fleets.module';
 import { MapsModule } from './maps/maps.module';
 import { PaymentsModule } from './payments/payments.module';
 import { RedisModule } from './redis/redis.module';
@@ -69,6 +70,7 @@ export class AppModule {
         DriversModule,
         MapsModule,
         PaymentsModule,
+        FleetsModule,
         RidesModule,
         HealthModule,
       ],

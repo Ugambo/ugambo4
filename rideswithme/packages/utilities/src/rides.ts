@@ -30,6 +30,7 @@ export function ridePhase(ride: Pick<RideView, 'status' | 'scheduledFor'>): Ride
     cancelled_by_passenger: 'cancelled',
     cancelled_by_driver: 'cancelled',
     no_driver_found: 'no_driver',
+    cancelled_by_admin: 'cancelled',
   };
   return map[ride.status];
 }

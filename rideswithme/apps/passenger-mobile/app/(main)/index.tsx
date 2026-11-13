@@ -517,6 +517,7 @@ export default function Home() {
           <>
             <Title>{t('ride.cancelled')}</Title>
             {ride.status === 'cancelled_by_driver' && <Body>{t('ride.cancelledByDriver')}</Body>}
+            {ride.status === 'cancelled_by_admin' && <Body>{t('ride.cancelledByAdmin')}</Body>}
             {ride.fare.cancellationFeeKobo > 0 && (
               <>
                 <FareLines ride={ride} />

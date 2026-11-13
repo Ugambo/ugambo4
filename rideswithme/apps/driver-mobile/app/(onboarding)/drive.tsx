@@ -5,7 +5,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '@rideswithme/api-client';
 import { formatDistance, formatDuration } from '@rideswithme/mobile-core';
-import type { DriverOfferView, DriverRideView, OnlineBlocker } from '@rideswithme/shared-types';
+import {
+  type DriverOfferView,
+  type DriverRideView,
+  isTerminalRideStatus,
+  type OnlineBlocker,
+} from '@rideswithme/shared-types';
 import { colors, radius, spacing, typography } from '@rideswithme/ui-components';
 import { formatKobo } from '@rideswithme/utilities';
 import { Body, Button, Card, ErrorText, Screen, Title } from '@/components/ui';
@@ -108,10 +113,7 @@ export default function Drive() {
   useRealtimeEvent<DriverRideView>(
     'ride:updated',
     useCallback((r: DriverRideView) => {
-      const ended =
-        r.status === 'completed' ||
-        r.status === 'cancelled_by_driver' ||
-        r.status === 'cancelled_by_passenger';
+      const ended = isTerminalRideStatus(r.status);
       if (ended) {
         setRide((current) => (current?.id === r.id ? null : current));
         setFinished((current) => current ?? r);

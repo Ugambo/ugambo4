@@ -86,6 +86,9 @@ export function LiveRide({
         {ride.status === 'cancelled_by_driver' && (
           <p className="notice notice-bad">{t('ride.cancelledByDriver')}</p>
         )}
+        {ride.status === 'cancelled_by_admin' && (
+          <p className="notice notice-bad">{t('ride.cancelledByAdmin')}</p>
+        )}
 
         {ride.driver && active && <DriverCard ride={ride} />}
         {age?.stale && active && (

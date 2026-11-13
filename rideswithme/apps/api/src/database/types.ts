@@ -611,4 +611,35 @@ export interface Database {
   payment_disputes: PaymentDisputesTable;
   refunds: RefundsTable;
   payment_webhook_events: PaymentWebhookEventsTable;
+  fleet_operators: FleetOperatorsTable;
+  fleet_members: FleetMembersTable;
+}
+
+export interface FleetOperatorsTable {
+  id: Generated<string>;
+  name: string;
+  status: ColumnType<
+    'active' | 'suspended',
+    'active' | 'suspended' | undefined,
+    'active' | 'suspended'
+  >;
+  contact_phone: string | null;
+  contact_email: string | null;
+  created_by: string | null;
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export interface FleetMembersTable {
+  id: Generated<string>;
+  fleet_id: string;
+  user_id: string;
+  member_role: 'manager' | 'driver';
+  status: 'invited' | 'active' | 'declined' | 'removed';
+  invited_by: string | null;
+  invited_at: ColumnType<Date, Date | string | undefined, never>;
+  responded_at: Timestamp | null;
+  removed_at: Timestamp | null;
+  removed_by: string | null;
+  updated_at: ColumnType<Date, never, never>;
 }

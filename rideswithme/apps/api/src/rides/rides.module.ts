@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { LocationService } from './location.service';
 import { MaintenanceService } from './maintenance.service';
+import { DashboardService } from './dashboard.service';
 import { TripLocationsService } from './trip-locations.service';
 import { PricingService } from '../pricing/pricing.service';
 import { AdminRidesController } from './admin-rides.controller';
@@ -33,6 +34,7 @@ import { RidesController } from './rides.controller';
     RealtimeAuthService,
     RealtimeGateway,
     MaintenanceService,
+    DashboardService,
   ],
   exports: [
     PricingService,

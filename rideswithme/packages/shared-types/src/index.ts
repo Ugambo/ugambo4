@@ -5,3 +5,4 @@ export * from './i18n';
 export * from './rides';
 export * from './roles';
 export * from './payments';
+export * from './fleets';

@@ -109,6 +109,48 @@ export class PresenceService {
     };
   }
 
+  /** Online flag and last position time for each driver (fleet portal, dashboards). */
+  async states(
+    driverIds: string[],
+  ): Promise<Map<string, { online: boolean; receivedAt: string | null }>> {
+    const out = new Map<string, { online: boolean; receivedAt: string | null }>();
+    if (driverIds.length === 0) return out;
+    const tx = this.redis.multi();
+    for (const id of driverIds) tx.hmget(presenceKey(id), 'online', 'receivedAt');
+    const rows = (await tx.exec()) ?? [];
+    driverIds.forEach((id, i) => {
+      const [, v] = rows[i] ?? [];
+      const [online, receivedAt] = (v as (string | null)[] | undefined) ?? [];
+      out.set(id, { online: online === '1', receivedAt: receivedAt ?? null });
+    });
+    return out;
+  }
+
+  /** Every online driver with a position (the admin live map). */
+  async onlineDrivers(): Promise<
+    { driverId: string; lat: number; lng: number; receivedAt: string }[]
+  > {
+    const ids = new Set<string>();
+    let cursor = '0';
+    do {
+      const [next, keys] = await this.redis.scan(cursor, 'MATCH', 'drivers:geo:*', 'COUNT', '100');
+      cursor = next;
+      for (const k of keys) for (const id of await this.redis.zrange(k, '0', '-1')) ids.add(id);
+    } while (cursor !== '0');
+    const out: { driverId: string; lat: number; lng: number; receivedAt: string }[] = [];
+    for (const id of ids) {
+      const s = await this.redis.hgetall(presenceKey(id));
+      if (s.online === '1' && s.lat && s.lng && s.receivedAt)
+        out.push({
+          driverId: id,
+          lat: Number(s.lat),
+          lng: Number(s.lng),
+          receivedAt: s.receivedAt,
+        });
+    }
+    return out;
+  }
+
   /**
    * Online drivers of a category within the radius, nearest first, whose last
    * position is fresh. Stale entries are removed from the index as they are found.

@@ -67,8 +67,8 @@ tested backups; rate limits on OTP, login and booking.
 | 2 Driver onboarding      | Driver registration, document upload, admin verification queue                               | Approved                                  |
 | 3 Core ride flow         | Location search, fare estimate, ride request, matching, state machine, cash                  | Approved (passenger web moved to Phase 4) |
 | 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness; passenger web booking          | Approved                                  |
-| 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              | **Built, awaiting approval**              |
-| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                |                                           |
+| 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              | Approved                                  |
+| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                | In progress                               |
 | 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          |                                           |
 | 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds |                                           |
 

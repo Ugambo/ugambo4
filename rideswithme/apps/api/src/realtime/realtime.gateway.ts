@@ -19,7 +19,7 @@ import { DB } from '../database/database.module';
 import type { Database } from '../database/types';
 import { LocationService } from '../rides/location.service';
 import { RealtimeAuthService, type RealtimeIdentity } from './realtime-auth.service';
-import { RealtimeNotifier, rideRoom, userRoom } from './realtime.notifier';
+import { OPS_ROOM, RealtimeNotifier, rideRoom, userRoom } from './realtime.notifier';
 
 type Ack = { ok: true; [k: string]: unknown } | { ok: false; code: string };
 
@@ -100,6 +100,16 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnAp
         identity.permissions.includes('rides.read'));
     if (!allowed) return { ok: false, code: ErrorCode.NOT_FOUND };
     await socket.join(rideRoom(rideId.data));
+    return { ok: true };
+  }
+
+  /** Staff (rides.read, after two-factor) receive every ride change and driver position. */
+  @SubscribeMessage('ops:subscribe')
+  async subscribeOps(@ConnectedSocket() socket: Socket): Promise<Ack> {
+    const identity = socket.data.identity as RealtimeIdentity;
+    if (!identity.permissions.includes('rides.read'))
+      return { ok: false, code: ErrorCode.FORBIDDEN };
+    await socket.join(OPS_ROOM);
     return { ok: true };
   }
 

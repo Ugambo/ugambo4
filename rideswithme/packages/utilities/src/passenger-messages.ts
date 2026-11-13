@@ -73,6 +73,9 @@ const en = {
   'status.cancelled_by_passenger': 'Cancelled',
   'status.cancelled_by_driver': 'Cancelled by driver',
   'status.no_driver_found': 'No driver found',
+  'status.cancelled_by_admin': 'Stopped by RideswithMe',
+  'ride.cancelledByAdmin':
+    'RideswithMe support stopped this ride. Contact support if you have questions.',
   'choose.payWith': 'Pay with',
   'pay.cash': 'Cash',
   'pay.wallet': 'Wallet ({amount})',
@@ -206,6 +209,9 @@ const ha: Record<PassengerMessageKey, string> = {
   'status.cancelled_by_passenger': 'An soke',
   'status.cancelled_by_driver': 'Direba ya soke',
   'status.no_driver_found': 'Ba a sami direba ba',
+  'status.cancelled_by_admin': 'RideswithMe ta dakatar',
+  'ride.cancelledByAdmin':
+    'Ma’aikatan RideswithMe sun dakatar da wannan tafiya. Tuntuɓi tallafi idan kuna da tambayoyi.',
   'choose.payWith': 'Biya da',
   'pay.cash': 'Kuɗi hannu',
   'pay.wallet': 'Walat ({amount})',

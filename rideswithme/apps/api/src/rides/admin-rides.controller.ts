@@ -1,14 +1,17 @@
-import { Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { type Kysely, sql } from 'kysely';
 import { Inject } from '@nestjs/common';
 import type {
+  DashboardView,
   FareRuleView,
+  LiveView,
   Paginated,
   RideEventView,
   RideView,
   ServiceAreaView,
 } from '@rideswithme/shared-types';
 import {
+  adminCancelRideSchema,
   fareRuleSchema,
   listAdminRidesQuerySchema,
   serviceAreaSchema,
@@ -22,6 +25,8 @@ import { zod } from '../common/zod-validation.pipe';
 import { DB } from '../database/database.module';
 import type { Database } from '../database/types';
 import { PricingService } from '../pricing/pricing.service';
+import { DashboardService } from './dashboard.service';
+import { RideService } from './ride.service';
 import { RideViewService } from './ride-view.service';
 
 const keyParam = z.string().regex(/^[a-z][a-z0-9_-]{1,40}$/);
@@ -33,7 +38,35 @@ export class AdminRidesController {
     private readonly pricing: PricingService,
     private readonly views: RideViewService,
     @Inject(DB) private readonly db: Kysely<Database>,
+    private readonly dashboard: DashboardService,
+    private readonly rideService: RideService,
   ) {}
+
+  @Get('dashboard')
+  @RequirePermissions('rides.read')
+  overview(): Promise<DashboardView> {
+    return this.dashboard.overview();
+  }
+
+  /** Online drivers and active rides. Changes then arrive over the realtime connection (ops:subscribe). */
+  @Get('live')
+  @RequirePermissions('rides.read')
+  live(): Promise<LiveView> {
+    return this.dashboard.live();
+  }
+
+  /** Stops a ride that cannot finish normally. Nobody is charged; audited. */
+  @Post('rides/:id/cancel')
+  @HttpCode(200)
+  @RequirePermissions('rides.manage')
+  cancelRide(
+    @CurrentPrincipal() p: Principal,
+    @Param('id', zod(uuidSchema)) id: string,
+    @Body(zod(adminCancelRideSchema)) body: z.output<typeof adminCancelRideSchema>,
+    @ReqContext() ctx: RequestContext,
+  ): Promise<RideView> {
+    return this.rideService.cancelByAdmin(p.userId, id, body.reason, ctx);
+  }
 
   @Get('service-areas')
   @RequirePermissions('rides.read')

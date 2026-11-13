@@ -152,6 +152,7 @@ const STATUS_TONE: Record<RideView['status'], string> = {
   cancelled_by_passenger: 'pill-muted',
   cancelled_by_driver: 'pill-bad',
   no_driver_found: 'pill-bad',
+  cancelled_by_admin: 'pill-bad',
 };
 
 export function StatusPill({ status }: { status: RideView['status'] }) {

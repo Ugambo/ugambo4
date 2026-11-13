@@ -69,6 +69,8 @@ export const RIDE_STATUSES = [
   'cancelled_by_passenger',
   'cancelled_by_driver',
   'no_driver_found',
+  /** Stopped by staff (e.g. a ride stuck after a phone was lost). */
+  'cancelled_by_admin',
 ] as const;
 export type RideStatus = (typeof RIDE_STATUSES)[number];
 
@@ -226,3 +228,10 @@ export interface ServiceAreaView {
   /** GeoJSON MultiPolygon. */
   boundary: { type: 'MultiPolygon'; coordinates: number[][][][] };
 }
+
+/** A ride as staff see it, with who took part and every event. */
+export type AdminRideDetail = RideView & {
+  passengerId: string;
+  driverId: string | null;
+  events: RideEventView[];
+};

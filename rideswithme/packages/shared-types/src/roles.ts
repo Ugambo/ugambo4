@@ -30,6 +30,10 @@ export const PERMISSION_KEYS = [
   'payments.refund',
   'payouts.manage',
   'wallets.adjust',
+  'fleets.read',
+  'fleets.manage',
+  'rides.manage',
+  'fleet.portal',
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 

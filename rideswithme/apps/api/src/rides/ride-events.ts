@@ -5,15 +5,26 @@ import type { Database } from '../database/types';
 
 /** The ride state machine: which status may follow which. */
 export const TRANSITIONS: Record<RideStatus, readonly RideStatus[]> = {
-  requested: ['searching', 'cancelled_by_passenger'],
-  searching: ['driver_assigned', 'cancelled_by_passenger', 'no_driver_found'],
-  driver_assigned: ['driver_arrived', 'cancelled_by_passenger', 'cancelled_by_driver'],
-  driver_arrived: ['in_progress', 'cancelled_by_passenger', 'cancelled_by_driver'],
-  in_progress: ['completed'],
+  requested: ['searching', 'cancelled_by_passenger', 'cancelled_by_admin'],
+  searching: ['driver_assigned', 'cancelled_by_passenger', 'no_driver_found', 'cancelled_by_admin'],
+  driver_assigned: [
+    'driver_arrived',
+    'cancelled_by_passenger',
+    'cancelled_by_driver',
+    'cancelled_by_admin',
+  ],
+  driver_arrived: [
+    'in_progress',
+    'cancelled_by_passenger',
+    'cancelled_by_driver',
+    'cancelled_by_admin',
+  ],
+  in_progress: ['completed', 'cancelled_by_admin'],
   completed: [],
   cancelled_by_passenger: [],
   cancelled_by_driver: [],
   no_driver_found: [],
+  cancelled_by_admin: [],
 };
 
 export function canTransition(from: RideStatus, to: RideStatus): boolean {

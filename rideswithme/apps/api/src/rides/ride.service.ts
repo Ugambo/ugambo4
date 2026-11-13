@@ -33,6 +33,8 @@ import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { PresenceService } from './presence.service';
 import { TripLocationsService } from './trip-locations.service';
 import { RidePaymentsService } from '../payments/ride-payments.service';
+import { AuditService } from '../audit/audit.service';
+import type { RequestContext } from '../common/request-context';
 
 const MAX_SCHEDULED_PER_PASSENGER = 3;
 
@@ -53,6 +55,7 @@ export class RideService {
     private readonly notifier: RealtimeNotifier,
     private readonly tripLocations: TripLocationsService,
     private readonly ridePayments: RidePaymentsService,
+    private readonly audit: AuditService,
   ) {}
 
   // --- Passenger ---
@@ -310,6 +313,64 @@ export class RideService {
     await this.ridePayments.chargePendingCards(rideId);
     await this.notifier.rideChanged(rideId);
     return this.getForPassenger(passengerId, rideId);
+  }
+
+  /**
+   * Staff stop a ride that cannot finish normally (e.g. the driver's phone died
+   * mid-trip). Nobody is charged and any wallet hold goes back; staff can make
+   * a manual adjustment if a partial fare is due.
+   */
+  async cancelByAdmin(
+    staffId: string,
+    rideId: string,
+    reason: string,
+    ctx: Partial<RequestContext>,
+    now = new Date(),
+  ): Promise<RideView> {
+    const withdrawn = await this.db.transaction().execute(async (trx) => {
+      const ride = await this.lock(trx, rideId, {});
+      const to: RideStatus = 'cancelled_by_admin';
+      if (!canTransition(ride.status, to)) {
+        throw new AppException(ErrorCode.INVALID_STATE, 'This ride has already ended', {
+          details: { status: ride.status },
+        });
+      }
+      await trx
+        .updateTable('rides')
+        .set({
+          status: to,
+          cancelled_at: now,
+          cancellation_reason: reason,
+          cancellation_fee_kobo: 0,
+        })
+        .where('id', '=', rideId)
+        .execute();
+      const offers = await this.withdrawOffers(trx, rideId);
+      await this.ridePayments.settleCancellation(trx, ride, 0, 0);
+      await recordRideEvent(trx, {
+        rideId,
+        eventType: 'cancelled_by_admin',
+        from: ride.status,
+        to,
+        actorType: 'admin',
+        actorId: staffId,
+        metadata: { reason },
+      });
+      await this.audit.record(
+        {
+          actor: { type: 'user', userId: staffId },
+          action: 'rides.cancelled_by_admin',
+          target: { type: 'ride', id: rideId },
+          metadata: { reason, from: ride.status },
+          context: ctx,
+        },
+        trx,
+      );
+      return offers;
+    });
+    for (const o of withdrawn) await this.notifier.offerClosed(o.driver_id, o.id, 'withdrawn');
+    await this.notifier.rideChanged(rideId);
+    return this.views.passengerView(await this.views.loadRow(rideId));
   }
 
   /** A short-lived link to the assigned driver's approved profile photo, only while the ride is active. */
