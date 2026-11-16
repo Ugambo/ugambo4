@@ -1,0 +1,18 @@
+# Alertmanager: where alerts go. Replace the receivers with your own
+# (email, Slack, PagerDuty/Opsgenie, or an SMS gateway webhook).
+route:
+  receiver: tickets
+  group_by: [alertname]
+  routes:
+    - matchers: [severity="page"]
+      receiver: on-call
+      repeat_interval: 15m
+receivers:
+  - name: on-call
+    webhook_configs:
+      - url: https://alerts.example.ng/page   # e.g. a PagerDuty or SMS-gateway webhook
+  - name: tickets
+    email_configs:
+      - to: ops@example.ng
+        from: alerts@example.ng
+        smarthost: smtp.example.ng:587

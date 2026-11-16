@@ -1,0 +1,74 @@
+# Alert rules. "page" alerts wake the on-call person; "ticket" alerts can wait
+# for working hours. SOS and money integrity always page.
+groups:
+  - name: safety
+    rules:
+      - alert: SosNotAcknowledged
+        expr: rwm_sos_oldest_unacknowledged_seconds > 120
+        labels: { severity: page }
+        annotations:
+          summary: 'An SOS alert has waited {{ $value | humanizeDuration }} without a staff response'
+          runbook: documentation/LAUNCH.md#sos
+      - alert: HighPriorityIncidentsWaiting
+        expr: rwm_incidents_open_high > 0
+        for: 2h
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value }} high-priority incident reports open for over 2 hours'
+
+  - name: money
+    rules:
+      - alert: LedgerMismatch
+        expr: rwm_ledger_mismatched_wallets > 0
+        labels: { severity: page }
+        annotations:
+          summary: '{{ $value }} wallets differ from their ledger lines: stop payouts and investigate'
+          runbook: documentation/LAUNCH.md#ledger
+      - alert: PaymentsStuckAtProvider
+        expr: rwm_payments_pending_stale > 20
+        for: 15m
+        labels: { severity: page }
+        annotations:
+          summary: '{{ $value }} payments pending at Paystack for over 30 minutes (webhooks or reconciliation failing?)'
+      - alert: PayoutsStuck
+        expr: rwm_payouts_stuck > 0
+        for: 30m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value }} driver payouts unfinished after 2 hours'
+
+  - name: service
+    rules:
+      - alert: ApiDown
+        expr: up{job="rideswithme-api"} == 0 or probe_success{job="rideswithme-api-health"} == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: 'The API is not answering'
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(rwm_http_request_duration_seconds_count{status=~"5.."}[5m]))
+            / sum(rate(rwm_http_request_duration_seconds_count[5m])) > 0.02
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: 'More than 2% of API requests fail with a server error'
+      - alert: SlowApi
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(rwm_http_request_duration_seconds_bucket{route!="/metrics"}[5m]))) > 1
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: '95th percentile API latency above 1 second'
+      - alert: RidesNotMatching
+        expr: rwm_rides_searching > 10 and rwm_drivers_online > 5
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: 'Many rides searching while drivers are online: check matching'
+      - alert: SupportBacklog
+        expr: rwm_support_tickets_waiting > 50
+        for: 1h
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value }} support requests waiting for the team'

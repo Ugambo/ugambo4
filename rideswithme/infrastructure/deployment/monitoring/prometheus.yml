@@ -1,0 +1,35 @@
+# Prometheus for RideswithMe. Scrapes the API's /metrics (bearer token) every 15 s
+# and evaluates alerts.yml; Alertmanager sends the alerts on.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: rideswithme-api
+    metrics_path: /metrics
+    scheme: https
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      # One entry per API instance (or use DNS service discovery behind a load balancer).
+      - targets: ['api.example.ng:443']
+  - job_name: rideswithme-api-health
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['https://api.example.ng/health/ready']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: blackbox:9115
