@@ -18,6 +18,7 @@ import {
   E2E_DATABASE_URL,
   OUT,
   SECOND_ADMIN_PHONE,
+  SUPER_ADMIN_PHONE,
   adminEnv,
   apiEnv,
 } from './env';
@@ -29,10 +30,29 @@ export default async function globalSetup() {
 
   const env = apiEnv();
   await flushRedis(env.REDIS_URL!);
-  for (const phone of [ADMIN_PHONE, SECOND_ADMIN_PHONE]) {
+  const seed = spawnSync(
+    'node',
+    [
+      'apps/api/dist/cli.js',
+      'seed-city',
+      '--key',
+      'kano',
+      '--name',
+      'Kano',
+      '--bbox',
+      '8.40,11.90,8.62,12.10',
+    ],
+    { cwd: ROOT, env: { ...process.env, ...env }, encoding: 'utf8' },
+  );
+  if (seed.status !== 0) throw new Error(`seed-city failed: ${seed.stderr}`);
+  for (const [phone, role] of [
+    [ADMIN_PHONE, 'admin'],
+    [SECOND_ADMIN_PHONE, 'admin'],
+    [SUPER_ADMIN_PHONE, 'super_admin'],
+  ] as const) {
     const r = spawnSync(
       'node',
-      ['apps/api/dist/cli.js', 'grant-role', '--phone', phone, '--role', 'admin'],
+      ['apps/api/dist/cli.js', 'grant-role', '--phone', phone, '--role', role],
       { cwd: ROOT, env: { ...process.env, ...env }, encoding: 'utf8' },
     );
     if (r.status !== 0) throw new Error(`grant-role failed: ${r.stderr}`);

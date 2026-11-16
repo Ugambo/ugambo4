@@ -384,6 +384,20 @@ describe('user list and audit log', () => {
       .expect(200);
     expect(res.body.items.map((e: { action: string }) => e.action)).toEqual(['auth.mfa.enabled']);
 
+    // The action filter matches a prefix, and _ or % in it are literal characters.
+    const byPrefix = await h.http
+      .get('/v1/admin/audit-logs')
+      .query({ action: 'auth.mfa.' })
+      .set('Authorization', admin.auth)
+      .expect(200);
+    expect(byPrefix.body.items.length).toBeGreaterThanOrEqual(1);
+    const wildcard = await h.http
+      .get('/v1/admin/audit-logs')
+      .query({ action: 'auth_mfa' })
+      .set('Authorization', admin.auth)
+      .expect(200);
+    expect(wildcard.body.items).toEqual([]);
+
     await expect(
       sql`UPDATE audit_logs SET action = 'tampered.entry'`.execute(h.db),
     ).rejects.toThrow(/append-only/);

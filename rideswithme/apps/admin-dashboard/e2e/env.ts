@@ -8,6 +8,7 @@ export const ADMIN_URL = 'http://127.0.0.1:3101';
 export const POLICY_VERSION = '2026-11';
 export const ADMIN_PHONE = '+2348030000001';
 export const SECOND_ADMIN_PHONE = '+2348030000002';
+export const SUPER_ADMIN_PHONE = '+2348030000003';
 
 const s3 = process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:9000';
 
@@ -37,6 +38,8 @@ export function apiEnv(): Record<string, string> {
     S3_SERVER_SIDE_ENCRYPTION: process.env.TEST_S3_SSE ?? 'AES256',
     S3_CREATE_BUCKET: 'true',
     DOCUMENT_EXPIRY_SWEEP_MINUTES: '0',
+    MAPS_PROVIDER: 'fake',
+    CORS_ORIGINS: ADMIN_URL,
   };
 }
 
@@ -48,5 +51,8 @@ export function adminEnv(): Record<string, string> {
     POLICY_VERSION,
     STORAGE_ORIGIN: new URL(s3).origin,
     SESSION_COOKIE_SECURE: 'false',
+    API_PUBLIC_URL: API_URL,
+    // No external tile server in tests: the map still works (grey background).
+    MAP_TILE_URL: `${API_URL}/no-tiles/{z}/{x}/{y}.png`,
   };
 }

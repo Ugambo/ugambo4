@@ -251,7 +251,11 @@ export class AdminService {
       .limit(q.limit + 1);
     if (q.actorUserId) query = query.where('actor_user_id', '=', q.actorUserId);
     if (q.targetId) query = query.where('target_id', '=', q.targetId);
-    if (q.action) query = query.where('action', '=', q.action);
+    // A prefix ("payments.") or a full action name; LIKE wildcards in it are taken literally.
+    if (q.action)
+      query = query.where(
+        sql<boolean>`action LIKE ${q.action.replace(/[\\%_]/g, (c) => `\\${c}`) + '%'} ESCAPE '\\'`,
+      );
     const cursor = decodeCursor(q.cursor);
     if (cursor)
       query = query.where(

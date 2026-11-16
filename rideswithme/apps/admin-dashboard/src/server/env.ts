@@ -8,6 +8,9 @@ const schema = z.object({
     .refine((s) => Buffer.from(s, 'base64').length === 32, 'Must be base64 of 32 random bytes'),
   POLICY_VERSION: z.string().min(1),
   STORAGE_ORIGIN: z.string().url().optional(),
+  API_PUBLIC_URL: z.string().url().optional(),
+  MAP_TILE_URL: z.string().default('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+  MAP_TILE_ATTRIBUTION: z.string().default('© OpenStreetMap contributors'),
   SESSION_COOKIE_SECURE: z.enum(['true', 'false']).optional(),
 });
 

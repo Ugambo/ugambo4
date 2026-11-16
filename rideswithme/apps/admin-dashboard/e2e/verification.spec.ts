@@ -41,7 +41,7 @@ test.describe('signing in', () => {
 
     await page.getByLabel('Code from your authenticator app').fill(totp(secret));
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByRole('heading', { name: 'Driver verification' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
     // Later tests reuse this signed-in, two-factor-verified session.
     await page.context().storageState({ path: STATE });
   });
@@ -125,7 +125,9 @@ test.describe('signed in', () => {
     await page.getByLabel('Language').selectOption('ha');
     await expect(page.getByRole('heading', { name: 'Tantance direbobi' })).toBeVisible();
     await page.getByRole('tab', { name: 'Duk direbobi' }).click();
-    await expect(page.locator('tbody tr')).toHaveCount(2);
+    // Other suites add drivers too; check the two from this suite are listed.
+    await expect(page.locator('tbody')).toContainText('Musa Abdullahi');
+    await expect(page.locator('tbody')).toContainText('Hauwa Garba');
     await shot(page, '07-hausa');
 
     await page.getByRole('button', { name: 'Fita' }).click();

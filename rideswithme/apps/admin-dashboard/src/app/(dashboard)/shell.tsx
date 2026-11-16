@@ -3,13 +3,34 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createContext, type ReactNode, useContext, useEffect } from 'react';
-import type { MeResponse } from '@rideswithme/shared-types';
+import type { MeResponse, PermissionKey } from '@rideswithme/shared-types';
+import type { MessageKey } from '@/lib/messages';
 import { ErrorState, Loading } from '@/components/states';
 import { api, auth, isSignedOut } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useResource } from '@rideswithme/web-core/client';
 
+const NAV: { href: string; label: MessageKey; permission: PermissionKey }[] = [
+  { href: '/overview', label: 'nav.overview', permission: 'rides.read' },
+  { href: '/live', label: 'nav.live', permission: 'rides.read' },
+  { href: '/rides', label: 'nav.rides', permission: 'rides.read' },
+  { href: '/users', label: 'nav.users', permission: 'users.read' },
+  { href: '/drivers', label: 'nav.drivers', permission: 'drivers.read' },
+  { href: '/fleets', label: 'nav.fleets', permission: 'fleets.read' },
+  { href: '/pricing', label: 'nav.pricing', permission: 'rides.read' },
+  { href: '/areas', label: 'nav.areas', permission: 'rides.read' },
+  { href: '/payments', label: 'nav.payments', permission: 'payments.read' },
+  { href: '/roles', label: 'nav.roles', permission: 'roles.read' },
+  { href: '/audit', label: 'nav.audit', permission: 'audit_logs.read' },
+];
+
 const MeContext = createContext<MeResponse | null>(null);
+
+/** Whether the signed-in staff member holds a permission (screens hide actions they cannot take). */
+export function useCan() {
+  const me = useContext(MeContext);
+  return (p: PermissionKey) => !!me?.permissions.includes(p);
+}
 export const useMe = () => useContext(MeContext);
 
 /** Left sidebar and content area. Sends the user to sign-in or two-factor when needed. */
@@ -44,12 +65,15 @@ export function Shell({ children }: { children: ReactNode }) {
             {t('app.name')}
           </div>
           <nav aria-label="Main">
-            <Link
-              href="/drivers"
-              aria-current={pathname.startsWith('/drivers') ? 'page' : undefined}
-            >
-              {t('nav.drivers')}
-            </Link>
+            {NAV.filter((n) => me.data!.permissions.includes(n.permission)).map((n) => (
+              <Link
+                key={n.href}
+                href={n.href}
+                aria-current={pathname.startsWith(n.href) ? 'page' : undefined}
+              >
+                {t(n.label)}
+              </Link>
+            ))}
           </nav>
           <p className="later">{t('nav.laterPhases')}</p>
           <div className="sidebar-footer">

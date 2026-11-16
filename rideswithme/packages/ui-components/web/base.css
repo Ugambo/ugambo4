@@ -524,3 +524,213 @@ details summary {
   height: 70vh;
   border: none;
 }
+
+/* KPI tiles */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+.kpi {
+  display: grid;
+  gap: var(--s-1);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: var(--s-3) var(--s-4);
+}
+.kpi-label {
+  font-size: var(--fs-sm);
+  color: var(--c-muted);
+}
+.kpi-value {
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-sub {
+  font-size: var(--fs-sm);
+  color: var(--c-muted);
+}
+.kpi-bad .kpi-value {
+  color: var(--c-danger);
+}
+
+/* Charts: single-series bars; marks use the data colour, text uses text colours. */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--s-4);
+}
+.chart {
+  margin: 0;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: var(--s-3) var(--s-4);
+}
+.chart-title {
+  font-weight: 700;
+  margin-bottom: var(--s-2);
+}
+.chart-plot {
+  position: relative;
+}
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.chart-grid {
+  stroke: var(--c-border);
+  stroke-width: 1;
+}
+.chart-axis {
+  font-size: 11px;
+  fill: var(--c-muted);
+  font-variant-numeric: tabular-nums;
+}
+.chart-bar {
+  fill: var(--c-chart);
+}
+.chart-bar-hover {
+  fill: var(--c-chart-hover);
+}
+.chart g[tabindex]:focus {
+  outline: none;
+}
+.chart g[tabindex]:focus .chart-bar {
+  stroke: var(--c-text);
+  stroke-width: 2;
+}
+.chart-tooltip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: var(--s-1) var(--s-2);
+  font-size: var(--fs-sm);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.chart-table summary {
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  color: var(--c-muted);
+  margin-top: var(--s-2);
+}
+.chart-table table {
+  width: 100%;
+  font-size: var(--fs-sm);
+}
+
+/* Maps */
+.map-frame {
+  position: relative;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: #e9eef3;
+}
+.map {
+  width: 100%;
+}
+.map-note {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  z-index: 500;
+  background: var(--c-bg);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+}
+.corner-handle {
+  background: #eb6834;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+}
+.areas-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--s-4);
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  .areas-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0 var(--s-4);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.peak {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: center;
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.peak .days {
+  display: flex;
+  gap: var(--s-2);
+}
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-1) 0;
+}
+.plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--s-4);
+  border-left: 2px solid var(--c-border);
+}
+.timeline li {
+  display: grid;
+  padding: var(--s-2) 0;
+}
+.clip {
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stack {
+  display: grid;
+  gap: var(--s-2);
+}
+.checkbox {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+  margin-bottom: var(--s-3);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

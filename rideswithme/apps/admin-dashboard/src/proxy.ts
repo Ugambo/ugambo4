@@ -17,11 +17,22 @@ export function proxy(request: NextRequest) {
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const storage = process.env.STORAGE_ORIGIN;
+  // Map tiles (the live map and service areas) and the API's live connection.
+  const tiles = new URL(
+    (process.env.MAP_TILE_URL ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png').replace(
+      /\{[a-z]\}/g,
+      'a',
+    ),
+  ).origin;
+  const api = process.env.API_PUBLIC_URL ? new URL(process.env.API_PUBLIC_URL) : null;
   const csp = contentSecurityPolicy({
     nonce,
     dev: process.env.NODE_ENV === 'development',
-    imgSrc: storage ? [storage] : [],
+    imgSrc: [...(storage ? [storage] : []), tiles],
     frameSrc: storage ? [storage] : [],
+    connectSrc: api
+      ? [api.origin, `${api.protocol === 'https:' ? 'wss' : 'ws'}://${api.host}`]
+      : [],
   });
 
   const requestHeaders = new Headers(request.headers);

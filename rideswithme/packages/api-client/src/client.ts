@@ -264,6 +264,8 @@ export function createApiClient(options: ApiClientOptions) {
       listUsers: (query: Partial<ListUsersQuery> = {}) =>
         request<Paginated<AdminUserSummary>>('/v1/admin/users', { query }),
       listRoles: () => request<RoleSummary[]>('/v1/admin/roles'),
+      getUser: (userId: string) =>
+        request<AdminUserSummary>(`/v1/admin/users/${encodeURIComponent(userId)}`),
       assignRole: (userId: string, role: RoleKey) =>
         request<AdminUserSummary>(`/v1/admin/users/${encodeURIComponent(userId)}/roles`, {
           method: 'POST',

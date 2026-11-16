@@ -30,6 +30,8 @@ export function LoginFlow({ resumeMfa }: { resumeMfa: boolean }) {
       setStep('mfa-setup');
     } else if (user.mfa.required && !user.mfa.verifiedForSession) {
       setStep('mfa-verify');
+    } else if (user.permissions.includes('rides.read')) {
+      router.replace('/overview');
     } else if (user.permissions.includes('drivers.read')) {
       router.replace('/drivers');
     } else {
