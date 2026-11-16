@@ -15,9 +15,9 @@ defined( 'ABSPATH' ) || exit;
 	<ul class="ek-event-list">
 		<?php foreach ( $ids as $id ) : $d = Tours::data( $id ); $next = array_values( array_filter( Tours::departures( $id ), static fn( $r ) => 'open' === $r->status && Tours::seats_left( $r ) > 0 ) ); ?>
 			<li class="ek-card ek-event-card">
-				<a href="<?php echo esc_url( get_permalink( $id ) ); ?>" class="ek-event-img" tabindex="-1" aria-hidden="true"><?php echo get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy' ) ); // phpcs:ignore ?></a>
+				<a href="<?php echo esc_url( get_permalink( $id ) ); ?>" class="ek-event-img" tabindex="-1" aria-hidden="true"><?php echo get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy', 'sizes' => '(min-width: 700px) 340px, 92vw' ) ); // phpcs:ignore ?></a>
 				<div class="ek-stack" style="gap:4px;min-width:0">
-					<h3 style="margin:0"><a href="<?php echo esc_url( get_permalink( $id ) ); ?>"><?php echo esc_html( get_the_title( $id ) ); ?></a></h3>
+					<h2 class="ek-card-title"><a href="<?php echo esc_url( get_permalink( $id ) ); ?>"><?php echo esc_html( get_the_title( $id ) ); ?></a></h2>
 					<p class="ek-small" style="margin:0"><strong><?php echo esc_html( Money::format( $d['price'] ) ); ?></strong> <?php esc_html_e( 'per person', 'explore-katsina' ); ?><?php echo $d['duration'] ? ' · ' . esc_html( $d['duration'] ) : ''; ?></p>
 					<p class="ek-small ek-muted" style="margin:0"><?php echo $next ? esc_html( sprintf( /* translators: %s: date */ __( 'Next date: %s', 'explore-katsina' ), wp_date( 'j M Y', strtotime( $next[0]->depart_date . ' 12:00' ) ) ) ) : esc_html__( 'No dates yet', 'explore-katsina' ); ?></p>
 				</div>

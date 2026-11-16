@@ -28,7 +28,7 @@ $track_attr = function ( $metric ) use ( $b, $track ) {
 	<?php if ( $b['photos'] ) : ?>
 		<div class="ek-gallery ek-gallery--<?php echo (int) min( 5, count( $b['photos'] ) ); ?>">
 			<?php foreach ( array_slice( $b['photos'], 0, 5 ) as $i => $pid ) : ?>
-				<?php echo wp_get_attachment_image( $pid, 0 === $i ? 'large' : 'medium_large', false, array( 'loading' => 0 === $i ? 'eager' : 'lazy', 'alt' => $b['name'] ) ); ?>
+				<?php echo wp_get_attachment_image( $pid, 0 === $i ? 'large' : 'medium_large', false, 0 === $i ? array( 'loading' => 'eager', 'fetchpriority' => 'high', 'alt' => $b['name'] ) : array( 'loading' => 'lazy', 'alt' => $b['name'] ) ); ?>
 			<?php endforeach; ?>
 		</div>
 	<?php else : ?>

@@ -181,6 +181,11 @@ fi
 # Phase 12: set up the free helper plugins once (later wp-admin changes are kept) and WebP photos.
 wp ek plugins-setup && ok "Helper plugins set up"
 wp ek webp --quiet && ok "Photos saved as WebP"
+# Phase 14: security + browser-caching rules (.htaccess). The local Apache also needs its "headers" module.
+wp ek security --quiet && ok "Security and caching rules written"
+if [ "$MODE" = "offline" ]; then
+  $COMPOSE exec -T wordpress sh -c 'a2enmod -q headers >/dev/null && apache2ctl -k graceful' && ok "Apache headers module on"
+fi
 # Phase 13: SAMPLE demonstration data (skipped if already there). Remove it all with:
 #   wp ek delete-sample --yes
 wp ek sample-data && ok "SAMPLE data ready (delete with: wp ek delete-sample --yes)"

@@ -81,8 +81,9 @@ final class Account {
 					self::$errors['current_password'] = __( 'Your current password is not correct.', 'explore-katsina' );
 					return;
 				}
-				if ( strlen( (string) ( $in['new_password'] ?? '' ) ) < 8 ) {
-					self::$errors['new_password'] = __( 'Choose a new password of at least 8 characters.', 'explore-katsina' );
+				$weak = Security::password_problem( (string) ( $in['new_password'] ?? '' ), $user, user_can( $user, 'edit_posts' ) );
+				if ( $weak ) {
+					self::$errors['new_password'] = $weak;
 					return;
 				}
 				wp_set_password( (string) $in['new_password'], $uid );
@@ -122,8 +123,9 @@ final class Account {
 		if ( ! empty( $in['reg_phone'] ) && ! $phone ) {
 			self::$errors['reg_phone'] = __( 'Enter a Nigerian phone number, or leave it empty.', 'explore-katsina' );
 		}
-		if ( strlen( $pass ) < 8 ) {
-			self::$errors['reg_password'] = __( 'Choose a password of at least 8 characters.', 'explore-katsina' );
+		$weak = Security::password_problem( $pass, array( 'email' => $email, 'name' => $name ) );
+		if ( $weak ) {
+			self::$errors['reg_password'] = $weak;
 		}
 		if ( self::$errors ) {
 			return;

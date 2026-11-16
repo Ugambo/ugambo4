@@ -41,6 +41,31 @@
 		}
 	}
 
+	/* Load the map library (Leaflet) only when a map is about to be seen. Shared with mini-map.js. */
+	window.ekLoadLeaflet = window.ekLoadLeaflet || function ( done ) {
+		if ( window.L ) { done(); return; }
+		var l = cfg.leaflet || {};
+		var q = window.ekLoadLeaflet;
+		if ( ! l.js ) { return; }
+		if ( q.queue ) { q.queue.push( done ); return; }
+		q.queue = [ done ];
+		var css = document.createElement( 'link' );
+		css.rel = 'stylesheet';
+		css.href = l.css;
+		document.head.appendChild( css );
+		var s = document.createElement( 'script' );
+		s.src = l.js;
+		s.onload = function () { q.queue.forEach( function ( fn ) { fn(); } ); };
+		document.head.appendChild( s );
+	};
+	function whenNear( el, fn ) {
+		if ( ! ( 'IntersectionObserver' in window ) ) { window.ekLoadLeaflet( fn ); return; }
+		var io = new IntersectionObserver( function ( en ) {
+			if ( en[ 0 ].isIntersecting ) { io.disconnect(); window.ekLoadLeaflet( fn ); }
+		}, { rootMargin: '300px' } );
+		io.observe( el );
+	}
+
 	function initMap( el ) {
 		if ( typeof L === 'undefined' ) { return; }
 		var pins = JSON.parse( el.getAttribute( 'data-pins' ) || '[]' );
@@ -77,7 +102,7 @@
 		document.querySelectorAll( '[data-ek-sort]' ).forEach( function ( s ) {
 			s.addEventListener( 'change', function () { window.location.href = s.value; } );
 		} );
-		document.querySelectorAll( '[data-ek-results-map]' ).forEach( initMap );
+		document.querySelectorAll( '[data-ek-results-map]' ).forEach( function ( el ) { whenNear( el, function () { initMap( el ); } ); } );
 		document.querySelectorAll( '[data-ek-order-form]' ).forEach( function ( f ) {
 			var out = f.querySelector( '[data-ek-order-total]' );
 			var upd = function () {

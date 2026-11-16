@@ -1,8 +1,36 @@
 /* Explore Katsina: small map preview on business and attraction pages, with nearby places as small dots.
-   Loads tiles only when scrolled into view. */
+   The map library (Leaflet) and its tiles load only when the map is scrolled near, so the page itself
+   shows faster on phones. */
 ( function () {
 	'use strict';
 	var cfg = window.ekMap || {};
+
+	/* Load the map library (Leaflet) only when a map is about to be seen. Shared with mini-map.js. */
+	window.ekLoadLeaflet = window.ekLoadLeaflet || function ( done ) {
+		if ( window.L ) { done(); return; }
+		var l = cfg.leaflet || {};
+		var q = window.ekLoadLeaflet;
+		if ( ! l.js ) { return; }
+		if ( q.queue ) { q.queue.push( done ); return; }
+		q.queue = [ done ];
+		var css = document.createElement( 'link' );
+		css.rel = 'stylesheet';
+		css.href = l.css;
+		document.head.appendChild( css );
+		var s = document.createElement( 'script' );
+		s.src = l.js;
+		s.onload = function () { q.queue.forEach( function ( fn ) { fn(); } ); };
+		document.head.appendChild( s );
+	};
+	function whenNear( el, fn ) {
+		if ( ! ( 'IntersectionObserver' in window ) ) { window.ekLoadLeaflet( fn ); return; }
+		var io = new IntersectionObserver( function ( en ) {
+			if ( en[ 0 ].isIntersecting ) { io.disconnect(); window.ekLoadLeaflet( fn ); }
+		}, { rootMargin: '300px' } );
+		io.observe( el );
+	}
+
+	function show( el ) { window.ekLoadLeaflet( function () { draw( el ); } ); }
 
 	function draw( el ) {
 		if ( el._ekMap || typeof L === 'undefined' ) { return; }
@@ -31,10 +59,10 @@
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var els = document.querySelectorAll( '[data-ek-mini-map]' );
-		if ( ! ( 'IntersectionObserver' in window ) ) { els.forEach( draw ); return; }
+		if ( ! ( 'IntersectionObserver' in window ) ) { els.forEach( show ); return; }
 		var io = new IntersectionObserver( function ( entries ) {
-			entries.forEach( function ( en ) { if ( en.isIntersecting ) { draw( en.target ); io.unobserve( en.target ); } } );
-		}, { rootMargin: '200px' } );
+			entries.forEach( function ( en ) { if ( en.isIntersecting ) { show( en.target ); io.unobserve( en.target ); } } );
+		}, { rootMargin: '300px' } );
 		els.forEach( function ( el ) { io.observe( el ); } );
 	} );
 }() );

@@ -153,6 +153,13 @@ final class CLI {
 	}
 
 	/**
+	 * Write the security and browser-caching rules again (.htaccess, uploads folder). Safe to re-run.
+	 */
+	public function security() {
+		\WP_CLI::success( Security::setup() );
+	}
+
+	/**
 	 * Save the sizes of existing photos as WebP (smaller files). New uploads are WebP already.
 	 *
 	 * ## OPTIONS

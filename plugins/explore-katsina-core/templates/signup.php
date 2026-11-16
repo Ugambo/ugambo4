@@ -168,7 +168,7 @@ foreach ( array_keys( $errors ) as $k ) {
 						<div class="<?php echo esc_attr( View::field_class( $errors, 'account_password' ) ); ?>">
 							<label for="ek-login-pass"><?php esc_html_e( 'Password', 'explore-katsina' ); ?> <span class="ek-req" aria-hidden="true">*</span></label>
 							<input type="password" id="ek-login-pass" name="account_password" required minlength="8" autocomplete="new-password"<?php echo View::aria( $errors, 'account_password' ); // phpcs:ignore ?>>
-							<span class="ek-hint"><?php esc_html_e( 'At least 8 characters.', 'explore-katsina' ); ?></span>
+							<span class="ek-hint"><?php esc_html_e( 'At least 8 characters, not a common password. A short sentence works well.', 'explore-katsina' ); ?></span>
 							<?php echo View::error( $errors, 'account_password' ); // phpcs:ignore ?>
 						</div>
 					</div>

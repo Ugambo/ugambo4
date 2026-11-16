@@ -88,7 +88,7 @@ $pages   = (int) ceil( $r['total'] / Restaurant_Search::PER_PAGE );
 		<ol class="ek-results">
 			<?php foreach ( $r['items'] as $i ) : ?>
 				<li class="ek-result">
-					<a class="ek-result-img" href="<?php echo esc_url( $i['url'] ); ?>" tabindex="-1" aria-hidden="true"><?php echo $i['photo'] ? wp_get_attachment_image( $i['photo'], 'medium_large', false, array( 'loading' => 'lazy', 'alt' => '' ) ) : '<span class="ek-result-noimg"></span>'; // phpcs:ignore ?></a>
+					<a class="ek-result-img" href="<?php echo esc_url( $i['url'] ); ?>" tabindex="-1" aria-hidden="true"><?php echo $i['photo'] ? wp_get_attachment_image( $i['photo'], 'medium_large', false, \EK\View::img_attrs( $ek_n = ( $ek_n ?? 0 ) + 1 ) ) : '<span class="ek-result-noimg"></span>'; // phpcs:ignore ?></a>
 					<div class="ek-result-body">
 						<div class="ek-result-top"><h2 class="ek-result-name"><a href="<?php echo esc_url( $i['url'] ); ?>"><?php echo esc_html( $i['name'] ); ?></a></h2><span class="ek-price-level" title="<?php echo esc_attr( $levels[ $i['level'] ][1] ); ?>"><?php echo esc_html( $levels[ $i['level'] ][0] ); ?></span></div>
 						<p class="ek-result-meta"><?php echo esc_html( implode( ' · ', array_map( static fn( $c ) => $cuis[ $c ], array_slice( $i['cuisines'], 0, 3 ) ) ) ); ?></p>

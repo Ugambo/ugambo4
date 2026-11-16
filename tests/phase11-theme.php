@@ -84,7 +84,7 @@ foreach ( ekt_home_sections() as $s ) {
 $home = ob_get_clean();
 ek11( 4 === substr_count( $home, 'role="tab"' ) && 1 === substr_count( $home, 'aria-selected="true"' ), 'Hero search with 4 tabs: Hotels, Restaurants, Event centres, Things to do' );
 foreach ( array( 'hotels' => 'hotels', 'restaurants' => 'restaurants', 'venues' => 'event_centres', 'todo' => 'things_to_do' ) as $panel => $page ) {
-	ek11( (bool) preg_match( '#id="ekt-panel-' . $panel . '"[^>]*action="' . preg_quote( esc_url( Install::page_url( $page ) ), '#' ) . '"#', $home ), "Tab \"{$panel}\" searches the right page" );
+	ek11( (bool) preg_match( '#id="ekt-panel-' . $panel . '"[^>]*>\s*<form[^>]*action="' . preg_quote( esc_url( Install::page_url( $page ) ), '#' ) . '"#', $home ), "Tab \"{$panel}\" searches the right page" );
 }
 foreach ( array( 'ekt-near' => 'Near you', 'ekt-attr' => 'Things to do', 'ekt-map' => 'Map preview', 'ekt-events' => 'Upcoming festivals', 'ekt-top' => 'Top-ranked', 'ekt-stories' => 'Stories' ) as $id => $label ) {
 	ek11( false !== strpos( $home, 'id="' . $id . '"' ), "Section: {$label}" );

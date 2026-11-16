@@ -41,6 +41,7 @@ body:has(.ek-signup) .wp-block-post-title, body:has(.ek-signup) .entry-title { d
 .ek h1 { font-size: clamp(1.45rem, 4.5vw, 2.1rem); font-weight: 700; margin: 0 0 .5em; }
 .ek h2 { font-size: clamp(1.15rem, 3.2vw, 1.45rem); font-weight: 600; margin: 0 0 .6em; }
 .ek h3 { font-size: 1.02rem; font-weight: 600; margin: 0 0 .5em; }
+.ek .ek-card-title { font-size: 1.02rem; font-weight: 600; margin: 0; } /* Item titles in lists: h2 for correct heading order, sized like h3. */
 .ek p { margin: 0 0 1em; }
 .ek a { color: var(--ek-crimson); }
 .ek a:hover { color: var(--ek-crimson-dark); }
@@ -597,8 +598,8 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek-top-item { display: grid; grid-template-columns: 52px 96px minmax(0, 1fr); gap: 12px; align-items: center; background: #fff; border: 1px solid var(--ek-line); border-radius: var(--ek-radius); padding: 10px; }
 .ek-top-num { font: 700 1.6rem var(--ek-font-display); color: var(--ek-crimson); text-align: center; }
 .ek-top-item img, .ek-top-ph { width: 96px; height: 72px; object-fit: cover; border-radius: 8px; background: var(--ek-sand); display: block; }
-.ek-top-item h3 { margin: 0; font-size: 1.05rem; }
-.ek-top-item h3 a { color: var(--ek-night); text-decoration: none; }
+.ek-top-item h3, .ek .ek-top-item .ek-card-title { margin: 0; font-size: 1.05rem; }
+.ek-top-item h3 a, .ek-top-item .ek-card-title a { color: var(--ek-night); text-decoration: none; }
 @media (max-width: 520px) { .ek-top-item { grid-template-columns: 38px minmax(0, 1fr); } .ek-top-item > a:first-of-type { display: none; } .ek-top-num { font-size: 1.3rem; } }
 .ek-top-nav { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
 .ek-score-parts { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; gap: 6px 10px; align-items: center; font-size: .9rem; }
@@ -613,7 +614,7 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek-sponsored-label { margin: 0 0 12px; font-size: .9rem; }
 .ek-ad { margin: 12px 0; text-align: center; }
 .ek-ad a { display: inline-block; max-width: 100%; }
-.ek-ad img { max-width: 100%; height: auto; border-radius: 8px; display: block; }
+.ek-ad img { max-width: 100%; height: auto; max-height: 280px; width: auto; object-fit: contain; border-radius: 8px; display: block; margin: 0 auto; } /* A tall picture never fills a phone screen. */
 .ek-ad-label { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ek-muted, #5B5965); margin-bottom: 4px; }
 .ek-spot-list, .ek .ek-event-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .ek .ek-spot { margin: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -621,7 +622,7 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek .ek-spot h3, .ek .ek-spot p { margin: 0; }
 .ek .ek-event-card { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .ek .ek-event-card.is-promoted { border: 2px solid var(--ek-brass); }
-.ek .ek-event-card h3 a { color: var(--ek-night); text-decoration: none; }
+.ek .ek-event-card h3 a, .ek .ek-event-card .ek-card-title a { color: var(--ek-night); text-decoration: none; }
 .ek .ek-ticket-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 72px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ek-line); }
 .ek .ek-ticket-row select { min-height: 40px; border-radius: 8px; border: 1.5px solid var(--ek-line); padding: 4px 8px; }
 .ek .ek-tickets { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
@@ -649,7 +650,7 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek .ek-attr-card { margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .ek .ek-attr-img img, .ek .ek-attr-noimg { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; display: block; background: var(--ek-sand); }
 .ek .ek-attr-noimg { display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; font-family: var(--ek-font-display, inherit); color: var(--ek-night); background: linear-gradient(135deg, var(--ek-sand), #fff); }
-.ek .ek-attr-card h3 a { color: var(--ek-night); text-decoration: none; }
+.ek .ek-attr-card h3 a, .ek .ek-attr-card .ek-card-title a { color: var(--ek-night); text-decoration: none; }
 .ek .ek-near-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
 .ek .ek-near-grid .ek-card { margin: 0; }
 .ek .ek-prose p { margin: 0 0 .9em; }

@@ -227,8 +227,7 @@ final class Hotel_Search {
 
 	public static function shortcode() {
 		wp_enqueue_style( 'ek' );
-		wp_enqueue_style( 'leaflet' );
-		wp_enqueue_script( 'ek-search' );
+		wp_enqueue_script( 'ek-search' ); // Loads the map library itself when the results map is scrolled near.
 		$p = self::params();
 		$r = self::search( $p );
 		return View::render( 'hotel-search', array( 'p' => $p, 'r' => $r ) );

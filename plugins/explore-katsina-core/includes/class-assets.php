@@ -16,6 +16,69 @@ final class Assets {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register' ), 5 );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'auto_enqueue' ), 20 );
 		add_action( 'wp_head', array( __CLASS__, 'js_flag' ), 1 );
+		// Phase 14: serve the small ".min" copies (made by `npm run build`) of our CSS and JavaScript.
+		add_filter( 'style_loader_src', array( __CLASS__, 'minified' ), 5 );
+		add_filter( 'script_loader_src', array( __CLASS__, 'minified' ), 5 );
+		// Things WordPress adds to every page that this site does not use.
+		remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+		remove_action( 'wp_print_styles', 'print_emoji_styles' );
+		remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
+		remove_action( 'admin_print_styles', 'print_emoji_styles' );
+		remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );
+		add_filter( 'emoji_svg_url', '__return_false' );
+		remove_action( 'wp_head', 'wp_oembed_add_discovery_links' );
+		remove_action( 'wp_head', 'wp_shortlink_wp_head' );
+	}
+
+	/**
+	 * Our plugin's and theme's files → their ".min" copy, when it was made from the current file
+	 * (its first line holds the source's fingerprint). Developers can see the readable files with
+	 * define( 'SCRIPT_DEBUG', true ).
+	 */
+	public static function minified( $src ) {
+		if ( ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) || ! $src || ! preg_match( '#^(.*?)(\.(?:css|js))(\?.*)?$#', $src, $m ) || str_ends_with( $m[1], '.min' ) ) {
+			return $src;
+		}
+		$path = self::path_of( $m[1] . $m[2] );
+		if ( ! $path ) {
+			return $src;
+		}
+		return self::min_is_current( $path ) ? $m[1] . '.min' . $m[2] . ( $m[3] ?? '' ) : $src;
+	}
+
+	/** Local file for one of our asset URLs, or ''. */
+	private static function path_of( $url ) {
+		$roots = array(
+			EK_URL                                        => EK_DIR,
+			trailingslashit( get_stylesheet_directory_uri() ) => trailingslashit( get_stylesheet_directory() ),
+		);
+		$url = preg_replace( '#^https?:#', '', $url );
+		foreach ( $roots as $u => $dir ) {
+			$u = preg_replace( '#^https?:#', '', $u );
+			if ( 0 === strpos( $url, $u ) ) {
+				$rel = substr( $url, strlen( $u ) );
+				return false === strpos( $rel, '..' ) ? $dir . $rel : '';
+			}
+		}
+		return '';
+	}
+
+	public static function min_is_current( $path ) {
+		static $memo = array();
+		if ( isset( $memo[ $path ] ) ) {
+			return $memo[ $path ];
+		}
+		$min = preg_replace( '/\.(css|js)$/', '.min.$1', $path );
+		$ok  = false;
+		if ( is_readable( $path ) && is_readable( $min ) ) {
+			$fh   = fopen( $min, 'rb' ); // phpcs:ignore
+			$head = $fh ? (string) fgets( $fh, 64 ) : '';
+			if ( $fh ) {
+				fclose( $fh ); // phpcs:ignore
+			}
+			$ok = 0 === strpos( $head, '/*! src:' . md5_file( $path ) . ' */' );
+		}
+		return $memo[ $path ] = $ok;
 	}
 
 	public static function ver( $rel ) {
@@ -51,7 +114,7 @@ final class Assets {
 		wp_register_script( 'ek-track', EK_URL . 'assets/js/track.js', array(), self::ver( 'assets/js/track.js' ), true );
 		wp_localize_script( 'ek-track', 'ekTrack', array( 'url' => esc_url_raw( rest_url( 'ek/v1/track' ) ) ) );
 
-		wp_register_script( 'ek-search', EK_URL . 'assets/js/search.js', array( 'leaflet' ), self::ver( 'assets/js/search.js' ), true );
+		wp_register_script( 'ek-search', EK_URL . 'assets/js/search.js', array(), self::ver( 'assets/js/search.js' ), true );
 		wp_localize_script( 'ek-search', 'ekMap', self::map_config() );
 		wp_localize_script(
 			'ek-search',
@@ -68,7 +131,7 @@ final class Assets {
 			)
 		);
 
-		wp_register_script( 'ek-mini-map', EK_URL . 'assets/js/mini-map.js', array( 'leaflet' ), self::ver( 'assets/js/mini-map.js' ), true );
+		wp_register_script( 'ek-mini-map', EK_URL . 'assets/js/mini-map.js', array(), self::ver( 'assets/js/mini-map.js' ), true );
 		wp_localize_script( 'ek-mini-map', 'ekMap', self::map_config() );
 	}
 
@@ -79,6 +142,10 @@ final class Assets {
 	public static function map_config() {
 		return array(
 			'provider'    => 'leaflet-osm',
+			'leaflet'     => array( // Loaded only when a small map is scrolled near (mini-map.js).
+				'js'  => EK_URL . 'assets/vendor/leaflet/leaflet.js?ver=1.9.4',
+				'css' => self::minified( EK_URL . 'assets/vendor/leaflet/leaflet.css?ver=1.9.4' ),
+			),
 			'tiles'       => 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 			'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 			'centre'      => Business::CENTRE,

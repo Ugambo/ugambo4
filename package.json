@@ -5,9 +5,12 @@
   "scripts": {
     "wp-env": "wp-env",
     "start": "wp-env start",
-    "stop": "wp-env stop"
+    "stop": "wp-env stop",
+    "build": "node scripts/minify.js"
   },
   "devDependencies": {
-    "@wordpress/env": "12.1.0"
+    "@wordpress/env": "12.1.0",
+    "esbuild": "0.24.2",
+    "lighthouse": "12.2.1"
   }
 }

@@ -122,7 +122,7 @@ $pages = (int) ceil( $r['total'] / Hotel_Search::PER_PAGE );
 				$link = add_query_arg( Hotel_Search::query_args( $p, array( 'sort' => '', 'view' => '', 'price_min' => '', 'price_max' => '', 'stars' => '', 'pay_venue' => '', 'lga' => '', 'lat' => '', 'lng' => '', 'near' => '', 'amenities' => array() ) ), $i['url'] );
 				?>
 				<li class="ek-result">
-					<a class="ek-result-img" href="<?php echo esc_url( $link ); ?>" tabindex="-1" aria-hidden="true"><?php echo $i['photo'] ? wp_get_attachment_image( $i['photo'], 'medium_large', false, array( 'loading' => 'lazy', 'alt' => '' ) ) : '<span class="ek-result-noimg"></span>'; // phpcs:ignore ?></a>
+					<a class="ek-result-img" href="<?php echo esc_url( $link ); ?>" tabindex="-1" aria-hidden="true"><?php echo $i['photo'] ? wp_get_attachment_image( $i['photo'], 'medium_large', false, \EK\View::img_attrs( $ek_n = ( $ek_n ?? 0 ) + 1 ) ) : '<span class="ek-result-noimg"></span>'; // phpcs:ignore ?></a>
 					<div class="ek-result-body">
 						<div class="ek-result-top">
 							<h2 class="ek-result-name"><a href="<?php echo esc_url( $link ); ?>"><?php echo esc_html( $i['name'] ); ?></a></h2>

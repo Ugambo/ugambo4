@@ -77,8 +77,9 @@ final class Signup {
 			} elseif ( email_exists( $acc_email ) ) {
 				$errors['account_email'] = __( 'An account with this email already exists. Please log in first, then come back to this page.', 'explore-katsina' );
 			}
-			if ( strlen( $acc_pass ) < 8 ) {
-				$errors['account_password'] = __( 'Choose a password of at least 8 characters.', 'explore-katsina' );
+			$weak = Security::password_problem( $acc_pass, array( 'email' => $acc_email, 'name' => $in['owner_name'] ?? '' ) );
+			if ( $weak ) {
+				$errors['account_password'] = $weak;
 			}
 		}
 

@@ -35,12 +35,12 @@ const check = ( c, m ) => { console.log( ( c ? '  ✔ ' : '  ✘ ' ) + m ); if (
 	const d = await dc.newPage();
 	watch( d );
 	await d.goto( `${ BASE }/things-to-do/` );
-	const cards = await d.locator( '.ek-attr-card h3' ).allTextContents();
+	const cards = await d.locator( '.ek-attr-card .ek-card-title' ).allTextContents();
 	check( cards.length >= 10 && ! cards.some( ( c ) => c.startsWith( 'SAMPLE' ) ) && cards.includes( 'Gobarau Minaret' ) && cards.includes( 'Kusugu Well (Daura)' ), `Lists the attractions (${ cards.length })` );
 	await d.screenshot( { path: path.join( SHOTS, 'p10-things-to-do-1280.png' ), fullPage: true } );
 	await d.locator( '.ek-chip:has-text("Nature & dams")' ).click();
 	await d.waitForLoadState();
-	const nature = await d.locator( '.ek-attr-card h3' ).allTextContents();
+	const nature = await d.locator( '.ek-attr-card .ek-card-title' ).allTextContents();
 	check( nature.includes( 'Zobe Dam' ) && nature.includes( 'Ajiwa Dam' ) && ! nature.includes( 'Gobarau Minaret' ), 'Filter "Nature & dams": the two dams only' );
 
 	console.log( '2. Attraction page (computer)' );

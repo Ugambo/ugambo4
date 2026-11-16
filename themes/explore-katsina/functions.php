@@ -73,14 +73,18 @@ add_action(
 	20
 );
 
-/** Preload the two main font files (the plugin self-hosts them). */
+/**
+ * Preload the body font (the plugin self-hosts the fonts). The heading font is not preloaded: on slow
+ * mobile data it would compete with the page's main photo; headings show in a fallback font for a
+ * moment instead (font-display: swap).
+ */
 add_action(
 	'wp_head',
 	static function () {
 		if ( ! defined( 'EK_URL' ) ) {
 			return;
 		}
-		foreach ( array( 'overpass-latin.woff2', 'unbounded-latin.woff2' ) as $f ) {
+		foreach ( array( 'overpass-latin.woff2' ) as $f ) {
 			echo '<link rel="preload" href="' . esc_url( EK_URL . 'assets/fonts/' . $f ) . '" as="font" type="font/woff2" crossorigin>' . "\n";
 		}
 		echo '<meta name="theme-color" content="#141B3A">' . "\n";

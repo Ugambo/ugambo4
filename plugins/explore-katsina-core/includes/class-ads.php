@@ -113,7 +113,7 @@ final class Ads {
 				self::bump( $ad->id, 'views' );
 			}
 			wp_enqueue_style( 'ek' );
-			$img = wp_get_attachment_image( (int) $ad->image_id, 'large', false, array( 'alt' => $ad->alt_text ? $ad->alt_text : $ad->title, 'loading' => 'lazy' ) );
+			$img = wp_get_attachment_image( (int) $ad->image_id, 'medium_large', false, array( 'alt' => $ad->alt_text ? $ad->alt_text : $ad->title, 'loading' => 'lazy', 'sizes' => '(min-width: 800px) 728px, 100vw' ) );
 			return '<aside class="ek ek-ad ek-ad--' . esc_attr( $zone ) . '" aria-label="' . esc_attr__( 'Advertisement', 'explore-katsina' ) . '"><span class="ek-ad-label">' . esc_html__( 'Advertisement', 'explore-katsina' ) . '</span><a href="' . esc_url( add_query_arg( 'ek_ad', (int) $ad->id, home_url( '/' ) ) ) . '" rel="sponsored nofollow noopener" target="_blank">' . $img . '</a></aside>';
 		}
 		return self::adsense( $zone );

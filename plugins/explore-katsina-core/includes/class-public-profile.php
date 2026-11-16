@@ -51,8 +51,7 @@ final class Public_Profile {
 			return $content;
 		}
 		wp_enqueue_style( 'ek' );
-		wp_enqueue_style( 'leaflet' );
-		wp_enqueue_script( 'ek-mini-map' );
+		wp_enqueue_script( 'ek-mini-map' ); // Loads the map library itself when the map is scrolled near.
 		wp_enqueue_script( 'ek-search' );
 
 		$uid   = get_current_user_id();

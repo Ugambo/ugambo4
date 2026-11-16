@@ -222,7 +222,6 @@ final class Attractions {
 	public static function public_assets() {
 		if ( is_singular( self::CPT ) || is_post_type_archive( self::CPT ) || is_tax( self::TAX ) ) {
 			wp_enqueue_style( 'ek' );
-			wp_enqueue_style( 'leaflet' );
 			wp_enqueue_script( 'ek-mini-map' );
 		}
 	}

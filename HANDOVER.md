@@ -16,8 +16,9 @@ from exactly where the last one stopped.
 - **Phase 10 (Tourism guide): done and approved.**
 - **Phase 11 (Brand & theme): done and approved.**
 - **Phase 12 (Other plugins, free versions): done and approved.**
-- **Phase 13 (Pages & sample data): done, waiting for the owner's go-ahead.**
-- Next: **Phase 14 (SEO, speed, security)**.
+- **Phase 13 (Pages & sample data): done and approved.**
+- **Phase 14 (SEO, speed, security): done, waiting for the owner's go-ahead.**
+- Next: **Phase 15 (Test everything & hand over)**.
 - **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
 
 ## Decisions made (owner approved, 5 Nov 2026)
@@ -318,6 +319,52 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 - Free libraries added: qrcode-generator 1.4.4 (MIT) for ticket QR codes, jsQR 1.4.0 (Apache 2.0) for the camera
   scanner (only loaded on /check-in/).
 
+## What Phase 14 built (plain language)
+**Search engines (SEO)**
+- Every hotel, restaurant, event centre, attraction, festival, tour and shop product now carries
+  **structured data** (schema.org): the "hidden labels" Google, Bing and AI assistants read to show stars,
+  prices, opening hours and menus in results. Hotels: rooms with Naira prices, check-in/out, amenities, and the
+  star rating **only if our team verified it**. Restaurants: the **full menu** with prices, cuisines,
+  reservations. Event centres: halls, capacity, prices. Other businesses get the closest type (Store, Travel
+  agency, Bank…). Ratings come only from verified-booking reviews. Festivals with an unconfirmed date get no
+  markup (search engines need a real date). Only facts already visible on the page are used.
+- Every main page has a written **search description**; the homepage has its own search title.
+- **Share previews** (WhatsApp, Facebook, X): every page has a picture, title and description. Pages without
+  their own photo use the credited Commons photo of the Emir's Palace gate.
+- **XML sitemap** at `/sitemap_index.xml` (businesses, attractions, events, tours, pages, stories, products);
+  booking, account, dashboard and check-in pages and untranslated Hausa pages are left out. `robots.txt`
+  points to it. Addresses are clean (`/hotels/name/`, `/attractions/name/`, `/events/name/`).
+
+**Speed (target: Lighthouse 90+ on a phone, reached on all 20 main pages: see `docs/lighthouse/summary.md`)**
+- Small **".min" copies** of our CSS and JavaScript (`npm run build` after editing; if forgotten, the site
+  safely serves the normal files and the tests say so).
+- **Pictures**: below-the-fold photos load as you scroll; the main photo loads first; phones download smaller
+  copies (never the full-size original).
+- **Map library** (Leaflet) loads only when a map is scrolled into view.
+- **Fonts**: the Naira sign ₦ and Hausa letters come from tiny 3 KB files instead of 165 KB ones.
+- WooCommerce's shop scripts (and jQuery) load only on shop pages; its visitor-tracking cookies are off.
+- WordPress's unused emoji script and embed links removed.
+- **Browser caching** for a year on pictures, fonts, CSS and JS (their addresses change when the file changes),
+  **compression** of text files, plus the page cache from Phase 12.
+
+**Security**
+- WordPress version hidden (no "generator" tag, no version on WordPress's own files; readme.html blocked).
+- **XML-RPC off** completely (an old door attackers use to guess passwords), pingbacks off.
+- **Login protection**: 4 tries then a 20-minute lockout (Phase 12); one message for any failed login and for
+  "forgot password", so nobody can find out which emails have accounts; usernames are never published (no
+  author pages, no public user list); **password rules**: at least 8 characters for everyone, 12 for staff,
+  no well-known passwords (e.g. "password123", "Katsina2026") or ones made from your own name/email;
+  application passwords never for business owners.
+- **Security headers** on every page (also cached ones); file editor in wp-admin off; no PHP can run from the
+  uploads folder; no folder listings.
+- **"Businesses can only access their own data", tested carefully**: the code check of every form and page,
+  plus a break-in test through the real website: logged in as three SAMPLE businesses (hotel, restaurant, event
+  centre), it makes 114 attempts on three other businesses (opening 60 of their dashboard pages; sending
+  their forms; slipping their room, hall, dish, category, booking, review, invoice, photo and price-rule numbers
+  into its own forms). **All refused, and a fingerprint of everything the other businesses own is unchanged.**
+  Also tested: guests see only their own bookings; booking pages need their secret link; ID documents and the
+  private folder are closed; owners can't reach wp-admin or the user list.
+
 ## What Phase 13 built (plain language)
 **Every page in the brief now exists**, in English, each with a Hausa version marked "Needs Hausa translation":
 - Home (now the site's front page), Explore, Katsina Map, Hotels, Restaurants, Event Centres, Things to Do and
@@ -377,7 +424,7 @@ with all of them switched on.
 
 | Plugin (free) | What it does here | Still for you to do |
 |---|---|---|
-| **Rank Math SEO** | Page titles, sitemap (`/sitemap_index.xml`: businesses, attractions, events, tours, stories, pages), redirects, 404 log. Booking/account/dashboard/check-in/cart/checkout and untranslated Hausa pages are hidden from search engines and the sitemap. Modules needing outside accounts (Analytics, Content AI…) are off. No generic "Article" markup on listings: proper Hotel/Restaurant/Event markup comes in Phase 14. | Optional: connect a free Rank Math account and Google Search Console after launch. |
+| **Rank Math SEO** | Page titles, sitemap (`/sitemap_index.xml`: businesses, attractions, events, tours, stories, pages), redirects, 404 log. Booking/account/dashboard/check-in/cart/checkout and untranslated Hausa pages are hidden from search engines and the sitemap. Modules needing outside accounts (Analytics, Content AI…) are off. No generic "Article" markup on listings: our own Hotel/Restaurant/Event markup (Phase 14) is used instead. | Optional: connect a free Rank Math account and Google Search Console after launch. |
 | **Wordfence** | Firewall and malware scans; alerts to the admin email. Hides usernames. Its own login lockouts are **off** so they don't double up with… | Optional: switch on two-factor login for admins (Wordfence → Login Security). |
 | **Limit Login Attempts Reloaded** | 4 wrong passwords → 20-minute lockout, on wp-login and our "My Account" login. (On the local test site only, your own machine is never locked out, so the tests can run.) | — |
 | **UpdraftPlus** | Database backup every day (14 kept), files every week (4 kept). Tested: a backup was made, and the backup folder can't be downloaded from the web. | **Connect remote storage** (Google Drive or Dropbox: free) in Settings → UpdraftPlus. Keep a copy of `EK_ENCRYPTION_KEY` somewhere safe and separate: without it, a restored site can't read bank details. On an Nginx host, ask the host to block `/wp-content/updraft/`. |
@@ -573,11 +620,16 @@ page itself. The full notes, with confidence levels and every place where source
   On the live host, set `EK_PRIVATE_DIR` in wp-config.php to a folder outside the website.
 - Spam protection on sign-up: a hidden trap field plus a minimum fill-in time.
 - Payout requests use a database lock, so a double-click can't request the same money twice.
+- Phase 14 lock-down and the business-isolation break-in test: see "What Phase 14 built".
+- **Owner to switch on:** two-step login for administrators (Wordfence → Login Security → scan the QR code
+  with an authenticator app on your phone). Free; it needs your phone, so it is not switched on for you.
 
 ## How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 1,100 automatic checks, server and browser (Phases 2–13)
+./tests/run.sh      # about 1,250 automatic checks, server and browser (Phases 2–14)
+./tests/run.sh --lighthouse   # the same plus the mobile speed test (about 5 more minutes)
+npm run build       # after editing any CSS/JS file: makes the small .min copies visitors download
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
 ```
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
@@ -593,6 +645,9 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase4/` | Screenshots of restaurant search, restaurant page, reservation, menu builder, table settings |
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
 | `docs/screenshots/phase9/` | Screenshots of the plan page, search with Featured + banner ad, tickets with QR codes, check-in, tour, events, advertise, admin sales and revenue |
+| `docs/screenshots/phase14/` | Screenshots of the login message, the weak-password message, structured data and the speed report |
+| `docs/lighthouse/summary.md` | Mobile Lighthouse scores for the 20 main pages (`node tests/lighthouse.js`) |
+| `scripts/minify.js`, `scripts/font-subset.py` | Make the .min CSS/JS (`npm run build`) and the tiny ₦/Hausa font files |
 | `docs/screenshots/phase13/` | Screenshots of the homepage with sample data, a sample hotel, Directory, Pricing, Privacy draft, a sample owner's dashboard |
 | `docs/screenshots/phase12/` | Screenshots of the contact form, newsletter sign-up, WhatsApp button on a phone, Fluent Forms in wp-admin |
 | `docs/screenshots/phase11/` | Screenshots of the homepage (computer and phone), Explore, My Account, Hausa page, login and wp-admin |
@@ -618,7 +673,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/vendor/qrcode/`, `jsqr/` | QR code drawing (MIT) and camera scanning (Apache 2.0) for tickets |
 | `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase12-plugins.php`, `phase13-pages-sample.php`, `phase4-woo-bridge.php`, `e2e/phase2–13.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase12-plugins.php`, `phase13-pages-sample.php`, `phase14-seo-security.php`, `phase4-woo-bridge.php`, `e2e/phase2–14.js`, `e2e/phase14-isolation.js` (business break-in test), `lighthouse.js` |
 
 ## Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
@@ -636,9 +691,9 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
     environment's Network access settings. Phase 3 needs WooCommerce for payments.
   - Docker Hub sometimes answers "429 Too Many Requests"; `setup.sh` retries automatically.
 - The cloud session's Docker daemon is not started automatically: `dockerd > /tmp/dockerd.log 2>&1 &`.
-- **GitHub push is failing** ("Claude doesn't have GitHub access to Ugambo/ugambo4"). All work is
-  committed locally on branch `claude/explore-katsina-architecture-wj2xli`. The owner must reconnect
-  GitHub / install the Claude GitHub App; then run `git push -u origin claude/explore-katsina-architecture-wj2xli`.
+- **GitHub push works**: `git push -u origin claude/explore-katsina-architecture-wj2xli`.
+- The local Apache needs its "headers" module for the security headers on cached pages; `setup.sh` switches it
+  on (`a2enmod headers`). Most hosts have it on already.
 - In the cloud test browser, OpenStreetMap tiles don't load (network), so maps look grey in
   screenshots; pins, dragging and "Use my location" work. In a normal browser the map shows.
 - **Live host needs a real cron job** (every 5 minutes) so unpaid holds are freed, held money is released and
@@ -648,6 +703,10 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
   into "Page not found"). The business name field is `business_name`.
 
 ## Placeholders to replace before launch (running list)
+- **Hosting (Phase 14):** the security and browser-caching rules are written into `.htaccess` (Apache/LiteSpeed
+  hosts, the usual in Nigeria). On an Nginx host, ask the host to add the same rules (listed in
+  `includes/class-security.php`). HTTPS sites also send HSTS for 180 days.
+- **Two-step login for administrators** (Wordfence, free): switch on with your phone.
 - Contact email `info@explorekatsina.com.ng` (PLACEHOLDER), used in the dashboard footer and emails
 - Phone `+234 800 000 0000` (PLACEHOLDER), used in the agreement, the Contact page and the WhatsApp button (Join.chat)
 - Social handles `@explorekatsina` (PLACEHOLDER)

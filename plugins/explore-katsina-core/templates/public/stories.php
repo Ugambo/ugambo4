@@ -23,11 +23,11 @@ $base = get_permalink();
 		<?php foreach ( $ids as $id ) : $cats = get_the_category( $id ); ?>
 			<li class="ek-card ek-attr-card">
 				<a href="<?php echo esc_url( get_permalink( $id ) ); ?>" class="ek-attr-img" tabindex="-1" aria-hidden="true">
-					<?php if ( has_post_thumbnail( $id ) ) : ?><?php echo get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy' ) ); ?><?php else : ?><span class="ek-attr-noimg"><?php echo esc_html( get_the_title( $id ) ); ?></span><?php endif; ?>
+					<?php if ( has_post_thumbnail( $id ) ) : ?><?php echo get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy', 'sizes' => '(min-width: 700px) 340px, 92vw' ) ); ?><?php else : ?><span class="ek-attr-noimg"><?php echo esc_html( get_the_title( $id ) ); ?></span><?php endif; ?>
 				</a>
 				<div class="ek-stack" style="gap:4px">
 					<span class="ek-small ek-muted" style="text-transform:uppercase;letter-spacing:.04em"><?php echo esc_html( $cats ? $cats[0]->name : '' ); ?> · <?php echo esc_html( get_the_date( '', $id ) ); ?></span>
-					<h3 style="margin:0"><a href="<?php echo esc_url( get_permalink( $id ) ); ?>"><?php echo esc_html( get_the_title( $id ) ); ?></a></h3>
+					<h2 class="ek-card-title"><a href="<?php echo esc_url( get_permalink( $id ) ); ?>"><?php echo esc_html( get_the_title( $id ) ); ?></a></h2>
 					<p class="ek-small" style="margin:0"><?php echo esc_html( get_the_excerpt( $id ) ); ?></p>
 				</div>
 			</li>

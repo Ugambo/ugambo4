@@ -57,6 +57,10 @@ final class Integrations {
 		// WhatsApp button.
 		add_filter( 'joinchat_show', array( __CLASS__, 'joinchat_show' ) );
 		add_action( 'wp_head', array( __CLASS__, 'joinchat_css' ), 99 );
+		// Speed (Phase 14): WooCommerce's shop files only on shop pages.
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'trim_woocommerce' ), 99 );
+		// Sharp phone screens would otherwise pick the full-size original (often 200 KB+); 1024 px is plenty.
+		add_filter( 'max_srcset_image_width', static fn() => 1024 );
 		// WebP.
 		add_filter( 'image_editor_output_format', array( __CLASS__, 'webp' ) );
 		add_filter( 'wp_editor_set_quality', static fn( $q, $mime = '' ) => 'image/webp' === $mime ? 80 : $q, 10, 2 ); // ~40% smaller than JPEG, same look.
@@ -107,6 +111,37 @@ final class Integrations {
 		if ( self::is_private_page() ) {
 			self::no_cache();
 			nocache_headers();
+		}
+	}
+
+	/* ---------------- Speed ---------------- */
+
+	/** Pages that use WooCommerce's own scripts: shop, products, cart, checkout, Guides (product list). */
+	public static function needs_woocommerce() {
+		if ( ! function_exists( 'is_woocommerce' ) ) {
+			return false;
+		}
+		if ( is_woocommerce() || is_cart() || is_checkout() || is_account_page() || Install::is_page( 'guides' ) ) {
+			return true;
+		}
+		$post = get_queried_object();
+		return $post instanceof \WP_Post && ( has_shortcode( $post->post_content, 'products' ) || has_shortcode( $post->post_content, 'product_page' ) || has_block( 'woocommerce/', $post ) );
+	}
+
+	/**
+	 * Elsewhere WooCommerce's scripts (and jQuery, which only they need) are not loaded: about 90 KB less
+	 * and nothing blocking the page from showing. Its "order attribution" tracking cookies are off
+	 * (`wp ek plugins-setup`), so visitors are not tracked on every page.
+	 */
+	public static function trim_woocommerce() {
+		if ( self::needs_woocommerce() ) {
+			return;
+		}
+		foreach ( array( 'woocommerce', 'wc-add-to-cart', 'wc-jquery-blockui', 'jquery-blockui', 'wc-js-cookie', 'js-cookie', 'wc-cart-fragments', 'sourcebuster-js', 'wc-order-attribution' ) as $h ) {
+			wp_dequeue_script( $h );
+		}
+		foreach ( array( 'woocommerce-general', 'woocommerce-layout', 'woocommerce-smallscreen', 'woocommerce-inline', 'wc-blocks-style', 'kadence-woocommerce' ) as $h ) {
+			wp_dequeue_style( $h );
 		}
 	}
 
@@ -304,6 +339,9 @@ final class Integrations {
 		$out  = array();
 		$run  = array(
 			'rank-math' => array( defined( 'RANK_MATH_VERSION' ), 'setup_rank_math' ),
+			'rank-math-share' => array( defined( 'RANK_MATH_VERSION' ), array( Seo::class, 'setup_rank_math' ) ), // Phase 14.
+			'security'  => array( true, array( Security::class, 'setup' ) ),                                       // Phase 14.
+			'speed'     => array( true, 'setup_speed' ),                                                           // Phase 14.
 			'wordfence' => array( class_exists( 'wfConfig' ), 'setup_wordfence' ),
 			'llar'      => array( class_exists( '\LLAR\Core\Config' ), 'setup_llar' ),
 			'updraft'   => array( class_exists( 'UpdraftPlus_Options' ), 'setup_updraft' ),
@@ -323,7 +361,7 @@ final class Integrations {
 				$out[ $key ] = 'already set up';
 				continue;
 			}
-			$out[ $key ]  = (string) call_user_func( array( __CLASS__, $r[1] ) );
+			$out[ $key ]  = (string) call_user_func( is_array( $r[1] ) ? $r[1] : array( __CLASS__, $r[1] ) );
 			$done[ $key ] = time();
 			update_option( self::DONE, $done, false );
 		}
@@ -345,7 +383,7 @@ final class Integrations {
 		$t['knowledgegraph_type']  = 'company';
 		$t['knowledgegraph_name']  = 'Explore Katsina';
 		$t['website_name']         = 'Explore Katsina';
-		// Our own structured data comes in Phase 14; until then no generic "Article" markup on listings.
+		// Our own structured data (class Seo) describes listings; no generic "Article" markup from Rank Math.
 		foreach ( array( Post_Types::BUSINESS, Attractions::CPT, Events::CPT, Tours::CPT ) as $pt ) {
 			$t[ 'pt_' . $pt . '_default_rich_snippet' ] = 'off';
 		}
@@ -387,6 +425,11 @@ final class Integrations {
 			\UpdraftPlus_Options::update_updraft_option( 'updraft_include_' . $part, 1 );
 		}
 		return 'database daily (14 kept), files weekly (4 kept); remote storage: owner to connect';
+	}
+
+	public static function setup_speed() {
+		update_option( 'woocommerce_feature_order_attribution_enabled', 'no' ); // Tracking cookies on every visit: off.
+		return 'WooCommerce order-attribution tracking off';
 	}
 
 	public static function setup_cache() {

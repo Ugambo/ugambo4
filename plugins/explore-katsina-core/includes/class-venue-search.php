@@ -169,8 +169,7 @@ final class Venue_Search {
 
 	public static function shortcode() {
 		wp_enqueue_style( 'ek' );
-		wp_enqueue_style( 'leaflet' );
-		wp_enqueue_script( 'ek-search' );
+		wp_enqueue_script( 'ek-search' ); // Loads the map library itself when the results map is scrolled near.
 		$p = self::params();
 		return View::render( 'venue-search', array( 'p' => $p, 'r' => self::search( $p ) ) );
 	}

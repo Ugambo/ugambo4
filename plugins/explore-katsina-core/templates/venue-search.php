@@ -80,7 +80,7 @@ $link_q  = array_filter( array( 'date' => $p['date'], 'guests' => $p['guests'] ?
 		<ol class="ek-results">
 			<?php foreach ( $r['items'] as $i ) : $link = add_query_arg( $link_q, $i['url'] ) . '#halls'; ?>
 				<li class="ek-result">
-					<a class="ek-result-img" href="<?php echo esc_url( $link ); ?>" tabindex="-1" aria-hidden="true"><?php echo $i['photo'] ? wp_get_attachment_image( $i['photo'], 'medium_large', false, array( 'loading' => 'lazy', 'alt' => '' ) ) : '<span class="ek-result-noimg"></span>'; // phpcs:ignore ?></a>
+					<a class="ek-result-img" href="<?php echo esc_url( $link ); ?>" tabindex="-1" aria-hidden="true"><?php echo $i['photo'] ? wp_get_attachment_image( $i['photo'], 'medium_large', false, \EK\View::img_attrs( $ek_n = ( $ek_n ?? 0 ) + 1 ) ) : '<span class="ek-result-noimg"></span>'; // phpcs:ignore ?></a>
 					<div class="ek-result-body">
 						<h2 class="ek-result-name"><a href="<?php echo esc_url( $link ); ?>"><?php echo esc_html( $i['name'] ); ?></a></h2>
 						<p class="ek-result-meta"><?php echo esc_html( $i['lga'] ); ?><?php echo null !== $i['distance'] ? ' · <strong>' . esc_html( Hotel_Search::format_distance( $i['distance'] ) ) . '</strong>' : ''; ?></p>

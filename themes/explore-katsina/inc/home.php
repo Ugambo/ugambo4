@@ -8,6 +8,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// Card photos: two columns on phones, about 300px wide on larger screens (phones then download a small copy).
+defined( 'EKT_CARD_SIZES' ) || define( 'EKT_CARD_SIZES', '(min-width: 640px) 300px, 50vw' );
+
 /** Section wrapper with heading, optional intro and "see all" link. */
 function ekt_section_open( $id, $title, $intro = '', $more = array(), $class = '' ) {
 	echo '<section class="ekt-sec ' . esc_attr( $class ) . '" id="' . esc_attr( $id ) . '" aria-labelledby="' . esc_attr( $id ) . '-h"><div class="ekt-wrap">';
@@ -71,35 +74,35 @@ function ekt_home_hero() {
 					</div>
 					<noscript><p class="ekt-noscript"><a href="<?php echo esc_url( ekt_page_url( 'restaurants' ) ); ?>"><?php esc_html_e( 'Restaurants', 'explore-katsina-theme' ); ?></a> · <a href="<?php echo esc_url( ekt_page_url( 'event_centres' ) ); ?>"><?php esc_html_e( 'Event centres', 'explore-katsina-theme' ); ?></a> · <a href="<?php echo esc_url( ekt_page_url( 'things_to_do' ) ); ?>"><?php esc_html_e( 'Things to do', 'explore-katsina-theme' ); ?></a></p></noscript>
 
-					<form role="tabpanel" id="ekt-panel-hotels" aria-labelledby="ekt-tab-hotels" class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'hotels' ) ); ?>">
+					<div role="tabpanel" id="ekt-panel-hotels" aria-labelledby="ekt-tab-hotels"><form class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'hotels' ) ); ?>">
 						<div class="ekt-field ekt-field--wide"><?php ekt_lga_options( 'lga', 'ekt-h-lga' ); ?></div>
 						<div class="ekt-field"><label for="ekt-h-in"><?php esc_html_e( 'Check-in', 'explore-katsina-theme' ); ?></label><input type="date" id="ekt-h-in" name="checkin" min="<?php echo esc_attr( $today ); ?>"></div>
 						<div class="ekt-field"><label for="ekt-h-out"><?php esc_html_e( 'Check-out', 'explore-katsina-theme' ); ?></label><input type="date" id="ekt-h-out" name="checkout" min="<?php echo esc_attr( $today ); ?>"></div>
 						<div class="ekt-field ekt-field--sm"><label for="ekt-h-g"><?php esc_html_e( 'Guests', 'explore-katsina-theme' ); ?></label><input type="number" id="ekt-h-g" name="guests" min="1" max="40" value="2" inputmode="numeric"></div>
 						<button class="ekt-go" type="submit"><?php esc_html_e( 'Search hotels', 'explore-katsina-theme' ); ?></button>
-					</form>
+					</form></div>
 
-					<form role="tabpanel" id="ekt-panel-restaurants" aria-labelledby="ekt-tab-restaurants" class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'restaurants' ) ); ?>" hidden>
+					<div role="tabpanel" id="ekt-panel-restaurants" aria-labelledby="ekt-tab-restaurants" hidden><form class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'restaurants' ) ); ?>">
 						<div class="ekt-field ekt-field--wide"><?php ekt_lga_options( 'lga', 'ekt-r-lga' ); ?></div>
 						<div class="ekt-field ekt-field--wide"><label for="ekt-r-c"><?php esc_html_e( 'Food', 'explore-katsina-theme' ); ?></label><select id="ekt-r-c" name="cuisine"><option value=""><?php esc_html_e( 'Any', 'explore-katsina-theme' ); ?></option>
 							<?php foreach ( class_exists( '\EK\Restaurant' ) ? \EK\Restaurant::cuisines() : array() as $k => $c ) : ?><option value="<?php echo esc_attr( $k ); ?>"><?php echo esc_html( $c ); ?></option><?php endforeach; ?>
 						</select></div>
 						<button class="ekt-go" type="submit"><?php esc_html_e( 'Find restaurants', 'explore-katsina-theme' ); ?></button>
-					</form>
+					</form></div>
 
-					<form role="tabpanel" id="ekt-panel-venues" aria-labelledby="ekt-tab-venues" class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'event_centres' ) ); ?>" hidden>
+					<div role="tabpanel" id="ekt-panel-venues" aria-labelledby="ekt-tab-venues" hidden><form class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'event_centres' ) ); ?>">
 						<div class="ekt-field ekt-field--wide"><?php ekt_lga_options( 'lga', 'ekt-v-lga' ); ?></div>
 						<div class="ekt-field"><label for="ekt-v-d"><?php esc_html_e( 'Event date', 'explore-katsina-theme' ); ?></label><input type="date" id="ekt-v-d" name="date" min="<?php echo esc_attr( $today ); ?>"></div>
 						<div class="ekt-field ekt-field--sm"><label for="ekt-v-g"><?php esc_html_e( 'Guests', 'explore-katsina-theme' ); ?></label><input type="number" id="ekt-v-g" name="guests" min="1" inputmode="numeric" placeholder="200"></div>
 						<button class="ekt-go" type="submit"><?php esc_html_e( 'Find event centres', 'explore-katsina-theme' ); ?></button>
-					</form>
+					</form></div>
 
-					<form role="tabpanel" id="ekt-panel-todo" aria-labelledby="ekt-tab-todo" class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'things_to_do' ) ); ?>" hidden>
+					<div role="tabpanel" id="ekt-panel-todo" aria-labelledby="ekt-tab-todo" hidden><form class="ekt-panel" method="get" action="<?php echo esc_url( ekt_page_url( 'things_to_do' ) ); ?>">
 						<div class="ekt-field ekt-field--wide"><label for="ekt-t-t"><?php esc_html_e( 'Type', 'explore-katsina-theme' ); ?></label><select id="ekt-t-t" name="type"><option value=""><?php esc_html_e( 'Everything', 'explore-katsina-theme' ); ?></option>
 							<?php foreach ( class_exists( '\EK\Attractions' ) ? \EK\Attractions::default_categories() : array() as $k => $c ) : ?><option value="<?php echo esc_attr( $k ); ?>"><?php echo esc_html( $c ); ?></option><?php endforeach; ?>
 						</select></div>
 						<button class="ekt-go" type="submit"><?php esc_html_e( 'Show things to do', 'explore-katsina-theme' ); ?></button>
-					</form>
+					</form></div>
 				</div>
 			</div>
 
@@ -176,7 +179,7 @@ function ekt_home_attractions() {
 		$a     = \EK\Attractions::data( $id );
 		$photo = \EK\Gallery::ids( $id );
 		echo '<li class="ekt-card"><a class="ekt-card-link" href="' . esc_url( get_permalink( $id ) ) . '">';
-		echo '<span class="ekt-card-img">' . ( $photo ? wp_get_attachment_image( $photo[0], 'medium_large', false, array( 'alt' => '', 'loading' => 'lazy' ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
+		echo '<span class="ekt-card-img">' . ( $photo ? wp_get_attachment_image( $photo[0], 'medium_large', false, array( 'alt' => '', 'loading' => 'lazy', 'sizes' => EKT_CARD_SIZES ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
 		echo '<span class="ekt-card-body"><span class="ekt-card-kicker">' . esc_html( trim( $a['category'] . ( $a['lga'] ? ' · ' . $a['lga'] : '' ), ' ·' ) ) . '</span><span class="ekt-card-title">' . esc_html( get_the_title( $id ) ) . '</span></span>';
 		echo '</a></li>';
 	}
@@ -209,7 +212,7 @@ function ekt_home_events() {
 			$d     = \EK\Events::data( $id );
 			$photo = \EK\Gallery::ids( $id );
 			echo '<li class="ekt-event"><a href="' . esc_url( get_permalink( $id ) ) . '">';
-			echo '<span class="ekt-event-img">' . ( $photo ? wp_get_attachment_image( $photo[0], 'medium', false, array( 'alt' => '', 'loading' => 'lazy' ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
+			echo '<span class="ekt-event-img">' . ( $photo ? wp_get_attachment_image( $photo[0], 'medium', false, array( 'alt' => '', 'loading' => 'lazy', 'sizes' => '96px' ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
 			echo '<span class="ekt-event-body">';
 			if ( \EK\Events::is_promoted( $id ) ) {
 				echo '<span class="ekt-tag ekt-tag--brass">' . esc_html__( 'Promoted', 'explore-katsina-theme' ) . '</span>';
@@ -286,7 +289,7 @@ function ekt_home_tours() {
 	echo '<ul class="ekt-cards">';
 	foreach ( $ids as $id ) {
 		$d = \EK\Tours::data( $id );
-		echo '<li class="ekt-card"><a class="ekt-card-link" href="' . esc_url( get_permalink( $id ) ) . '"><span class="ekt-card-img">' . ( has_post_thumbnail( $id ) ? get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy' ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
+		echo '<li class="ekt-card"><a class="ekt-card-link" href="' . esc_url( get_permalink( $id ) ) . '"><span class="ekt-card-img">' . ( has_post_thumbnail( $id ) ? get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy', 'sizes' => EKT_CARD_SIZES ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
 		echo '<span class="ekt-card-body"><span class="ekt-card-title">' . esc_html( get_the_title( $id ) ) . '</span><span class="ekt-card-meta">' . esc_html( \EK\Money::format( $d['price'] ) ) . ' ' . esc_html__( 'per person', 'explore-katsina-theme' ) . ( $d['duration'] ? ' · ' . esc_html( $d['duration'] ) : '' ) . '</span></span></a></li>';
 	}
 	echo '</ul>';
@@ -302,7 +305,7 @@ function ekt_home_stories() {
 		echo '<ul class="ekt-cards">';
 		foreach ( $ids as $id ) {
 			$cats = get_the_category( $id );
-			echo '<li class="ekt-card"><a class="ekt-card-link" href="' . esc_url( get_permalink( $id ) ) . '"><span class="ekt-card-img">' . ( has_post_thumbnail( $id ) ? get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy' ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
+			echo '<li class="ekt-card"><a class="ekt-card-link" href="' . esc_url( get_permalink( $id ) ) . '"><span class="ekt-card-img">' . ( has_post_thumbnail( $id ) ? get_the_post_thumbnail( $id, 'medium_large', array( 'alt' => '', 'loading' => 'lazy', 'sizes' => EKT_CARD_SIZES ) ) : '<span class="ekt-noimg" aria-hidden="true"></span>' ) . '</span>';
 			echo '<span class="ekt-card-body"><span class="ekt-card-kicker">' . esc_html( $cats ? $cats[0]->name : '' ) . '</span><span class="ekt-card-title">' . esc_html( get_the_title( $id ) ) . '</span></span></a></li>';
 		}
 		echo '</ul>';

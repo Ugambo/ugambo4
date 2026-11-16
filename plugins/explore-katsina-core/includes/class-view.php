@@ -11,6 +11,15 @@ defined( 'ABSPATH' ) || exit;
 
 final class View {
 
+	/**
+	 * Picture settings for the n-th result in a list: the first one loads straight away and first
+	 * (it is usually the biggest thing on a phone screen); the rest load as the visitor scrolls.
+	 */
+	public static function img_attrs( $n, $sizes = '(min-width: 720px) 240px, 100vw' ) {
+		return 1 === (int) $n ? array( 'loading' => 'eager', 'fetchpriority' => 'high', 'alt' => '', 'sizes' => $sizes ) : array( 'loading' => 'lazy', 'alt' => '', 'sizes' => $sizes );
+	}
+
+
 	public static function render( $template, array $vars = array() ) {
 		$file = EK_DIR . 'templates/' . $template . '.php';
 		if ( ! is_readable( $file ) ) {
