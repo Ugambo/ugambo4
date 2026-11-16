@@ -3,7 +3,7 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** Phase 5 (payments) is built and awaiting approval:
+**Status:** Phase 6 (admin and fleet) is built and awaiting approval:
 
 - **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
   admin two-factor authentication, audit log, Docker and CI.
@@ -20,6 +20,12 @@ bus seats, for passengers, drivers, admins and fleet operators.
   for rides by cash, wallet or card; commission on cash trips from the driver's
   wallet; driver withdrawals; refunds, fare disputes and chargebacks; a
   reconciliation job.
+- **Phase 6:** the admin dashboard's overview (KPIs, 14-day revenue and trip charts),
+  live map of drivers and rides, ride management with an event timeline and admin
+  cancellation, user management, pricing, service areas drawn on a map, payments
+  (wallets, refunds, payouts, disputes), roles and the audit log; fleet operators
+  and the fleet portal, where a manager invites drivers (who accept in the driver
+  app) and sees only their own fleet's drivers, vehicles, trips and earnings.
 
 The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
@@ -63,6 +69,22 @@ pnpm --filter @rideswithme/admin-dashboard dev                         # http://
 
 With `SMS_PROVIDER=console` the sign-in code appears in the API log.
 
+The live map loads map tiles from OpenStreetMap by default (`MAP_TILE_URL`); for
+production use a tile provider you have an agreement with (see DECISIONS D-057).
+For the live map's updates the browser connects to the API directly: set
+`API_PUBLIC_URL` and add the dashboard's address to the API's `CORS_ORIGINS`.
+
+### Fleet portal
+
+Staff create a fleet in the admin dashboard (Fleets → New fleet) with the
+manager's phone number. The manager then signs in to the portal with an SMS code
+and sets up an authenticator app, as staff do.
+
+```bash
+cp apps/fleet-portal/.env.example apps/fleet-portal/.env.local   # set FLEET_SESSION_SECRET
+pnpm --filter @rideswithme/fleet-portal dev                      # http://localhost:3003
+```
+
 ### Payments in development
 
 With `PAYMENT_PROVIDER=fake` (the default) no money moves: top-ups and saved cards
@@ -98,8 +120,9 @@ pnpm --filter @rideswithme/driver-mobile start               # needs a developme
 ### Everything in containers
 
 `docker compose --profile app up --build` runs migrations, the API, the admin
-dashboard and the passenger website (create `apps/api/.env`,
-`apps/admin-dashboard/.env.local` and `apps/passenger-web/.env.local` first).
+dashboard, the passenger website and the fleet portal (create `apps/api/.env`,
+`apps/admin-dashboard/.env.local`, `apps/passenger-web/.env.local` and
+`apps/fleet-portal/.env.local` first).
 
 ## Commands
 
@@ -112,6 +135,7 @@ Run from `rideswithme/`.
 | `pnpm typecheck` / `pnpm lint` / `pnpm format:check`    | Static checks (CI runs all of these)                                   |
 | `pnpm --filter @rideswithme/admin-dashboard e2e`        | Browser tests of the admin dashboard against a real API (build first)  |
 | `pnpm --filter @rideswithme/passenger-web e2e`          | Browser tests of the passenger website: booking with live updates      |
+| `pnpm --filter @rideswithme/fleet-portal e2e`           | Browser tests of the fleet portal: invitations, isolation from others  |
 | `pnpm --filter @rideswithme/driver-mobile bundle:check` | Bundles the driver app for Android with Metro (same for passenger)     |
 | `pnpm db:migrate` / `pnpm db:status`                    | Apply or list migrations (`DATABASE_URL`)                              |
 | `pnpm dev:api`                                          | API with reload, reading `apps/api/.env`                               |
@@ -123,14 +147,14 @@ Integration tests use `TEST_DATABASE_URL` (default
 `TEST_DATABASE_URL=postgres://rideswithme:rideswithme@localhost:5432/rideswithme_test`.
 The test database is wiped and rebuilt from migrations on every run. The website
 end-to-end tests use `E2E_DATABASE_URL` (a database they drop and recreate; the
-passenger website's tests add `_passenger` to its name) and `E2E_REDIS_URL` in the
-same way.
+passenger website's tests add `_passenger` to its name, the fleet portal's
+`_fleet`) and `E2E_REDIS_URL` in the same way.
 
 ## Layout
 
 ```
-apps/            api, admin-dashboard, driver-mobile, passenger-mobile, passenger-web (built);
-                 fleet-portal (Phase 6)
+apps/            api, admin-dashboard, fleet-portal, driver-mobile, passenger-mobile,
+                 passenger-web
 packages/        shared-types, validation, api-client, ui-components, utilities, mobile-core,
                  web-core, e2e-support
 infrastructure/  database (migrations + runner), docker, deployment

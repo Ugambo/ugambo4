@@ -1,6 +1,6 @@
 # Local development stack.
 #   docker compose up -d postgres redis s3   data stores only; run the apps on your machine (see README)
-#   docker compose --profile app up --build  everything, including migrations, the API, the admin dashboard and the passenger website
+#   docker compose --profile app up --build  everything, including migrations, the API, the admin dashboard, the fleet portal and the passenger website
 name: rideswithme
 
 services:
@@ -58,10 +58,11 @@ services:
       S3_PUBLIC_ENDPOINT: http://localhost:9000
       S3_FORCE_PATH_STYLE: 'true'
       S3_CREATE_BUCKET: 'true'
-      # The admin dashboard is a proxy in front of the API.
+      # The web apps are proxies in front of the API.
       TRUST_PROXY_HOPS: '1'
-      # Browsers on the passenger website connect here directly for live updates.
-      CORS_ORIGINS: http://localhost:3002
+      # Browsers on the passenger website (trip updates) and the admin dashboard
+      # (live map) connect here directly for live updates.
+      CORS_ORIGINS: http://localhost:3002,http://localhost:3001
     ports: ['3000:3000']
     depends_on:
       migrate: { condition: service_completed_successfully }
@@ -74,9 +75,22 @@ services:
     env_file: apps/admin-dashboard/.env.local
     environment:
       API_URL: http://api:3000
+      # Where the browser reaches the API for the live map.
+      API_PUBLIC_URL: http://localhost:3000
       STORAGE_ORIGIN: http://localhost:9000
       SESSION_COOKIE_SECURE: 'false'
     ports: ['3001:3001']
+    depends_on:
+      api: { condition: service_started }
+
+  fleet-portal:
+    profiles: [app]
+    build: { context: ., dockerfile: infrastructure/docker/fleet-portal.Dockerfile }
+    env_file: apps/fleet-portal/.env.local
+    environment:
+      API_URL: http://api:3000
+      SESSION_COOKIE_SECURE: 'false'
+    ports: ['3003:3003']
     depends_on:
       api: { condition: service_started }
 

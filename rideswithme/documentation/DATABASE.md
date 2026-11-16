@@ -260,6 +260,29 @@ rides 1──1 commissions               (owed by the driver for cash rides)
 - **commissions:** now settled into the ledger at completion; `journal_id` links the
   journal that moved the money.
 
+## Admin and fleets (Phase 6)
+
+Migrations `0009_ride_cancelled_by_admin` (adds the ride status; run outside a
+transaction, as Postgres requires for a new enum value used later) and
+`0010_fleets`.
+
+- **rides:** new status `cancelled_by_admin` (staff stopped the ride, with
+  `cancellation_reason`; never a fee). The "driver once assigned" check allows it
+  with or without a driver.
+- **fleet_operators:** name (unique ignoring case), status (active, suspended),
+  contact phone and email, who created it.
+- **fleet_members:** a person's place in a fleet: `member_role` (manager, driver),
+  `status` (invited, active, declined, removed), who invited them and when,
+  `responded_at` (when they joined or declined), `removed_at` and `removed_by`.
+  Partial unique indexes: a driver is active in at most one fleet, a manager
+  manages at most one fleet, and there is at most one open (invited or active)
+  row per fleet, person and role. Rows are never deleted, so a fleet's view of a
+  driver's trips is limited to `responded_at` ≤ `rides.assigned_at` < `removed_at`.
+- **Permissions:** `fleets.read` (support agents, admins), `fleets.manage` and
+  `rides.manage` (admins, super admins), `fleet.portal` (the `fleet_manager` role).
+- **Indexes for the dashboard and fleets:** completed rides by `completed_at`, and
+  rides by driver and `assigned_at`.
+
 ## Not in the database
 
 - One-time codes, rate-limit counters, job locks, cached routes: Redis, with expiry.
@@ -270,7 +293,7 @@ rides 1──1 commissions               (owed by the driver for cash rides)
 
 ## Planned domains
 
-Tables listed in the brief for later phases (passenger_profiles, fleets, bus_*, emergency_alerts,
+Tables listed in the brief for later phases (passenger_profiles, bus_*, emergency_alerts,
 incident_reports, ratings, reviews, promotions, notifications, support_tickets)
 are added by the phase that first needs them. `driver_locations` is not needed:
 the live position is in Redis and the history in `trip_locations` (DECISIONS D-042).

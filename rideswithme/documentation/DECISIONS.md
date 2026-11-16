@@ -28,6 +28,9 @@ These need your answer or awareness. Work continues on the stated assumption.
 | B-17 | Holding passengers' money in a wallet is regulated in Nigeria (CBN rules on stored value and e-money).                                                                                                                                                        | The wallet is built (as the brief asks) with a balance limit like a tier-1 account (₦300,000, `WALLET_MAX_BALANCE_KOBO`), no cash-out for passengers, and a full ledger. **Before launch, confirm with a lawyer whether RideswithMe needs a licence or a licensed partner (e.g. holding the funds through Paystack or a bank) and what KYC tiers apply.** |
 | B-18 | The brief does not say who pays Paystack's fees (1.5% + ₦100 per card payment, ₦10–₦50 per transfer).                                                                                                                                                         | The platform absorbs them: wallets are credited the full amount paid and drivers receive the full payout; fees are recorded in their own account (`provider_fees`) so their cost is visible. Passing fees on would be a change to the top-up and payout amounts. Please confirm.                                                                          |
 | B-19 | Who receives a cancellation fee is not in the brief.                                                                                                                                                                                                          | The driver who was on the way, less the platform's commission at the ride's rate (the same split as a fare). Please confirm, or say if the platform should keep it all.                                                                                                                                                                                   |
+| B-20 | The admin maps need map tiles. OpenStreetMap's own tile servers are free but their usage policy forbids heavy or commercial use, and Google map tiles need the browser key from B-16.                                                                         | The maps use Leaflet with the tile server set by `MAP_TILE_URL` (OpenStreetMap by default, fine for development and a few staff). **Before launch, choose a tile provider** (e.g. MapTiler, Stadia, Mapbox, or Google with a key) and set `MAP_TILE_URL` and `MAP_TILE_ATTRIBUTION`. See D-057.                                                           |
+| B-21 | The brief says fleet operators see their drivers' earnings, but not whether the fleet is paid instead of the driver, or takes a share.                                                                                                                        | Drivers in a fleet are still paid individually to their own wallets and bank accounts; the fleet only sees the numbers. Paying fleets (all earnings, or a share) would be a ledger change: a fleet wallet and a split at settlement. **Please say which model fleets in your market expect.**                                                             |
+| B-22 | The admin section lists promotions and an SOS panel, but the phase plan puts promotions and SOS in Phase 8, and buses in Phase 7.                                                                                                                             | Followed the phase plan: those screens are built with their features (Phase 7 buses, Phase 8 SOS and promotions). Phase 6 built everything else in the admin section.                                                                                                                                                                                     |
 
 ## Decision log
 
@@ -595,8 +598,8 @@ staff resolve it with a refund or a written reason. Card chargebacks from Paysta
 are recorded; a lost chargeback is taken from platform revenue (staff can recover it
 from the driver with an adjustment). Refunds, dispute decisions, adjustments and
 payout retries are all in the audit log. Super admins can make manual wallet
-adjustments (`wallets.adjust`) with a reason. The screens for all of this arrive
-with the dashboard in Phase 6; the APIs are ready.
+adjustments (`wallets.adjust`) with a reason. The admin dashboard's Payments
+screens (Phase 6) cover all of this.
 
 ### D-055 Reconciliation
 
@@ -606,3 +609,67 @@ retries card charges and transfers that never reached it, marks checkouts abando
 after `PAYMENT_ABANDON_AFTER_HOURS` (24), retries failed webhook processing, returns
 wallet holds left on finished rides, and logs an error if any wallet balance differs
 from its ledger lines.
+
+### D-056 Admin overview numbers
+
+KPI cards: riders (active accounts with the passenger role, plus new today),
+approved drivers (plus online now), rides in progress, trips completed today, and
+today's fares and platform revenue. "Today" is the Nigerian calendar day
+(Africa/Lagos). Revenue is what the platform earned (booking fees, commission and
+its share of cancellation fees, less chargebacks): the movement on the
+`platform_revenue` ledger account, not the fares passengers paid, which are shown
+separately. The 14-day charts are single-series bars (revenue in naira; trips
+completed), each with a table view, following the shared chart guidance (one
+colour, no dual axes). Numbers come from SQL on demand; at larger volumes they can
+move to a daily summary table without changing the API.
+
+### D-057 Maps in the admin dashboard: Leaflet and a configurable tile server
+
+The live map and the service-area editor use Leaflet (open source, small, works
+with any tile server) instead of Google's Maps JavaScript API, which would need a
+browser key (B-16) and billing. Tiles come from `MAP_TILE_URL` with
+`MAP_TILE_ATTRIBUTION`; the default is OpenStreetMap, whose policy allows light use
+only (B-20). The tile host is added to the dashboard's Content Security Policy
+automatically. Markers are drawn with CSS, not image files. Service areas are
+drawn as a polygon: click the map to add corners, drag a corner to move it, with
+buttons to remove the last corner or start again. Saving uses the existing
+`PUT /v1/admin/service-areas`.
+
+### D-058 Fleets
+
+Staff create a fleet operator with a manager's phone number (the account is
+created if needed and given the `fleet_manager` role). Managers use the fleet portal
+with two-factor authentication (`fleet.portal` requires it, as staff permissions
+do). Drivers join only by accepting an invitation in the driver app, because the
+fleet will see their trips and earnings; a driver is in at most one fleet, and can
+leave at any time. A manager sees a driver's trips only between joining and leaving
+(by the time the ride was assigned), so joining a fleet does not expose past trips
+and leaving stops new ones from showing. Removed drivers' past trips stay visible
+to the fleet. A suspended fleet's managers cannot use the portal. One person
+manages at most one fleet. Every change is audited (`fleets.*`).
+
+### D-059 Staff stopping a ride
+
+Staff with `rides.manage` can stop a ride in any state before it ends, with a
+written reason (`cancelled_by_admin`). There is never a fee: a wallet hold is
+returned and nothing is charged. A trip already in progress is stopped without a
+fare; if the passenger should pay part of it, that is handled afterwards. The
+passenger and driver see "Stopped by RideswithMe" and the reason is in the ride's
+timeline and the audit log.
+
+### D-060 Live operations feed
+
+Staff with `rides.read` join the `ops` Socket.IO room (`ops:subscribe`) and receive
+every ride change (`ops:ride`) and every driver position (`ops:driver`). The live
+map first loads `GET /v1/admin/live` (online drivers, rides in progress), then
+applies the events, and reloads on reconnect, as the apps do (D-044). A driver whose
+last position is more than 30 seconds old is drawn grey with its age, never as
+live (the brief's staleness rule).
+
+### D-061 One sign-in for staff and fleet managers
+
+The SMS code plus authenticator sign-in (including first-time authenticator set-up
+with a QR code) is a component in `@rideswithme/web-core`, used by the admin
+dashboard and the fleet portal with their own titles and landing pages. Apps can
+also word API errors for their own users (for example, "No driver with this phone
+number" in the fleet portal rather than the driver app's wording).

@@ -36,6 +36,12 @@ event timelines; pricing, service areas, promotions; payments, wallets, refunds,
 payouts, disputes; SOS panel at highest priority; incidents and tickets; bus
 routes and seat maps; roles, permissions, audit log, two-factor authentication.
 
+**Fleet operator:** staff create a fleet and its managers; managers sign in with
+two-factor authentication; drivers join only by accepting an invitation in the
+driver app and belong to at most one fleet; managers see their drivers' status,
+vehicles, trips and earnings only for the time each driver was in the fleet, and
+nothing of other fleets.
+
 **Fare:** `F = B + (D × Rd) + (T × Rt) + A` per vehicle category, admin-controlled
 rates, minimums, waiting and cancellation charges, service fees, commission,
 promotions, optional peak pricing. Integer kobo. The fare is snapshotted when a
@@ -68,9 +74,13 @@ tested backups; rate limits on OTP, login and booking.
 | 3 Core ride flow         | Location search, fare estimate, ride request, matching, state machine, cash                  | Approved (passenger web moved to Phase 4) |
 | 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness; passenger web booking          | Approved                                  |
 | 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              | Approved                                  |
-| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                | In progress                               |
+| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                | Built, awaiting approval (see note)       |
 | 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          |                                           |
 | 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds |                                           |
+
+Phase 6 note: the admin dashboard's promotions screen and SOS panel are built with
+those features in Phase 8, and bus screens with buses in Phase 7, as the phase plan
+lists them there.
 
 ## Open decisions (defaults in use)
 

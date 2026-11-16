@@ -225,16 +225,16 @@ belongs to another account.
 
 All need the listed permission, and TOTP verification for the session.
 
-| Method | Path                              | Permission      | Notes                                                                                                         |
-| ------ | --------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------- |
-| GET    | `/v1/admin/users`                 | users.read      | Query: `search` (phone in any format, name or email), `role`, `status`, `limit`, `cursor`                     |
-| GET    | `/v1/admin/users/:id`             | users.read      | `AdminUserSummary`                                                                                            |
-| POST   | `/v1/admin/users/:id/roles`       | roles.assign    | `{ "role": "driver" }`. Privileged roles need roles.assign_privileged. Idempotent                             |
-| DELETE | `/v1/admin/users/:id/roles/:role` | roles.assign    | Same rule; `409 LAST_SUPER_ADMIN` protection                                                                  |
-| POST   | `/v1/admin/users/:id/suspend`     | users.manage    | `{ "reason": "…" }`. Signs the user out everywhere. Staff accounts need roles.assign_privileged; not yourself |
-| POST   | `/v1/admin/users/:id/reactivate`  | users.manage    |                                                                                                               |
-| GET    | `/v1/admin/roles`                 | roles.read      | Roles with their permissions                                                                                  |
-| GET    | `/v1/admin/audit-logs`            | audit_logs.read | Query: `actorUserId`, `targetId`, `action`, `limit`, `cursor`                                                 |
+| Method | Path                              | Permission      | Notes                                                                                                              |
+| ------ | --------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/v1/admin/users`                 | users.read      | Query: `search` (phone in any format, name or email), `role`, `status`, `limit`, `cursor`                          |
+| GET    | `/v1/admin/users/:id`             | users.read      | `AdminUserSummary`                                                                                                 |
+| POST   | `/v1/admin/users/:id/roles`       | roles.assign    | `{ "role": "driver" }`. Privileged roles need roles.assign_privileged. Idempotent                                  |
+| DELETE | `/v1/admin/users/:id/roles/:role` | roles.assign    | Same rule; `409 LAST_SUPER_ADMIN` protection                                                                       |
+| POST   | `/v1/admin/users/:id/suspend`     | users.manage    | `{ "reason": "…" }`. Signs the user out everywhere. Staff accounts need roles.assign_privileged; not yourself      |
+| POST   | `/v1/admin/users/:id/reactivate`  | users.manage    |                                                                                                                    |
+| GET    | `/v1/admin/roles`                 | roles.read      | Roles with their permissions                                                                                       |
+| GET    | `/v1/admin/audit-logs`            | audit_logs.read | Query: `actorUserId`, `targetId`, `action` (a prefix: `payments.` matches every payment action), `limit`, `cursor` |
 
 `AdminUserSummary`:
 
@@ -498,13 +498,15 @@ own rides.
 
 **Server → client events**
 
-| Event             | To                                                | Payload                                                       |
-| ----------------- | ------------------------------------------------- | ------------------------------------------------------------- |
-| `ride:updated`    | The passenger, the driver, and the ride's room    | `RideView` for the passenger, `DriverRideView` for the driver |
-| `driver:position` | The passenger of the driver's active ride         | `{ rideId, position: { lat, lng, recordedAt, receivedAt } }`  |
-| `offer:new`       | The driver offered a ride                         | `DriverOfferView`                                             |
-| `offer:closed`    | The driver, when an offer expires or is withdrawn | `{ offerId, reason }`, reason `expired` or `withdrawn`        |
-| `session:ended`   | Every connection of a session that has ended      | `{ code: "SESSION_REVOKED" }`; the connection then closes     |
+| Event             | To                                                | Payload                                                                                 |
+| ----------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `ride:updated`    | The passenger, the driver, and the ride's room    | `RideView` for the passenger, `DriverRideView` for the driver                           |
+| `driver:position` | The passenger of the driver's active ride         | `{ rideId, position: { lat, lng, recordedAt, receivedAt } }`                            |
+| `offer:new`       | The driver offered a ride                         | `DriverOfferView`                                                                       |
+| `offer:closed`    | The driver, when an offer expires or is withdrawn | `{ offerId, reason }`, reason `expired` or `withdrawn`                                  |
+| `session:ended`   | Every connection of a session that has ended      | `{ code: "SESSION_REVOKED" }`; the connection then closes                               |
+| `ops:ride`        | Staff in the `ops` room (Phase 6)                 | `{ id, status, category, pickup, dropoff, driverId, requestedAt }` on every ride change |
+| `ops:driver`      | Staff in the `ops` room (Phase 6)                 | `{ driverId, lat, lng, receivedAt, rideId }` for every driver position                  |
 
 **Client → server messages** (with acknowledgement `{ ok: true, … }` or `{ ok: false, code }`)
 
@@ -512,6 +514,7 @@ own rides.
 | ----------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `ride:subscribe`  | The ride's passenger or driver; staff with `rides.read` after two-factor verification | `{ rideId }`. Joins the ride's room (`NOT_FOUND` otherwise)                                 |
 | `location:update` | Drivers                                                                               | Same as `POST /v1/driver/location`; acknowledgement `{ ok, position, stored }`. 60 a minute |
+| `ops:subscribe`   | Staff with `rides.read` after two-factor verification                                 | No body. Joins the `ops` room (`FORBIDDEN` otherwise); load `GET /v1/admin/live` first      |
 
 Events sent while a client is offline are not replayed: refetch state (for
 example `GET /v1/rides/active`) after reconnecting.
@@ -580,6 +583,56 @@ cancel). It answers 404 otherwise.
 | GET    | `/v1/admin/users/:id/wallets`            | payments.read   | Both wallets with recent lines                                                                                                              |
 | POST   | `/v1/admin/users/:id/wallet-adjustments` | wallets.adjust  | **`Idempotency-Key` required.** `{ amountKobo (+ credit / − debit), kind: passenger \| driver, reason }`, against platform revenue. Audited |
 | GET    | `/v1/admin/ledger`                       | payments.read   | Platform account balances and the number of wallets whose balance differs from their lines (should be 0)                                    |
+
+## Admin and fleet (Phase 6)
+
+### Admin operations
+
+| Method | Path                         | Permission   | Notes                                                                                                                                                                                                                                 |
+| ------ | ---------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/admin/dashboard`        | rides.read   | `{ kpis: { riders, newRidersToday, drivers, driversOnline, activeRides, tripsToday, faresTodayKobo, revenueTodayKobo, openDisputes }, days: [{ date, trips, faresKobo, revenueKobo }] }`, the last 14 Nigerian days (DECISIONS D-056) |
+| GET    | `/v1/admin/live`             | rides.read   | `{ drivers: [{ driverId, name, lat, lng, receivedAt, rideId }], rides: [{ id, status, category, pickup, dropoff, driverId, requestedAt }] }`: online drivers and rides in progress                                                    |
+| POST   | `/v1/admin/rides/:id/cancel` | rides.manage | `{ reason }` (3–300 characters). Stops a ride that has not ended (`cancelled_by_admin`), no fee, any wallet hold returned. `409 INVALID_STATE` if it has ended. Audited (D-059)                                                       |
+
+### Fleets (staff)
+
+| Method | Path                              | Permission    | Notes                                                                                                                                                                                    |
+| ------ | --------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/admin/fleets`                | fleets.read   | `FleetSummary[]`: `{ id, name, status, contactPhone, contactEmail, drivers, managers: [{ userId, name, phone }], createdAt }`                                                            |
+| POST   | `/v1/admin/fleets`                | fleets.manage | `{ name, managerPhone, contactPhone?, contactEmail? }` → `201 FleetSummary`. Creates the manager's account if needed. `409` for a duplicate name or a person who already manages a fleet |
+| GET    | `/v1/admin/fleets/:id`            | fleets.read   | `FleetSummary`                                                                                                                                                                           |
+| GET    | `/v1/admin/fleets/:id/drivers`    | fleets.read   | `FleetDriverView[]`, as the fleet sees them                                                                                                                                              |
+| POST   | `/v1/admin/fleets/:id/managers`   | fleets.manage | `{ phone }`                                                                                                                                                                              |
+| POST   | `/v1/admin/fleets/:id/suspend`    | fleets.manage | The fleet's managers can no longer use the portal; drivers keep working                                                                                                                  |
+| POST   | `/v1/admin/fleets/:id/reactivate` | fleets.manage |                                                                                                                                                                                          |
+
+All are audited (`fleets.*`).
+
+### Fleet portal (managers)
+
+Need `fleet.portal` (the `fleet_manager` role) and two-factor verification. Every
+call is limited to the fleet the caller manages (`403` if none, or if it is
+suspended). Trips and totals only include rides assigned while the driver was in
+the fleet (DECISIONS D-058).
+
+| Method | Path                    | Notes                                                                                                                                                                                                                                               |
+| ------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/fleet`             | `{ fleet, drivers: { active, invited, online, onTrip }, today, week }`; totals `{ trips, faresKobo, earningsKobo, commissionKobo }`                                                                                                                 |
+| GET    | `/v1/fleet/drivers`     | `FleetDriverView[]`: `{ userId, name, phone, membership: { status, invitedAt, joinedAt }, driverStatus, online, lastSeenAt, vehicle, today, week }`. Invited drivers show only the phone                                                            |
+| GET    | `/v1/fleet/drivers/:id` | One driver. `404` if not in the fleet                                                                                                                                                                                                               |
+| POST   | `/v1/fleet/drivers`     | `{ phone }` → `201`: invites a registered driver. `404 DRIVER_NOT_REGISTERED`, `409 CONFLICT` (already invited or in a fleet)                                                                                                                       |
+| DELETE | `/v1/fleet/drivers/:id` | Removes a driver or withdraws an invitation. Past trips stay visible                                                                                                                                                                                |
+| GET    | `/v1/fleet/vehicles`    | `[{ driver: { userId, name }, category, make, model, colour, year, plateNumber }]` for drivers in the fleet                                                                                                                                         |
+| GET    | `/v1/fleet/trips`       | `FleetTripView` page: `{ id, status, driver, category, pickupAddress, dropoffAddress, paymentMethod, fareKobo, earningsKobo, commissionKobo, requestedAt, completedAt }`. Query: `driverId`, `from`, `to` (dates, Nigerian time), `cursor`, `limit` |
+
+### Driver: fleet membership
+
+| Method | Path                                       | Notes                                                                                                |
+| ------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/driver/fleet`                         | `{ current: { id, name, joinedAt } \| null, invitations: [{ id, fleet: { id, name }, invitedAt }] }` |
+| POST   | `/v1/driver/fleet-invitations/:id/accept`  | Joins the fleet. `409` if already in one (leave it first)                                            |
+| POST   | `/v1/driver/fleet-invitations/:id/decline` |                                                                                                      |
+| POST   | `/v1/driver/fleet/leave`                   | Leaves the current fleet                                                                             |
 
 ## Command line (operators)
 

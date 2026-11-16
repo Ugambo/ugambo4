@@ -6,10 +6,11 @@
  passenger-mobile ─┐                                         ┌─ PostgreSQL 16 + PostGIS
  driver-mobile ────┤   HTTPS (REST /v1)                      │   (system of record)
  passenger-web ────┼────────────────────────────►  api  ─────┤
- fleet-portal ─────┤   Socket.IO /realtime        (NestJS)   ├─ Redis
+                   │   Socket.IO /realtime        (NestJS)   ├─ Redis
                    │                                 ▲       │   (OTP, rate limits, live positions, locks)
  admin browser ──► admin-dashboard server ───────────┤       ├─ SMS gateway (Termii, behind SmsProvider)
- passenger browser ► passenger-web server ───────────┘       ├─ Paystack (payments, transfers, webhooks)
+ fleet browser ──► fleet-portal server ──────────────┤       ├─ Paystack (payments, transfers, webhooks)
+ passenger browser ► passenger-web server ───────────┘       │
                    (Next.js; hold the user's tokens;         │
                     browsers open Socket.IO with a ticket)   │
                                                              ├─ Google Maps (Phase 3)
@@ -201,7 +202,7 @@ client reconnects ─► refetches state (events are not replayed); 30 s fallbac
 
 ## Websites
 
-`admin-dashboard` and `passenger-web` share `@rideswithme/web-core`: the browser
+`admin-dashboard`, `fleet-portal` and `passenger-web` share `@rideswithme/web-core`: the browser
 calls only the website's server, which holds the API tokens in an encrypted
 httpOnly cookie, refreshes them, and forwards an allow-list of API paths. Pages
 are client components using the shared typed API client. Each request gets a
@@ -235,11 +236,35 @@ reconciliation job    ─► pending payments/payouts checked with the provider,
   for the outcome. How a ride was paid is described by one shared rule
   (`paymentSummary` in `@rideswithme/utilities`).
 
+## Admin and fleet (Phase 6)
+
+```
+admin browser ── pages ──► admin-dashboard server ── /api/proxy (allow-list) ──► api /v1/admin/*
+      │                                                                         ▲
+      └── Socket.IO (ticket) ── ops:subscribe ── ops:ride / ops:driver ─────────┘
+      └── map tiles ──► MAP_TILE_URL (OpenStreetMap by default)
+
+fleet browser ── pages ──► fleet-portal server ── /api/proxy (/v1/fleet/* only) ──► api /v1/fleet/*
+                                                                    FleetsService.scope(manager)
+driver app ── accept invitation ──► api /v1/driver/fleet-invitations/:id/accept
+```
+
+- **Admin dashboard:** left sidebar (items shown by permission), KPI cards and
+  charts on the overview, tables with search and filters. Each page calls the
+  admin APIs through the dashboard's proxy. The live map is the only page with its
+  own connection to the API (a short-lived realtime ticket, then the `ops` room).
+  Maps use Leaflet; charts are plain SVG components with a table view.
+- **Fleets:** `apps/api/src/fleets`. Every portal call first resolves the caller's
+  fleet (`scope`), and every query is written against that fleet id; trips are
+  joined to memberships by time, so a fleet never sees a driver's trips outside
+  their membership. The portal's proxy forwards only sign-in, session and
+  `/v1/fleet/*` paths, so even a mistake in a page cannot reach staff endpoints.
+- **Shared code:** staff sign-in (SMS code, authenticator set-up and check) is in
+  `@rideswithme/web-core` for both staff websites; browser-test helpers (sign-in,
+  driver applications, rides) are in `@rideswithme/e2e-support`.
+
 ## Planned shape of later phases
 
-- **Admin and fleet (Phase 6):** dashboard screens on the existing admin APIs
-  (rides, pricing, service areas, payments, refunds, disputes, payouts) and the
-  fleet portal, both on `@rideswithme/web-core`.
 - **Buses (Phase 7):** seats held with short-lived locks and booked in a transaction
   with a unique constraint per seat and departure, paid through the same ledger.
 - **Safety and launch (Phase 8):** SOS alerts over the realtime connection with
