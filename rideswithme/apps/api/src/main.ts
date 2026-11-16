@@ -4,9 +4,12 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { configureApp } from './bootstrap';
 import { loadConfig } from './config/config';
+import { initErrorTracking, reportError } from './observability/error-tracking';
 
 async function main() {
   const config = loadConfig();
+  initErrorTracking(config);
+  process.on('unhandledRejection', (err) => reportError(err));
   const app = await NestFactory.create(AppModule.forRoot(config), {
     bufferLogs: true,
     bodyParser: false,

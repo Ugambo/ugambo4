@@ -20,6 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { EngagementModule } from './engagement/engagement.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { SafetyModule } from './safety/safety.module';
+import { ObservabilityModule } from './observability/observability.module';
 import { PaymentsModule } from './payments/payments.module';
 import { RedisModule } from './redis/redis.module';
 import { RidesModule } from './rides/rides.module';
@@ -81,6 +82,7 @@ export class AppModule {
         SafetyModule,
         EngagementModule,
         PrivacyModule,
+        ObservabilityModule,
         RidesModule,
         HealthModule,
       ],

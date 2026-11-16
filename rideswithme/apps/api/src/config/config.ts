@@ -187,6 +187,12 @@ export const configSchema = z
     /** Account deletion: days to change one's mind, and how often requests are processed (minutes; 0 = off). */
     DELETION_GRACE_DAYS: z.coerce.number().int().min(0).max(90).default(7),
     DELETION_SWEEP_MINUTES: z.coerce.number().int().min(0).max(1440).default(60),
+    // --- Monitoring ---
+    /** Error tracking (Sentry, or a compatible service such as GlitchTip). Off when unset. */
+    SENTRY_DSN: z.string().url().optional(),
+    SENTRY_ENVIRONMENT: z.string().min(1).optional(),
+    /** Bearer token Prometheus uses to read /metrics. /metrics is off (404) when unset. */
+    METRICS_TOKEN: z.string().min(24).optional(),
   })
   .superRefine((c, ctx) => {
     if (!c.FIELD_ENCRYPTION_KEYS.has(c.FIELD_ENCRYPTION_ACTIVE_KEY_ID)) {

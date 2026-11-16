@@ -1,3 +1,4 @@
+import { reportError } from '../observability/error-tracking';
 import {
   type ArgumentsHost,
   Catch,
@@ -65,6 +66,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error({ err: exception, requestId }, 'Unhandled error');
+      reportError(exception, {
+        requestId,
+        route: (req.route as { path?: string } | undefined)?.path,
+      });
     }
     const payload: ApiErrorBody = { error: body };
     if (requestId) payload.requestId = requestId;
