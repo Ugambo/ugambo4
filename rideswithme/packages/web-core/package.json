@@ -18,7 +18,9 @@
     "@rideswithme/api-client": "workspace:*",
     "@rideswithme/shared-types": "workspace:*",
     "@rideswithme/utilities": "workspace:*",
-    "jose": "^6.2.17"
+    "jose": "^6.2.17",
+    "qrcode": "^1.5.4",
+    "@rideswithme/validation": "workspace:*"
   },
   "exports": {
     ".": {
@@ -35,6 +37,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
-    "react": "19.3.1"
+    "react": "19.3.1",
+    "@types/qrcode": "^1.5.6"
   }
 }

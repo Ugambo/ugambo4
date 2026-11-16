@@ -68,6 +68,9 @@ export function createWebI18n<K extends string>(
           const code = err instanceof ApiError ? err.code : 'INTERNAL_ERROR';
           if (code === 'NETWORK_ERROR') return t('common.offline');
           const seconds = err instanceof ApiError ? (err.retryAfterSeconds ?? '') : '';
+          // An app may word an error for its own users (e.g. a fleet manager, not a driver).
+          const own = (messages[lang] as Record<string, string | undefined>)[`error.${code}`];
+          if (own) return own.replace('{seconds}', String(seconds));
           return translate(
             lang,
             `error.${code === 'UNKNOWN' ? 'INTERNAL_ERROR' : code}` as SharedKey,

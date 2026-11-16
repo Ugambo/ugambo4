@@ -59,9 +59,6 @@ importers:
       next:
         specifier: 16.4.6
         version: 16.4.6(@playwright/test@1.63.0)(@types/node@22.20.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      qrcode:
-        specifier: ^1.5.4
-        version: 1.5.4
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -87,9 +84,6 @@ importers:
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
-      '@types/qrcode':
-        specifier: ^1.5.6
-        version: 1.5.6
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
@@ -296,6 +290,61 @@ importers:
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
+
+  apps/fleet-portal:
+    dependencies:
+      '@rideswithme/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@rideswithme/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@rideswithme/ui-components':
+        specifier: workspace:*
+        version: link:../../packages/ui-components
+      '@rideswithme/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
+      '@rideswithme/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
+      '@rideswithme/web-core':
+        specifier: workspace:*
+        version: link:../../packages/web-core
+      jose:
+        specifier: ^6.2.17
+        version: 6.2.17
+      next:
+        specifier: 16.4.6
+        version: 16.4.6(@playwright/test@1.63.0)(@types/node@22.20.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      react:
+        specifier: 19.3.1
+        version: 19.3.1
+      react-dom:
+        specifier: 19.3.1
+        version: 19.3.1(react@19.3.1)
+      server-only:
+        specifier: ^0.0.1
+        version: 0.0.1
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.63.0
+        version: 1.63.0
+      '@rideswithme/e2e-support':
+        specifier: workspace:*
+        version: link:../../packages/e2e-support
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
 
   apps/passenger-mobile:
     dependencies:
@@ -562,10 +611,19 @@ importers:
       '@rideswithme/utilities':
         specifier: workspace:*
         version: link:../utilities
+      '@rideswithme/validation':
+        specifier: workspace:*
+        version: link:../validation
       jose:
         specifier: ^6.2.17
         version: 6.2.17
+      qrcode:
+        specifier: ^1.5.4
+        version: 1.5.4
     devDependencies:
+      '@types/qrcode':
+        specifier: ^1.5.6
+        version: 1.5.6
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
