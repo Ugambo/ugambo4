@@ -40,7 +40,13 @@ export function LeafletMap({
       const L = (mod as unknown as { default?: L }).default ?? (mod as unknown as L);
       if (cancelled || !ref.current) return;
       map = L.map(ref.current, { zoomControl: true }).setView(center, zoom);
-      const layer = L.tileLayer(tiles.url, { attribution: tiles.attribution, maxZoom: 19 });
+      // The pages send no Referer (proxy.ts), but OpenStreetMap's tile servers
+      // refuse requests without one. Send just the origin, and only for tiles.
+      const layer = L.tileLayer(tiles.url, {
+        attribution: tiles.attribution,
+        maxZoom: 19,
+        referrerPolicy: 'strict-origin',
+      });
       layer.on('tileerror', () => setFailed(true));
       layer.addTo(map);
       cleanup = ready.current(map, L);
