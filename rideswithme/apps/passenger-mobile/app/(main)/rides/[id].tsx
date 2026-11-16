@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { RideView } from '@rideswithme/shared-types';
 import { formatDistance, formatDuration } from '@rideswithme/mobile-core';
 import { DisputeSection } from '@/components/dispute-section';
+import { ReportProblem } from '@/components/report-problem';
 import { FareLines, PaymentLine, StatusLabel } from '@/components/ride-parts';
 import { Body, Card, ErrorView, Loading, Screen, Title } from '@/components/ui';
 import { api } from '@/lib/session';
@@ -42,6 +43,7 @@ export default function Receipt() {
         <PaymentLine ride={ride} past />
       </Card>
       <DisputeSection ride={ride} onRaised={load} />
+      <ReportProblem rideId={ride.id} />
     </Screen>
   );
 }

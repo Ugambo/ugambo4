@@ -24,6 +24,7 @@ import {
   Screen,
   Title,
 } from '@/components/ui';
+import { MyRating } from '@/components/my-rating';
 import { useI18n } from '@/lib/i18n';
 import type { MessageKey } from '@/lib/messages';
 import { api } from '@/lib/session';
@@ -134,6 +135,7 @@ export default function Earnings() {
 
   return (
     <Screen onRefresh={() => void load()} refreshing={refreshing}>
+      <MyRating />
       <View style={styles.cards}>
         <Period label={t('earnings.today')} p={wallet.earnings.today} />
         <Period label={t('earnings.week')} p={wallet.earnings.week} />

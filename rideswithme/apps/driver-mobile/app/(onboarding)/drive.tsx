@@ -5,7 +5,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '@rideswithme/api-client';
-import { formatDistance, formatDuration } from '@rideswithme/mobile-core';
+import { formatDistance, formatDuration, RateForm, SosButton } from '@rideswithme/mobile-core';
 import {
   type DriverOfferView,
   type DriverRideView,
@@ -30,13 +30,27 @@ import { cashToCollect, navigationUrl, secondsLeft } from '@/lib/trips';
 const FALLBACK_POLL_MS = 30_000;
 const FLUSH_MS = 15_000;
 
+const DRIVER_TAGS = ['respectful', 'on_time', 'friendly', 'rude', 'late', 'no_show'] as const;
+
+/** The last known position, for SOS (sent without one rather than waiting). */
+async function quickFix() {
+  const p = await Location.getLastKnownPositionAsync().catch(() => null);
+  return p
+    ? {
+        lat: p.coords.latitude,
+        lng: p.coords.longitude,
+        recordedAt: new Date(p.timestamp).toISOString(),
+      }
+    : undefined;
+}
+
 /**
  * The driver's working screen: go online, answer ride requests, run the trip.
  * Requests and trip changes arrive live; location is tracked in the background
  * and buffered on the phone whenever there is no connection.
  */
 export default function Drive() {
-  const { t } = useI18n();
+  const { t, errorText } = useI18n();
   const [online, setOnline] = useState(false);
   const [blockers, setBlockers] = useState<OnlineBlocker[]>([]);
   const [offer, setOffer] = useState<DriverOfferView | null>(null);
@@ -354,11 +368,40 @@ export default function Drive() {
     );
   }
 
+  function Safety({ r }: { r: DriverRideView }) {
+    return (
+      <View style={styles.safetyRow}>
+        <SosButton
+          api={api}
+          rideId={r.id}
+          errorText={errorText}
+          getLocation={quickFix}
+          labels={{
+            button: t('sos.button'),
+            title: t('sos.title'),
+            explain: t('sos.explain'),
+            send: t('sos.send'),
+            cancel: t('common.cancel'),
+            sent: t('sos.sent'),
+            acknowledged: t('sos.acknowledged'),
+            call: t('sos.call'),
+          }}
+        />
+        <Button
+          title={t('chat.button', { name: r.passenger.firstName })}
+          variant="secondary"
+          onPress={() => router.push(`/chat/${r.id}`)}
+        />
+      </View>
+    );
+  }
+
   function ActiveTrip({ r }: { r: DriverRideView }) {
     const name = r.passenger.firstName;
     if (r.status === 'driver_assigned') {
       return (
         <>
+          <Safety r={r} />
           <Title>{t('trip.pickupName', { name })}</Title>
           <Body bold>{r.pickup.address}</Body>
           <Button
@@ -384,6 +427,7 @@ export default function Drive() {
       const waited = r.arrivedAt ? Math.floor((now - Date.parse(r.arrivedAt)) / 60_000) : 0;
       return (
         <>
+          <Safety r={r} />
           <Title>{t('trip.waitingFor', { name })}</Title>
           <Body muted>{t('trip.waitedFor', { minutes: waited })}</Body>
           <Button title={t('trip.start')} onPress={() => void step(api.trips.start)} busy={busy} />
@@ -404,6 +448,7 @@ export default function Drive() {
     }
     return (
       <>
+        <Safety r={r} />
         <Title>{t('trip.toDropoff')}</Title>
         <Body bold>{r.dropoff.address}</Body>
         <Button
@@ -440,6 +485,29 @@ export default function Drive() {
             </Body>
           </Card>
         )}
+        {finished.rating.canRate && (
+          <RateForm
+            tags={DRIVER_TAGS}
+            errorText={errorText}
+            labels={{
+              title: t('rate.title', { name: finished.passenger.firstName }),
+              stars: (n) => t('rate.stars', { count: n }),
+              comment: t('rate.comment'),
+              send: t('rate.send'),
+              tag: (tag) => t(`tag.${tag}` as MessageKey),
+            }}
+            onSubmit={async (input) => {
+              await api.ratings.rate(finished.id, input as never);
+              setFinished({ ...finished, rating: { given: input.stars, canRate: false } });
+            }}
+          />
+        )}
+        {finished.rating.given && <Body>{t('rate.thanks')}</Body>}
+        <Button
+          title={t('report.button')}
+          variant="secondary"
+          onPress={() => router.push(`/report/${finished.id}`)}
+        />
         <Button title={t('trip.backOnline')} onPress={() => setFinished(null)} />
       </>
     );
@@ -447,6 +515,7 @@ export default function Drive() {
 }
 
 const styles = StyleSheet.create({
+  safetyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2], alignItems: 'center' },
   statusBanner: { borderRadius: radius.lg, padding: spacing[6], alignItems: 'center' },
   onlineBanner: { backgroundColor: colors.success },
   offlineBanner: { backgroundColor: colors.grey[700] },

@@ -3,11 +3,13 @@ import { colors } from '@rideswithme/ui-components';
 import { Loading } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { OnboardingProvider } from '@/lib/onboarding-context';
-import { useSession } from '@/lib/session';
+import { usePushRegistration } from '@rideswithme/mobile-core';
+import { api, useSession } from '@/lib/session';
 
 export default function OnboardingLayout() {
   const { status } = useSession();
   const { t } = useI18n();
+  usePushRegistration(api, 'driver', status === 'signedIn');
   if (status === 'loading') return <Loading />;
   if (status === 'signedOut') return <Redirect href="/sign-in" />;
   return (
@@ -27,6 +29,8 @@ export default function OnboardingLayout() {
         <Stack.Screen name="document/[type]" options={{ title: '' }} />
         <Stack.Screen name="drive" options={{ title: t('drive.title') }} />
         <Stack.Screen name="earnings" options={{ title: t('earnings.title') }} />
+        <Stack.Screen name="chat/[id]" options={{ title: t('chat.title') }} />
+        <Stack.Screen name="report/[id]" options={{ title: t('report.button') }} />
       </Stack>
     </OnboardingProvider>
   );

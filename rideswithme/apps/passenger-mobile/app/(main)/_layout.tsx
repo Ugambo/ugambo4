@@ -2,12 +2,14 @@ import { Redirect, Stack } from 'expo-router';
 import { colors } from '@rideswithme/ui-components';
 import { Loading } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
-import { useSession } from '@/lib/session';
+import { usePushRegistration } from '@rideswithme/mobile-core';
+import { api, useSession } from '@/lib/session';
 import { TripDraftProvider } from '@/lib/trip-draft';
 
 export default function MainLayout() {
   const { status } = useSession();
   const { t } = useI18n();
+  usePushRegistration(api, 'passenger', status === 'signedIn');
   if (status === 'loading') return <Loading />;
   if (status === 'signedOut') return <Redirect href="/sign-in" />;
   return (
@@ -30,6 +32,9 @@ export default function MainLayout() {
         <Stack.Screen name="buses/departure/[id]" options={{ title: t('bus.chooseSeats') }} />
         <Stack.Screen name="buses/booking/[id]" options={{ title: t('bus.title') }} />
         <Stack.Screen name="buses/bookings" options={{ title: t('bus.myTickets') }} />
+        <Stack.Screen name="chat/[id]" options={{ title: t('chat.title', { name: '' }).trim() }} />
+        <Stack.Screen name="help/index" options={{ title: t('help.title') }} />
+        <Stack.Screen name="help/[id]" options={{ title: t('help.title') }} />
       </Stack>
     </TripDraftProvider>
   );

@@ -57,9 +57,7 @@ export default function History() {
               <Text style={styles.meta}>{dateTime(r.requestedAt)}</Text>
               <StatusLabel ride={r} />
             </View>
-            <Text style={styles.price}>
-              {formatKobo(r.fare.payableKobo)}
-            </Text>
+            <Text style={styles.price}>{formatKobo(r.fare.payableKobo)}</Text>
           </Pressable>
         </Link>
       ))}

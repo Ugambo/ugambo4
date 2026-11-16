@@ -5,17 +5,20 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError, newIdempotencyKey } from '@rideswithme/api-client';
-import { formatTime } from '@rideswithme/mobile-core';
+import { formatTime, RateForm, SosButton } from '@rideswithme/mobile-core';
 import {
   type DriverPosition,
   ACTIVE_RIDE_STATUSES,
+  RATING_TAGS,
   type FareEstimateResponse,
   type RideView,
   type SavedCardView,
@@ -29,6 +32,7 @@ import { DriverCard, FareLines, PaymentLine, VehicleRow } from '@/components/rid
 import { RideMap } from '@/components/ride-map';
 import { Body, Button, Card, ErrorText, Title } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import type { MessageKey } from '@/lib/messages';
 import { api, useOnReconnect, useRealtimeEvent } from '@/lib/session';
 import {
   applyActiveRides,
@@ -45,6 +49,23 @@ import { useTripDraft } from '@/lib/trip-draft';
 
 /** Live updates do the work; this slow poll only covers missed events. */
 const FALLBACK_POLL_MS = 30_000;
+
+const PASSENGER_TAGS = RATING_TAGS.filter((x) => x !== 'no_show' && x !== 'respectful');
+
+/** A quick location fix for SOS (the alert is sent without one if this is slow). */
+async function quickFix() {
+  try {
+    const p = await Location.getLastKnownPositionAsync();
+    if (!p) return undefined;
+    return {
+      lat: p.coords.latitude,
+      lng: p.coords.longitude,
+      recordedAt: new Date(p.timestamp).toISOString(),
+    };
+  } catch {
+    return undefined;
+  }
+}
 
 /** API place input: drop empty optional fields. */
 export default function Home() {
@@ -131,7 +152,9 @@ export default function Home() {
     })();
   }, []);
 
-  // Price the trip whenever both ends are set.
+  // Price the trip whenever both ends are set (and again when a promotion code is applied).
+  const [promo, setPromo] = useState('');
+  const [promoInput, setPromoInput] = useState('');
   useEffect(() => {
     if (!draft.pickup || !draft.dropoff || ride) {
       setEstimate(null);
@@ -141,7 +164,11 @@ export default function Home() {
     setBusy(true);
     setError(null);
     api.fares
-      .estimate({ pickup: toPlaceInput(draft.pickup), dropoff: toPlaceInput(draft.dropoff) })
+      .estimate({
+        pickup: toPlaceInput(draft.pickup),
+        dropoff: toPlaceInput(draft.dropoff),
+        ...(promo && { promoCode: promo }),
+      })
       .then(
         (e) => {
           if (cancelled) return;
@@ -156,7 +183,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [draft.pickup, draft.dropoff, ride]);
+  }, [draft.pickup, draft.dropoff, ride, promo]);
 
   // Live: the ride's status and the driver's position as they change.
   useRealtimeEvent<RideView>(
@@ -196,6 +223,33 @@ export default function Home() {
 
   const option = estimate?.options.find((o) => o.category.key === selected) ?? null;
 
+  const { errorText } = useI18n();
+  const sosLabels = {
+    button: t('sos.button'),
+    title: t('sos.title'),
+    explain: t('sos.explain'),
+    send: t('sos.send'),
+    cancel: t('common.cancel'),
+    sent: t('sos.sent'),
+    acknowledged: t('sos.acknowledged'),
+    call: t('sos.call'),
+  };
+  const rateLabels = (driverName: string) => ({
+    title: t('rate.title', { name: driverName }),
+    stars: (n: number) => t('rate.stars', { count: n }),
+    comment: t('rate.comment'),
+    send: t('rate.send'),
+    tag: (tag: string) => t(`tag.${tag}` as MessageKey),
+  });
+  async function shareTrip(rideId: string) {
+    try {
+      const s = await api.safety.share(rideId);
+      await Share.share({ message: `${t('share.native')}: ${s.url}` });
+    } catch (err) {
+      setError(err);
+    }
+  }
+
   async function request() {
     if (!option) return;
     setBusy(true);
@@ -208,6 +262,8 @@ export default function Home() {
             ? { paymentMethod: 'card' as const, cardId: pay.slice(5) }
             : { paymentMethod: pay as 'cash' | 'wallet' }),
           ...(when && { scheduledFor: when.toISOString() }),
+          ...(estimate?.promotion?.valid &&
+            option.discountKobo > 0 && { promoCode: estimate.promotion.code }),
         },
         bookingKey.current,
       );
@@ -408,7 +464,35 @@ export default function Home() {
             </Pressable>
           ))}
         </ScrollView>
-        {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.totalKobo && (
+        <View style={styles.promoRow}>
+          <TextInput
+            style={styles.promoInput}
+            value={promoInput}
+            onChangeText={setPromoInput}
+            placeholder={t('promo.label')}
+            accessibilityLabel={t('promo.label')}
+            autoCapitalize="characters"
+            maxLength={40}
+          />
+          <Button
+            title={promo ? t('promo.remove') : t('promo.apply')}
+            variant="secondary"
+            onPress={() => {
+              if (promo) {
+                setPromo('');
+                setPromoInput('');
+              } else setPromo(promoInput.trim());
+            }}
+          />
+        </View>
+        {estimate?.promotion && (
+          <Body bold>
+            {estimate.promotion.valid
+              ? `${estimate.promotion.description ?? ''}${option && option.discountKobo > 0 ? ` · ${t('promo.saving', { amount: formatKobo(option.discountKobo) })}` : ''}`
+              : t(`promo.reason.${estimate.promotion.reason ?? 'not_found'}` as MessageKey)}
+          </Body>
+        )}
+        {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.payableKobo && (
           <Body muted>{t('pay.walletShort')}</Body>
         )}
         {wallet && wallet.owedKobo > 0 && (
@@ -468,7 +552,7 @@ export default function Home() {
                   })
                 : t('choose.request', {
                     category: option.category.name,
-                    price: formatKobo(option.totalKobo),
+                    price: formatKobo(option.payableKobo),
                   })
               : t('common.loading')
           }
@@ -508,7 +592,31 @@ export default function Home() {
         {age?.stale && ACTIVE_RIDE_STATUSES.includes(ride.status) && (
           <Body muted>{t('ride.lastUpdated', { seconds: age.seconds })}</Body>
         )}
+        {ACTIVE_RIDE_STATUSES.includes(ride.status) && (
+          <SosButton
+            api={api}
+            rideId={ride.id}
+            labels={sosLabels}
+            getLocation={quickFix}
+            errorText={errorText}
+          />
+        )}
         {ride.driver && ACTIVE_RIDE_STATUSES.includes(ride.status) && <DriverCard ride={ride} />}
+        {ride.driver &&
+          ['driver_assigned', 'driver_arrived', 'in_progress'].includes(ride.status) && (
+            <Button
+              title={t('chat.title', { name: ride.driver.firstName })}
+              variant="secondary"
+              onPress={() => router.push(`/chat/${ride.id}`)}
+            />
+          )}
+        {ACTIVE_RIDE_STATUSES.includes(ride.status) && (
+          <Button
+            title={t('share.button')}
+            variant="secondary"
+            onPress={() => void shareTrip(ride.id)}
+          />
+        )}
         {phase === 'completed' && (
           <>
             <Title>{t('ride.completed')}</Title>
@@ -516,6 +624,18 @@ export default function Home() {
               <PaymentLine ride={ride} />
             </Card>
             <FareLines ride={ride} />
+            {ride.rating.canRate && (
+              <RateForm
+                tags={PASSENGER_TAGS}
+                labels={rateLabels(name)}
+                errorText={errorText}
+                onSubmit={async (input) => {
+                  await api.ratings.rate(ride.id, input as never);
+                  setRide(await api.rides.get(ride.id));
+                }}
+              />
+            )}
+            {ride.rating.given && <Body>{t('rate.given', { count: ride.rating.given })}</Body>}
           </>
         )}
         {phase === 'cancelled' && (
@@ -540,9 +660,7 @@ export default function Home() {
         {ACTIVE_RIDE_STATUSES.includes(ride.status) && phase !== 'completed' && (
           <View style={styles.optionRow}>
             <Text style={styles.optionLabel}>{t('ride.fare')}</Text>
-            <Text style={styles.optionValue}>
-              {formatKobo(ride.fare.quotedTotalKobo)} · 💵 {t('choose.cash')}
-            </Text>
+            <Text style={styles.optionValue}>{formatKobo(ride.fare.payableKobo)}</Text>
           </View>
         )}
         {canCancel(ride.status) && (
@@ -557,6 +675,16 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  promoRow: { flexDirection: 'row', gap: spacing[2], alignItems: 'center' },
+  promoInput: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    color: colors.text,
+  },
   fill: { flex: 1, backgroundColor: colors.surface },
   top: { position: 'absolute', top: 0, left: 0, right: 0 },
   topButtons: { flexDirection: 'row', justifyContent: 'space-between', padding: spacing[3] },
