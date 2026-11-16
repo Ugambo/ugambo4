@@ -66,7 +66,8 @@ const en = {
   'error.WEBHOOK_SIGNATURE_INVALID': 'Invalid signature.',
   'error.SEAT_UNAVAILABLE': 'Someone else has just taken that seat. Choose another.',
   'error.BOOKING_CLOSED': 'Booking for this departure has closed.',
-  'error.HOLD_EXPIRED': 'Your seats were released because payment took too long. Choose seats again.',
+  'error.HOLD_EXPIRED':
+    'Your seats were released because payment took too long. Choose seats again.',
   'error.TICKET_INVALID': 'This ticket is not valid for your buses.',
   'error.ROUTE_NOT_FOUND': 'We could not find a route between these places.',
   'sms.driver_approved':

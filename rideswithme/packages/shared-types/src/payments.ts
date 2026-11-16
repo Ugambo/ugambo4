@@ -63,6 +63,8 @@ export interface PaymentView {
   outstandingKobo: number;
   refundedKobo: number;
   rideId: string | null;
+  /** Set for a bus ticket payment. */
+  busBookingId: string | null;
   card: { brand: string; last4: string } | null;
   failureReason: string | null;
   createdAt: string;

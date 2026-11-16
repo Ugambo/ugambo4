@@ -67,6 +67,12 @@ function Wallet() {
       for (let i = 0; i < 15 && !stop; i++) {
         try {
           const p = await api().payments.get(reference, true);
+          // A bus ticket paid on the payment page: its booking shows the outcome.
+          if (p.busBookingId) {
+            stop = true;
+            router.replace(`/buses/bookings/${p.busBookingId}?reference=${p.id}`);
+            return;
+          }
           if (p.status !== 'pending' || i === 14) {
             if (!stop) setReturned(p);
             break;

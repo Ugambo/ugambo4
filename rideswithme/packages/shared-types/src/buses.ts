@@ -1,5 +1,7 @@
 /** Bus operators, routes, departures, seat maps, bookings and tickets (Phase 7). */
 
+import type { PaymentView } from './payments';
+
 export const SEAT_CLASSES = ['standard', 'executive', 'vip'] as const;
 export type SeatClass = (typeof SEAT_CLASSES)[number];
 
@@ -107,8 +109,10 @@ export interface BusBookingView {
 
 export interface BusPayResult {
   booking: BusBookingView;
-  /** Set for a checkout: open it, then reload the booking. */
+  /** Set for a checkout: open it, then check the payment and reload the booking. */
   checkoutUrl: string | null;
+  /** The checkout's payment (null when paid from the wallet or a saved card). */
+  payment: PaymentView | null;
 }
 
 // --- Operators (portal and admin) ---

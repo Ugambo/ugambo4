@@ -26,6 +26,10 @@ export default function MainLayout() {
         <Stack.Screen name="rides/[id]" options={{ title: t('receipt.title') }} />
         <Stack.Screen name="account" options={{ title: t('account.title') }} />
         <Stack.Screen name="wallet" options={{ title: t('wallet.title') }} />
+        <Stack.Screen name="buses/index" options={{ title: t('bus.title') }} />
+        <Stack.Screen name="buses/departure/[id]" options={{ title: t('bus.chooseSeats') }} />
+        <Stack.Screen name="buses/booking/[id]" options={{ title: t('bus.title') }} />
+        <Stack.Screen name="buses/bookings" options={{ title: t('bus.myTickets') }} />
       </Stack>
     </TripDraftProvider>
   );

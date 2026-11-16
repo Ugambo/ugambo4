@@ -274,6 +274,11 @@ export default function Home() {
               <Text style={styles.roundText}>{t('home.history')}</Text>
             </Pressable>
           </Link>
+          <Link href="/buses" asChild>
+            <Pressable accessibilityRole="button" style={styles.roundButton}>
+              <Text style={styles.roundText}>{t('nav.buses')}</Text>
+            </Pressable>
+          </Link>
           <Link href="/wallet" asChild>
             <Pressable accessibilityRole="button" style={styles.roundButton}>
               <Text style={styles.roundText}>{t('wallet.title')}</Text>

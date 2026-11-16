@@ -813,6 +813,10 @@ button.seat {
   background: var(--c-primary);
   color: var(--c-on-primary);
 }
+.seat-yours {
+  opacity: 0.6;
+  cursor: default;
+}
 .seat-legend {
   display: flex;
   flex-wrap: wrap;

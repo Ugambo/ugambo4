@@ -450,3 +450,68 @@
   align-items: center;
   min-height: 36px;
 }
+
+/* --- Buses --- */
+.bus-search {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0 var(--s-3);
+  align-items: end;
+}
+.bus-search .btn {
+  margin-bottom: var(--s-4);
+}
+.bus-head {
+  display: grid;
+  gap: var(--s-1);
+  margin-bottom: var(--s-3);
+}
+.bus-result {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.bus-result-end {
+  display: grid;
+  gap: var(--s-1);
+  justify-items: end;
+}
+.bus-seat-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-6);
+  align-items: flex-start;
+}
+.bus-seat-layout form {
+  flex: 1 1 16rem;
+}
+.tickets {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--s-4);
+}
+.ticket {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  align-items: center;
+  padding: var(--s-3);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--r-md);
+}
+.ticket > div {
+  display: grid;
+  gap: var(--s-1);
+}
+.ticket-code {
+  font-family: ui-monospace, monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+}
+.bus-cancel {
+  margin-top: var(--s-4);
+}

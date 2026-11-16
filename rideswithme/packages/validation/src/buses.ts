@@ -105,7 +105,9 @@ export const busSeatLayoutSchema = z
               .string()
               .trim()
               .transform((s) => s.toUpperCase())
-              .pipe(z.string().regex(/^[A-Z0-9]{1,4}$/, 'Seat labels are 1 to 4 letters or digits')),
+              .pipe(
+                z.string().regex(/^[A-Z0-9]{1,4}$/, 'Seat labels are 1 to 4 letters or digits'),
+              ),
             row: z.number().int().min(1),
             col: z.number().int().min(1),
             seatClass,
@@ -188,9 +190,7 @@ export type CheckInInput = z.input<typeof checkInSchema>;
 
 // --- Passengers ---
 
-export const busSearchQuerySchema = z
-  .object({ from: city, to: city, date })
-  .strict();
+export const busSearchQuerySchema = z.object({ from: city, to: city, date }).strict();
 export type BusSearchQuery = z.output<typeof busSearchQuerySchema>;
 
 export const createBusBookingSchema = z

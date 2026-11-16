@@ -14,6 +14,9 @@ export const PASSENGER_API_ALLOW = [
   /^v1\/payments\/[0-9a-f-]{36}$/,
   /^v1\/payment-cards(\/[0-9a-f-]{36})?$/,
   /^v1\/vehicle-categories$/,
+  /^v1\/bus\/(cities|search|bookings)$/,
+  /^v1\/bus\/departures\/[0-9a-f-]{36}$/,
+  /^v1\/bus\/bookings\/[0-9a-f-]{36}(\/(pay|cancel))?$/,
 ];
 
 export const isAllowedPassengerPath = (path: string) => isAllowedPath(path, PASSENGER_API_ALLOW);

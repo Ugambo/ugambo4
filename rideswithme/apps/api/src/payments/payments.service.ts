@@ -48,6 +48,7 @@ export function paymentView(p: PaymentRow): PaymentView {
     outstandingKobo: koboFromDb(p.outstanding_kobo),
     refundedKobo: koboFromDb(p.refunded_kobo),
     rideId: p.ride_id,
+    busBookingId: p.bus_booking_id,
     card: p.card_brand && p.card_last4 ? { brand: p.card_brand, last4: p.card_last4 } : null,
     failureReason: p.failure_reason,
     createdAt: p.created_at.toISOString(),

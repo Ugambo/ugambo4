@@ -221,7 +221,11 @@ export class BookingsService implements OnModuleInit, OnApplicationShutdown {
         });
         await this.confirm(trx, b.id, 'wallet', now);
       });
-      return { booking: await this.get(passengerId, bookingId, now), checkoutUrl: null };
+      return {
+        booking: await this.get(passengerId, bookingId, now),
+        checkoutUrl: null,
+        payment: null,
+      };
     }
 
     // Card or checkout: keep the seats while the payment is processed.
@@ -239,13 +243,13 @@ export class BookingsService implements OnModuleInit, OnApplicationShutdown {
     const total = koboFromDb(b.total_kobo);
 
     if (input.method === 'checkout') {
-      const { checkoutUrl } = await this.payments.startBusCheckout(
+      const { checkoutUrl, payment } = await this.payments.startBusCheckout(
         passengerId,
         b.id,
         total,
         input.returnTo ?? 'app',
       );
-      return { booking: await this.get(passengerId, bookingId, now), checkoutUrl };
+      return { booking: await this.get(passengerId, bookingId, now), checkoutUrl, payment };
     }
 
     const authorizationCode = await this.payments.cardAuthorization(
@@ -291,7 +295,11 @@ export class BookingsService implements OnModuleInit, OnApplicationShutdown {
         'Card payments are not available right now; try again or pay from your wallet',
       );
     }
-    return { booking: await this.get(passengerId, bookingId, now), checkoutUrl: null };
+    return {
+      booking: await this.get(passengerId, bookingId, now),
+      checkoutUrl: null,
+      payment: null,
+    };
   }
 
   /**

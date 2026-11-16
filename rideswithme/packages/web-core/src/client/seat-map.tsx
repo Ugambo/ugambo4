@@ -62,7 +62,7 @@ export function SeatMap({
             key={s.id}
             type="button"
             className={className}
-            disabled={state === 'taken'}
+            disabled={state !== 'available'}
             aria-pressed={isSelected}
             aria-label={describe(s, isSelected)}
             data-seat={s.label}
