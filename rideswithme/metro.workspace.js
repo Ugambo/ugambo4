@@ -10,7 +10,14 @@ const { getDefaultConfig } = require('expo/metro-config');
  * does not depend on (e.g. zod inside @rideswithme/validation) resolve normally.
  */
 function createConfig(appDir) {
-  const config = getDefaultConfig(appDir);
+  // Sentry's variant of Expo's default config adds a debug id to each bundle,
+  // so crash reports can be matched with the source maps uploaded at build
+  // time. It changes nothing else, and nothing is sent unless the app is
+  // built with EXPO_PUBLIC_SENTRY_DSN (packages/mobile-core/src/error-tracking.ts).
+  const { getSentryExpoConfig } = require(
+    require.resolve('@sentry/react-native/metro', { paths: [appDir] }),
+  );
+  const config = getSentryExpoConfig(appDir, { getDefaultConfig });
   const packagesDir = path.resolve(__dirname, 'packages') + path.sep;
   const appOrigin = path.join(appDir, 'package.json');
   const upstream = config.resolver.resolveRequest;

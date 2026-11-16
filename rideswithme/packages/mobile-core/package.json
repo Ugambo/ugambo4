@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@react-native-community/netinfo": "12.0.1",
+    "@sentry/react-native": "~8.28.0",
     "@types/react": "^19.3.0",
     "expo": "58.0.24",
     "expo-constants": "~58.0.16",
@@ -39,12 +40,13 @@
   },
   "peerDependencies": {
     "expo-constants": "*",
+    "expo-device": "*",
     "expo-localization": "*",
+    "expo-notifications": "*",
     "expo-secure-store": "*",
     "expo-web-browser": "*",
     "react": "*",
     "react-native": "*",
-    "expo-notifications": "*",
-    "expo-device": "*"
+    "@sentry/react-native": "*"
   }
 }

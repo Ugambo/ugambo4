@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { releaseSettings } from '../app-config';
+import { releaseSettings, sentryPlugins } from '../app-config';
 
 const store = {
   EXPO_PUBLIC_API_URL: 'https://api.example.ng',
@@ -38,5 +38,15 @@ describe('releaseSettings', () => {
   it('asks nothing of local and development builds', () => {
     expect(releaseSettings({})).toEqual({});
     expect(releaseSettings({ EAS_BUILD_PROFILE: 'development' })).toEqual({});
+  });
+});
+
+describe('sentryPlugins', () => {
+  it('uploads source maps only when the build has Sentry credentials', () => {
+    expect(sentryPlugins({})).toEqual([]);
+    expect(sentryPlugins({ SENTRY_AUTH_TOKEN: 't', SENTRY_ORG: 'rwm' })).toEqual([]);
+    expect(
+      sentryPlugins({ SENTRY_AUTH_TOKEN: 't', SENTRY_ORG: 'rwm', SENTRY_PROJECT: 'driver' }),
+    ).toEqual([['@sentry/react-native', { organization: 'rwm', project: 'driver' }]]);
   });
 });

@@ -1,5 +1,5 @@
 import type { ExpoConfig } from 'expo/config';
-import { releaseSettings } from '@rideswithme/mobile-core/app-config';
+import { releaseSettings, sentryPlugins } from '@rideswithme/mobile-core/app-config';
 
 /**
  * RideswithMe Driver. A development build (not Expo Go), because it shares its
@@ -55,6 +55,7 @@ const config: ExpoConfig = {
       },
     ],
     ['expo-notifications', { color: '#0F2A43' }],
+    ...sentryPlugins(),
   ],
   extra: release.extra,
   experiments: { typedRoutes: false },

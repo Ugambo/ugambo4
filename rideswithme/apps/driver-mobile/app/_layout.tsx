@@ -6,6 +6,10 @@ import { I18nProvider } from '@/lib/i18n';
 import { SessionProvider } from '@/lib/session';
 // Registers the background location task at start-up (the OS may start it without any screen).
 import '@/lib/background-location';
+import { startErrorTracking } from '@rideswithme/mobile-core';
+import { SENTRY_DSN, SENTRY_ENVIRONMENT } from '@/lib/config';
+
+startErrorTracking({ dsn: SENTRY_DSN, environment: SENTRY_ENVIRONMENT, app: 'driver' });
 
 export default function RootLayout() {
   return (

@@ -40,7 +40,7 @@ These need your answer or awareness. Work continues on the stated assumption.
 | B-29 | Push notifications need an Expo (EAS) project, a Firebase project for Android and an Apple push key for iOS. None exist yet.                                                                                                                                  | Push is built and tested with a logging provider (`PUSH_PROVIDER=log`). Set `PUSH_PROVIDER=expo` and the EAS variables once the accounts exist (LAUNCH.md, "Store builds"). Until then, important events (SOS acknowledgement, bus cancellations) also go by SMS.                                                                                           |
 | B-30 | The brief says SOS must alert staff at once, but not who: there is no on-call rota, and no agreed procedure with the police or emergency services.                                                                                                            | Every new SOS texts every phone in `SOS_ALERT_PHONES` and pages through monitoring after 2 minutes unacknowledged (LAUNCH.md#sos, which says to call 112). **Please name the on-call team, staff it every hour the service runs, and confirm the escalation procedure.**                                                                                    |
 | B-31 | Driver support requests: the brief lists support tickets, but not whether drivers raise them in the driver app.                                                                                                                                               | **Resolved:** built. Drivers and applicants contact support from the driver app (checklist and drive screens), with topics for driving, payment, trips, account and other. The screens are shared with the passenger app (`SupportHome`, `SupportTicket` in `@rideswithme/mobile-core`).                                                                    |
-| B-32 | Error tracking for the web apps and mobile apps (crash reporting) is not in the brief's stack.                                                                                                                                                                | Only the API reports to Sentry (`SENTRY_DSN`). Adding Sentry to the Next.js and Expo apps is a small change once a Sentry (or GlitchTip) account exists.                                                                                                                                                                                                    |
+| B-32 | Error tracking for the web apps and mobile apps (crash reporting) is not in the brief's stack.                                                                                                                                                                | **Resolved:** built for all apps, off until a DSN is set (D-078). Needs a Sentry or GlitchTip account.                                                                                                                                                                                                                                                      |
 | B-33 | How long trips, payments, messages and safety reports are kept after an account is deleted is a legal question (NDPA, tax and CBN record-keeping rules).                                                                                                      | Kept indefinitely, linked to an anonymous account (D-074). **Please get legal advice on retention periods**; a scheduled purge of old records is then straightforward.                                                                                                                                                                                      |
 
 ## Decision log
@@ -980,3 +980,47 @@ pending ones held) during a money incident without stopping rides.
   that is word-for-word the English.
 - `pnpm hausa:export` writes everything to a CSV for the native-speaker review
   (HAUSA_REVIEW.md).
+
+### D-078 Error tracking everywhere, one privacy rule
+
+The API, the three websites and the two apps report errors to Sentry, or to a
+compatible service such as GlitchTip. Each is off until it is given a DSN.
+
+**One scrubber for all of them** (`scrubErrorEvent` in
+`@rideswithme/utilities`, unit-tested):
+
+- **Removed:** headers, cookies, request bodies and query strings, user
+  details and the server name.
+- **Breadcrumbs:** console breadcrumbs are dropped, since they can contain
+  anything.
+- **URLs and error messages:** share tokens are replaced with `:token`, and
+  phone numbers and email addresses are masked. Errors sometimes quote a URL or
+  a value.
+- **Kept:** the error, its stack, the route or screen, and record ids (UUIDs),
+  which identify records, not people.
+
+**Websites:**
+
+- **Servers:** Next.js `instrumentation.ts` reports errors (`onRequestError`).
+- **Browser setting at run time:** the browser learns whether tracking is on
+  from a `<meta>` tag the server renders from `SENTRY_DSN`. One Docker image
+  therefore serves every environment, with no rebuild to turn tracking on.
+- **CSP:** the Content-Security-Policy then allows only the DSN's origin.
+- **Download only when on:** the Sentry code is fetched only when tracking is
+  on. It is a plain ES module (`web-core/error-tracking-browser.mjs`), so the
+  bundler keeps only what is used: 236 KB instead of 1.3 MB.
+- **Verified in a browser:** with tracking off, nothing is downloaded or sent.
+  With it on, a test error arrived with its share token and phone number
+  removed.
+
+**Apps:**
+
+- **SDK:** `@sentry/react-native` 8.28 (the version Expo SDK 58 lists),
+  started from each root layout when the app is built with
+  `EXPO_PUBLIC_SENTRY_DSN`.
+- **Debug ids:** the shared Metro config adds a debug id to each bundle.
+- **Source maps:** Sentry's build plugin uploads source maps only when the
+  build has `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT`. Without
+  them, builds are unchanged.
+- **Not yet confirmed:** native crash reporting cannot be checked without a
+  device build.

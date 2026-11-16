@@ -18,25 +18,25 @@ app's `.env.example`.
 Items marked **you** need accounts, money or decisions that only the business
 can provide (see DECISIONS, section B).
 
-| #   | Item                                                                                                   | Where           | Owner     |
-| --- | ------------------------------------------------------------------------------------------------------ | --------------- | --------- |
-| 1   | Domain names and TLS for the API, website, admin and partner portal                                    | reverse proxy   | you       |
-| 2   | Production PostgreSQL 16 + PostGIS, Redis and S3 bucket (server-side encryption on)                    | hosting         | you       |
-| 3   | Secrets: JWT, OTP pepper, lookup hash, field encryption keys, `BACKUP_ENCRYPTION_KEY`, `METRICS_TOKEN` | secret store    | you       |
-| 4   | Termii (SMS) account and sender ID; `SMS_PROVIDER=termii`                                              | `apps/api/.env` | you       |
-| 5   | Paystack live keys, webhook URL and IP allow-list; `PAYMENT_PROVIDER=paystack`                         | `apps/api/.env` | you       |
-| 6   | Google Maps keys (server, Android, browser)                                                            | env files, EAS  | you       |
-| 7   | Launch city polygon and fares, entered in admin (Areas, Pricing)                                       | admin dashboard | you       |
-| 8   | **SOS on-call phones** in `SOS_ALERT_PHONES`, with a staffed rota covering every hour of service       | `apps/api/.env` | you       |
-| 9   | Staff accounts: `grant-role` for the first super admin, then roles in admin                            | API CLI, admin  | you       |
-| 10  | Monitoring stack running, alerts reaching a phone (test with a fake SOS, below)                        | monitoring host | you + dev |
-| 11  | Sentry (or GlitchTip) project; `SENTRY_DSN` set                                                        | `apps/api/.env` | you       |
-| 12  | Nightly backup and weekly restore check scheduled; first restore check passed                          | scheduler       | dev       |
-| 13  | Hausa reviewed and signed off (`documentation/HAUSA_REVIEW.md`)                                        |                 | you       |
-| 14  | Privacy policy and terms published; `CURRENT_POLICY_VERSION` matches the apps                          | website, env    | you       |
-| 15  | Store accounts, EAS project, Firebase and APNs credentials; store listings                             | below           | you       |
-| 16  | Load test at expected launch volume against staging (below)                                            | staging         | dev       |
-| 17  | NDPA: data protection officer named, deletion requests checked weekly (admin, Privacy)                 |                 | you       |
+| #   | Item                                                                                                         | Where           | Owner     |
+| --- | ------------------------------------------------------------------------------------------------------------ | --------------- | --------- |
+| 1   | Domain names and TLS for the API, website, admin and partner portal                                          | reverse proxy   | you       |
+| 2   | Production PostgreSQL 16 + PostGIS, Redis and S3 bucket (server-side encryption on)                          | hosting         | you       |
+| 3   | Secrets: JWT, OTP pepper, lookup hash, field encryption keys, `BACKUP_ENCRYPTION_KEY`, `METRICS_TOKEN`       | secret store    | you       |
+| 4   | Termii (SMS) account and sender ID; `SMS_PROVIDER=termii`                                                    | `apps/api/.env` | you       |
+| 5   | Paystack live keys, webhook URL and IP allow-list; `PAYMENT_PROVIDER=paystack`                               | `apps/api/.env` | you       |
+| 6   | Google Maps keys (server, Android, browser)                                                                  | env files, EAS  | you       |
+| 7   | Launch city polygon and fares, entered in admin (Areas, Pricing)                                             | admin dashboard | you       |
+| 8   | **SOS on-call phones** in `SOS_ALERT_PHONES`, with a staffed rota covering every hour of service             | `apps/api/.env` | you       |
+| 9   | Staff accounts: `grant-role` for the first super admin, then roles in admin                                  | API CLI, admin  | you       |
+| 10  | Monitoring stack running, alerts reaching a phone (test with a fake SOS, below)                              | monitoring host | you + dev |
+| 11  | Sentry (or GlitchTip) projects; `SENTRY_DSN` for the API and websites, `EXPO_PUBLIC_SENTRY_DSN` for the apps | env files, EAS  | you       |
+| 12  | Nightly backup and weekly restore check scheduled; first restore check passed                                | scheduler       | dev       |
+| 13  | Hausa reviewed and signed off (`documentation/HAUSA_REVIEW.md`)                                              |                 | you       |
+| 14  | Privacy policy and terms published; `CURRENT_POLICY_VERSION` matches the apps                                | website, env    | you       |
+| 15  | Store accounts, EAS project, Firebase and APNs credentials; store listings                                   | below           | you       |
+| 16  | Load test at expected launch volume against staging (below)                                                  | staging         | dev       |
+| 17  | NDPA: data protection officer named, deletion requests checked weekly (admin, Privacy)                       |                 | you       |
 
 ## Monitoring
 
@@ -80,9 +80,22 @@ servers. The configuration is in `infrastructure/deployment/monitoring/`.
 | SlowApi                      | ticket   | p95 latency over 1 s for 10 minutes                            | [Errors](#errors)     |
 | SupportBacklog               | ticket   | over 50 support requests waiting for an hour                   | admin, Support        |
 
-**Errors.** With `SENTRY_DSN` set, unexpected server errors (5xx, never 4xx)
-go to Sentry or a compatible service such as GlitchTip. Request bodies,
-headers, cookies and user details are removed before sending.
+**Errors.** Errors go to Sentry, or a compatible service such as GlitchTip.
+Each part is off until it has a DSN. Before sending, every report has removed:
+
+- request data and user details
+- console output
+- share tokens, phone numbers and email addresses (DECISIONS D-078)
+
+| Part         | Setting                                         | What is reported                                                                                                             |
+| ------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| API          | `SENTRY_DSN` in `apps/api/.env`                 | unexpected server errors (5xx, never 4xx)                                                                                    |
+| Each website | `SENTRY_DSN` in its `.env.local`                | server errors, and errors in visitors' browsers (Sentry's code is downloaded only when this is set)                          |
+| Each app     | `EXPO_PUBLIC_SENTRY_DSN` in the EAS environment | crashes and errors; add `SENTRY_AUTH_TOKEN` (secret), `SENTRY_ORG` and `SENTRY_PROJECT` so release builds upload source maps |
+
+Use one Sentry project per part, or one project with the `app` tag to tell
+them apart. `SENTRY_ENVIRONMENT` (`EXPO_PUBLIC_SENTRY_ENVIRONMENT` in the apps)
+separates staging from production.
 
 **Logs.** Logs are JSON on stdout, one line per request with its request id.
 Authorization headers, OTP codes and tokens are redacted. Ship them with the
@@ -328,14 +341,16 @@ Both apps build with EAS Build (`eas.json` in each app). The profiles are:
 Each profile takes its variables from the EAS environment of the same name
 (expo.dev → project → Environment variables):
 
-| Variable                      | Notes                                                    |
-| ----------------------------- | -------------------------------------------------------- |
-| `EXPO_PUBLIC_API_URL`         | `https://` API address (staging for `preview`)           |
-| `EXPO_PUBLIC_POLICY_VERSION`  | must equal the API's `CURRENT_POLICY_VERSION`            |
-| `EAS_PROJECT_ID`              | from `eas init`; push notifications need it              |
-| `EXPO_OWNER`                  | the Expo account or organisation                         |
-| `GOOGLE_SERVICES_JSON`        | Firebase config for Android push, as a **file** variable |
-| `GOOGLE_MAPS_ANDROID_API_KEY` | passenger app (maps)                                     |
+| Variable                                                     | Notes                                                    |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`                                        | `https://` API address (staging for `preview`)           |
+| `EXPO_PUBLIC_POLICY_VERSION`                                 | must equal the API's `CURRENT_POLICY_VERSION`            |
+| `EAS_PROJECT_ID`                                             | from `eas init`; push notifications need it              |
+| `EXPO_OWNER`                                                 | the Expo account or organisation                         |
+| `GOOGLE_SERVICES_JSON`                                       | Firebase config for Android push, as a **file** variable |
+| `GOOGLE_MAPS_ANDROID_API_KEY`                                | passenger app (maps)                                     |
+| `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_SENTRY_ENVIRONMENT`   | crash reports (optional)                                 |
+| `SENTRY_AUTH_TOKEN` (secret), `SENTRY_ORG`, `SENTRY_PROJECT` | source map upload during the build (optional)            |
 
 A `preview` or `production` build stops at once if the API address is not
 https, or the project ID or policy version is missing

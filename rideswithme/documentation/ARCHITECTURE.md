@@ -320,7 +320,9 @@ API modules:
   - `MetricsService` (prom-client registry, business gauges read at scrape time)
   - `MetricsInterceptor` (request histogram by route pattern)
   - the token-guarded `/metrics`
-  - `error-tracking.ts` (optional Sentry, with request data removed)
+  - `error-tracking.ts` (optional Sentry). Websites and apps report too, through
+    `@rideswithme/web-core` and `@rideswithme/mobile-core`, all scrubbed by
+    `scrubErrorEvent` in `@rideswithme/utilities` (DECISIONS D-078)
 
 Apps:
 

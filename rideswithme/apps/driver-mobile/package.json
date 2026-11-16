@@ -20,6 +20,7 @@
     "@rideswithme/ui-components": "workspace:*",
     "@rideswithme/utilities": "workspace:*",
     "@rideswithme/validation": "workspace:*",
+    "@sentry/react-native": "~8.28.0",
     "expo": "58.0.24",
     "expo-constants": "~58.0.16",
     "expo-dev-client": "~58.0.19",

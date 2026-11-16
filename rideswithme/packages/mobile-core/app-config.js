@@ -10,6 +10,9 @@
  *   EAS_PROJECT_ID         the app's EAS project (needed for push notifications)
  *   EXPO_OWNER             the Expo account or organisation that owns the project
  *   GOOGLE_SERVICES_JSON   Firebase config file for Android push (an EAS "file" variable)
+ *   SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT
+ *                          optional: upload source maps to Sentry during the build, so
+ *                          crash reports show the original code (EAS secret for the token)
  */
 
 const STORE_PROFILES = new Set(['preview', 'production']);
@@ -40,4 +43,24 @@ function releaseSettings(env = process.env) {
   };
 }
 
-module.exports = { releaseSettings };
+/**
+ * The Sentry config plugin (source map upload during the build), only when
+ * the build has Sentry credentials; without them builds are unchanged.
+ * @param {Record<string, string | undefined>} env
+ * @returns {[string, { organization: string; project: string; url?: string }][]}
+ */
+function sentryPlugins(env = process.env) {
+  if (!env.SENTRY_AUTH_TOKEN || !env.SENTRY_ORG || !env.SENTRY_PROJECT) return [];
+  return [
+    [
+      '@sentry/react-native',
+      {
+        organization: env.SENTRY_ORG,
+        project: env.SENTRY_PROJECT,
+        ...(env.SENTRY_URL && { url: env.SENTRY_URL }),
+      },
+    ],
+  ];
+}
+
+module.exports = { releaseSettings, sentryPlugins };

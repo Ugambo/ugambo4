@@ -1,5 +1,5 @@
 import type { ExpoConfig } from 'expo/config';
-import { releaseSettings } from '@rideswithme/mobile-core/app-config';
+import { releaseSettings, sentryPlugins } from '@rideswithme/mobile-core/app-config';
 
 /**
  * RideswithMe passenger app. Store builds are made with EAS Build (eas.json);
@@ -45,6 +45,7 @@ const config: ExpoConfig = {
       { androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY ?? '' },
     ],
     ['expo-notifications', { color: '#0F2A43' }],
+    ...sentryPlugins(),
   ],
   extra: release.extra,
   experiments: { typedRoutes: false },
