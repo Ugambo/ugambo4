@@ -6,7 +6,7 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import type Redis from 'ioredis';
-import type { Kysely } from 'kysely';
+import { type Kysely, sql } from 'kysely';
 import { IdempotencyService } from '../common/idempotency.service';
 import { APP_CONFIG, type AppConfig } from '../config/config';
 import { DB, isUniqueViolation } from '../database/database.module';
@@ -162,12 +162,16 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
 
       for (const c of candidates) {
         if (busy.has(c.driverId)) continue;
-        // Documents can expire or be withdrawn while a driver is online.
-        const state = await this.drivers.load(c.driverId, trx, now).catch(() => null);
-        if (!state?.view.eligibility.canGoOnline) {
+        // Documents can expire, or debt build up, while a driver is online.
+        const state = await this.drivers.load(c.driverId, trx, now);
+        if (!state.view.eligibility.canGoOnline) {
           await this.presence.goOffline(c.driverId);
           continue;
         }
+        // A failed statement aborts the whole transaction in PostgreSQL, so the
+        // insert runs under a savepoint: losing a driver to a concurrent offer
+        // must not break the search for the next one.
+        await sql`SAVEPOINT offer`.execute(trx);
         try {
           const offer = await trx
             .insertInto('ride_requests')
@@ -179,6 +183,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
             })
             .returning('id')
             .executeTakeFirstOrThrow();
+          await sql`RELEASE SAVEPOINT offer`.execute(trx);
           await recordRideEvent(trx, {
             rideId,
             eventType: 'offer_sent',
@@ -191,8 +196,11 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
           });
           return { offerId: offer.id, driverId: c.driverId };
         } catch (err) {
-          // Another replica just offered this driver something else.
-          if (isUniqueViolation(err)) continue;
+          // Another ride (or replica) just offered this driver something else.
+          if (isUniqueViolation(err)) {
+            await sql`ROLLBACK TO SAVEPOINT offer`.execute(trx);
+            continue;
+          }
           throw err;
         }
       }

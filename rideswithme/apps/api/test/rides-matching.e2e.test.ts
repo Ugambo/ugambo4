@@ -12,6 +12,7 @@ import {
   PICKUP,
   seedCity,
 } from './ride-fixtures';
+import { PresenceService } from '../src/rides/presence.service';
 import { RideService } from '../src/rides/ride.service';
 
 let h: Harness;
@@ -241,6 +242,34 @@ describe('matching', () => {
     await book(h, p.auth);
     await dispatched;
     expect(await currentOffer(h, d.auth)).not.toBeNull();
+  });
+
+  it('moves on to the next driver, and keeps the first online, when a concurrent offer wins', async () => {
+    // Found by the load test: two rides dispatched at the same moment both pick
+    // the nearest driver. The loser's insert hits the one-open-offer index, which
+    // used to abort the whole transaction and take the next candidates offline.
+    const near = await approvedDriver(h);
+    const next = await approvedDriver(h);
+    await goOnline(h, near.auth, north(PICKUP.location, 200));
+    await goOnline(h, next.auth, north(PICKUP.location, 600));
+    const first = await book(h, (await passenger(h)).auth);
+    const second = await book(h, (await passenger(h)).auth);
+    const d = dispatcher(h);
+    expect(await d.dispatchRide(first.id)).not.toBeNull(); // nearest driver, offered ride 1
+    // Ride 2's search reads "nobody is busy" before ride 1's offer lands.
+    const internals = d as unknown as { busyDrivers: () => Promise<Set<string>> };
+    const busyDrivers = internals.busyDrivers;
+    internals.busyDrivers = () => Promise.resolve(new Set());
+    try {
+      expect(await d.dispatchRide(second.id)).not.toBeNull();
+    } finally {
+      internals.busyDrivers = busyDrivers;
+    }
+    expect((await currentOffer(h, near.auth))?.rideId).toBe(first.id);
+    expect((await currentOffer(h, next.auth))?.rideId).toBe(second.id);
+    const presence = h.app.get(PresenceService);
+    expect(await presence.isOnline(near.userId)).toBe(true);
+    expect(await presence.isOnline(next.userId)).toBe(true);
   });
 });
 
