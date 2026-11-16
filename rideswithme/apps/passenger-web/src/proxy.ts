@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { contentSecurityPolicy } from '@rideswithme/web-core';
+import { contentSecurityPolicy, errorTrackingOrigins } from '@rideswithme/web-core';
 
 const SESSION_COOKIE = 'rwm_session';
 
@@ -22,9 +22,10 @@ export function proxy(request: NextRequest) {
     nonce,
     dev: process.env.NODE_ENV === 'development',
     imgSrc: storage ? [storage] : [],
-    connectSrc: api
-      ? [api.origin, `${api.protocol === 'https:' ? 'wss' : 'ws'}://${api.host}`]
-      : [],
+    connectSrc: [
+      ...(api ? [api.origin, `${api.protocol === 'https:' ? 'wss' : 'ws'}://${api.host}`] : []),
+      ...errorTrackingOrigins(),
+    ],
   });
   const headers = new Headers(request.headers);
   headers.set('x-nonce', nonce);

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { contentSecurityPolicy } from '@rideswithme/web-core';
+import { contentSecurityPolicy, errorTrackingOrigins } from '@rideswithme/web-core';
 
 const SESSION_COOKIE = 'rwm_fleet_session';
 
@@ -9,7 +9,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-  const csp = contentSecurityPolicy({ nonce, dev: process.env.NODE_ENV === 'development' });
+  const csp = contentSecurityPolicy({
+    nonce,
+    dev: process.env.NODE_ENV === 'development',
+    connectSrc: errorTrackingOrigins(),
+  });
   const headers = new Headers(request.headers);
   headers.set('x-nonce', nonce);
   headers.set('Content-Security-Policy', csp);

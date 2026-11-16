@@ -1,12 +1,13 @@
 import * as Sentry from '@sentry/node';
+import { scrubBreadcrumb, scrubErrorEvent } from '@rideswithme/utilities';
 import type { AppConfig } from '../config/config';
 
 let enabled = false;
 
 /**
  * Error tracking. Sends unhandled errors (5xx) to Sentry when SENTRY_DSN is
- * set. Never sends request bodies, headers, cookies or user details: only the
- * error, its stack, the route and the request id.
+ * set. Never sends request bodies, headers, cookies, query strings or user
+ * details: only the error, its stack, the route and the request id.
  */
 export function initErrorTracking(config: AppConfig) {
   if (!config.SENTRY_DSN || enabled) return;
@@ -15,16 +16,9 @@ export function initErrorTracking(config: AppConfig) {
     environment: config.SENTRY_ENVIRONMENT ?? config.NODE_ENV,
     release: process.env.APP_VERSION,
     tracesSampleRate: 0,
-    beforeSend(event) {
-      if (event.request) {
-        delete event.request.headers;
-        delete event.request.cookies;
-        delete event.request.data;
-        delete event.request.query_string;
-      }
-      delete event.user;
-      return event;
-    },
+    // The same privacy rules as the websites and apps (@rideswithme/utilities).
+    beforeSend: (event) => scrubErrorEvent(event),
+    beforeBreadcrumb: (b) => scrubBreadcrumb(b),
   });
   enabled = true;
 }

@@ -6,7 +6,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "error-tracking-browser.mjs",
+    "error-tracking-browser.d.mts"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -18,9 +20,10 @@
     "@rideswithme/api-client": "workspace:*",
     "@rideswithme/shared-types": "workspace:*",
     "@rideswithme/utilities": "workspace:*",
+    "@rideswithme/validation": "workspace:*",
+    "@sentry/nextjs": "11.12.0",
     "jose": "^6.2.17",
-    "qrcode": "^1.5.4",
-    "@rideswithme/validation": "workspace:*"
+    "qrcode": "^1.5.4"
   },
   "exports": {
     ".": {
@@ -30,14 +33,26 @@
     "./client": {
       "types": "./dist/client/index.d.ts",
       "default": "./dist/client/index.js"
+    },
+    "./error-tracking": {
+      "types": "./dist/error-tracking.d.ts",
+      "default": "./dist/error-tracking.js"
+    },
+    "./error-tracking-browser": {
+      "types": "./error-tracking-browser.d.mts",
+      "default": "./error-tracking-browser.mjs"
+    },
+    "./error-tracking-config": {
+      "types": "./dist/error-tracking-config.d.ts",
+      "default": "./dist/error-tracking-config.js"
     }
   },
   "peerDependencies": {
     "react": "^19"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
-    "react": "19.3.1",
-    "@types/qrcode": "^1.5.6"
+    "react": "19.3.1"
   }
 }
