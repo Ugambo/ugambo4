@@ -146,6 +146,12 @@ export const configSchema = z
     DRIVER_DEBT_LIMIT_KOBO: z.coerce.number().int().min(0).default(500_000),
     PAYOUT_MIN_KOBO: z.coerce.number().int().min(100).default(100_000),
     PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS: z.coerce.number().int().min(0).max(720).default(24),
+    /**
+     * Emergency stop for driver payouts (for example while a ledger mismatch is
+     * investigated): new requests are refused and pending ones wait. Earnings keep
+     * accruing. See documentation/LAUNCH.md#ledger.
+     */
+    PAYOUTS_PAUSED: bool.default('false'),
     /** How often to ask the provider about payments, payouts and refunds still pending (minutes). 0 = off. */
     PAYMENT_RECONCILE_INTERVAL_MINUTES: z.coerce.number().int().min(0).max(1440).default(5),
     /** Ask about something only once it has been pending this long (minutes). */

@@ -167,6 +167,10 @@ export class PayoutsService {
         .executeTakeFirst();
       if (!profile)
         throw new AppException(ErrorCode.DRIVER_NOT_REGISTERED, 'Driver registration not started');
+      if (this.config.PAYOUTS_PAUSED)
+        throw new AppException(ErrorCode.PAYOUT_UNAVAILABLE, 'Payouts are paused for now', {
+          details: { paused: true },
+        });
       if (
         profile.status !== 'approved' ||
         !profile.payout_bank_code ||
@@ -251,6 +255,8 @@ export class PayoutsService {
       .where('id', '=', payoutId)
       .executeTakeFirst();
     if (!p || p.status !== 'pending') return;
+    // Paused: stays pending; reconciliation sends it once payouts resume.
+    if (this.config.PAYOUTS_PAUSED) return;
     try {
       const recipientCode = await this.recipient(p.driver_id);
       const result = await this.provider.transfer({

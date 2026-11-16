@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { DisputeView, PayoutView, RefundView } from '@rideswithme/shared-types';
+import { APP_CONFIG, type AppConfig } from '../src/config/config';
 import { fakeTransferFee } from '../src/payments/fake.provider';
 import { WebhooksService } from '../src/payments/webhooks.service';
 import { createHarness, type Harness, nextPhone, resetState, signInWithMfa } from './harness';
@@ -153,6 +154,44 @@ describe('payouts', () => {
     });
     const w = (await h.http.get('/v1/driver/wallet').set('Authorization', d.auth).expect(200)).body;
     expect(w.payout.pausedUntil).toEqual(expect.any(String));
+  });
+
+  it('can be paused: new requests are refused and pending ones wait until resumed', async () => {
+    const { PayoutsService } = await import('../src/payments/payouts.service');
+    const d = await approvedDriver(h);
+    await adjust(d.userId, 500_000, 'driver').expect(201);
+    fake(h).setWebhookSink(async () => undefined);
+    const config = h.app.get<AppConfig>(APP_CONFIG);
+    // A payout requested just before the pause, not yet handed to the bank.
+    const before = (await requestPayout(d.auth, 100_000).expect(201)).body as PayoutView;
+    await h.db
+      .updateTable('payouts')
+      .set({ status: 'pending' })
+      .where('id', '=', before.id)
+      .execute();
+    const status = async () =>
+      (
+        await h.db
+          .selectFrom('payouts')
+          .select('status')
+          .where('id', '=', before.id)
+          .executeTakeFirstOrThrow()
+      ).status;
+
+    config.PAYOUTS_PAUSED = true;
+    try {
+      const refused = await requestPayout(d.auth, 100_000).expect(422);
+      expect(refused.body.error).toMatchObject({
+        code: 'PAYOUT_UNAVAILABLE',
+        details: { paused: true },
+      });
+      await h.app.get(PayoutsService).send(before.id);
+      expect(await status()).toBe('pending');
+    } finally {
+      config.PAYOUTS_PAUSED = false;
+    }
+    await h.app.get(PayoutsService).send(before.id);
+    expect(await status()).not.toBe('pending');
   });
 
   it('creates one payout when several requests race', async () => {
