@@ -1,0 +1,16 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "search.exclude": {
+    "**/dist": true,
+    "**/.next": true,
+    "**/.turbo": true,
+    "**/.expo-export-check": true,
+    "**/e2e/.output": true,
+    "pnpm-lock.yaml": true
+  },
+  "files.associations": { "*.env.example": "dotenv", ".env.local": "dotenv" }
+}

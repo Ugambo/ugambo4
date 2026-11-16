@@ -57,6 +57,11 @@ The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
 ## Run it locally
 
+**Using VS Code?** Follow [documentation/RUN_IN_VSCODE.md](documentation/RUN_IN_VSCODE.md):
+ready-made tasks start everything without typing commands, and
+`pnpm setup:local` writes the `.env` files with fresh secrets. The commands
+below are the same steps by hand.
+
 ```bash
 cd rideswithme
 pnpm install
@@ -194,3 +199,4 @@ documentation/   PRD, ARCHITECTURE, DATABASE, API_DOCUMENTATION, DECISIONS, LAUN
 - [Decisions and open questions](documentation/DECISIONS.md)
 - [Launch: checklist, monitoring, runbooks, backups, store builds](documentation/LAUNCH.md)
 - [Hausa review](documentation/HAUSA_REVIEW.md)
+- [Running it in VS Code](documentation/RUN_IN_VSCODE.md)

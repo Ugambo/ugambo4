@@ -1,0 +1,184 @@
+{
+  // Terminal → Run Task… lists these. "Run everything" starts the API and the
+  // three websites side by side. First-time set-up: run tasks 1 to 4 in order
+  // (documentation/RUN_IN_VSCODE.md).
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1. Create settings files (.env)",
+      "type": "shell",
+      "command": "pnpm setup:local",
+      "problemMatcher": []
+    },
+    {
+      "label": "2. Start databases (Docker)",
+      "type": "shell",
+      "command": "docker compose up -d --wait postgres redis s3",
+      "problemMatcher": []
+    },
+    {
+      "label": "Install packages",
+      "type": "shell",
+      "command": "pnpm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build everything",
+      "type": "shell",
+      "command": "pnpm build",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "3. Install and build",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Install packages", "Build everything"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Create database tables",
+      "type": "shell",
+      "command": "pnpm db:migrate:local",
+      "problemMatcher": []
+    },
+    {
+      "label": "Add the Kano test city",
+      "type": "shell",
+      "command": "pnpm seed:local",
+      "problemMatcher": []
+    },
+    {
+      "label": "4. Prepare the database",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Create database tables", "Add the Kano test city"],
+      "problemMatcher": []
+    },
+    {
+      "label": "5. Make a phone number super admin",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/api cli grant-role --phone ${input:phone} --role super_admin",
+      "problemMatcher": []
+    },
+    {
+      "label": "API (port 3000)",
+      "type": "shell",
+      "command": "pnpm dev:api",
+      "isBackground": true,
+      "presentation": { "group": "servers", "panel": "dedicated" },
+      "problemMatcher": {
+        "owner": "rideswithme",
+        "pattern": { "regexp": "^__never__$" },
+        "background": {
+          "activesBegin": true,
+          "beginsPattern": "Starting compilation",
+          "endsPattern": "Watching for file changes|Nest application successfully started"
+        }
+      }
+    },
+    {
+      "label": "Admin dashboard (port 3001)",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/admin-dashboard dev",
+      "isBackground": true,
+      "presentation": { "group": "servers", "panel": "dedicated" },
+      "problemMatcher": {
+        "owner": "rideswithme",
+        "pattern": { "regexp": "^__never__$" },
+        "background": {
+          "activesBegin": true,
+          "beginsPattern": "next dev|Next\\.js",
+          "endsPattern": "Ready in|✓ Ready"
+        }
+      }
+    },
+    {
+      "label": "Passenger website (port 3002)",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/passenger-web dev",
+      "isBackground": true,
+      "presentation": { "group": "servers", "panel": "dedicated" },
+      "problemMatcher": {
+        "owner": "rideswithme",
+        "pattern": { "regexp": "^__never__$" },
+        "background": {
+          "activesBegin": true,
+          "beginsPattern": "next dev|Next\\.js",
+          "endsPattern": "Ready in|✓ Ready"
+        }
+      }
+    },
+    {
+      "label": "Partner portal (port 3003)",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/fleet-portal dev",
+      "isBackground": true,
+      "presentation": { "group": "servers", "panel": "dedicated" },
+      "problemMatcher": {
+        "owner": "rideswithme",
+        "pattern": { "regexp": "^__never__$" },
+        "background": {
+          "activesBegin": true,
+          "beginsPattern": "next dev|Next\\.js",
+          "endsPattern": "Ready in|✓ Ready"
+        }
+      }
+    },
+    {
+      "label": "Run everything",
+      "dependsOn": [
+        "API (port 3000)",
+        "Admin dashboard (port 3001)",
+        "Passenger website (port 3002)",
+        "Partner portal (port 3003)"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Driver app (Metro, needs a development build on the phone)",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/driver-mobile start",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Passenger app (Metro, needs a development build on the phone)",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/passenger-mobile start",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: everything except browsers",
+      "type": "shell",
+      "command": "pnpm test",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: browser tests (all three websites)",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/admin-dashboard e2e && pnpm --filter @rideswithme/passenger-web e2e && pnpm --filter @rideswithme/fleet-portal e2e",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop databases (Docker)",
+      "type": "shell",
+      "command": "docker compose stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build the API (for debugging)",
+      "type": "shell",
+      "command": "pnpm --filter @rideswithme/api... build",
+      "problemMatcher": ["$tsc"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "phone",
+      "type": "promptString",
+      "description": "Your phone number (e.g. 08031234567). You will sign in to the admin dashboard with it.",
+      "default": "08031234567"
+    }
+  ]
+}

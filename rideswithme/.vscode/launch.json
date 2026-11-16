@@ -1,0 +1,68 @@
+{
+  // Run and Debug (Ctrl+Shift+D). Breakpoints work in the TypeScript sources.
+  // Start the databases first (task "2. Start databases (Docker)").
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug API",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/api",
+      "program": "${workspaceFolder}/apps/api/dist/main.js",
+      "envFile": "${workspaceFolder}/apps/api/.env",
+      "preLaunchTask": "Build the API (for debugging)",
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/apps/api/dist/**/*.js",
+        "${workspaceFolder}/packages/*/dist/**/*.js"
+      ],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Debug admin dashboard",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --filter @rideswithme/admin-dashboard dev",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Debug passenger website",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --filter @rideswithme/passenger-web dev",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Debug partner portal",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --filter @rideswithme/fleet-portal dev",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug everything (API and the three websites)",
+      "configurations": [
+        "Debug API",
+        "Debug admin dashboard",
+        "Debug passenger website",
+        "Debug partner portal"
+      ],
+      "stopAll": true
+    }
+  ]
+}

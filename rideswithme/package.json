@@ -15,7 +15,10 @@
     "db:migrate": "pnpm --filter @rideswithme/database migrate",
     "db:status": "pnpm --filter @rideswithme/database status",
     "dev:api": "pnpm --filter @rideswithme/api dev",
-    "hausa:export": "node --no-warnings scripts/hausa-review.mts"
+    "hausa:export": "node --no-warnings scripts/hausa-review.mts",
+    "setup:local": "node scripts/setup-local.mjs",
+    "db:migrate:local": "node --env-file=apps/api/.env infrastructure/database/dist/cli.js up",
+    "seed:local": "pnpm --filter @rideswithme/api cli seed-city --key kano --name Kano --bbox 8.40,11.90,8.62,12.10"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
