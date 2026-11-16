@@ -18,6 +18,7 @@ import { PresenceService } from './presence.service';
 import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { recordRideEvent } from './ride-events';
 import { RideService } from './ride.service';
+import { releasePromotion } from '../promotions/promotions.service';
 import { RidePaymentsService } from '../payments/ride-payments.service';
 
 /** Search radius grows each time nobody suitable is found nearby. */
@@ -285,6 +286,7 @@ export class DispatcherService implements OnModuleInit, OnApplicationShutdown {
       .returning(['id', 'passenger_id', 'payment_method'])
       .execute();
     for (const r of rows) {
+      await releasePromotion(this.db, r.id);
       // A wallet hold goes back at once (the reconciliation job catches any missed).
       if (r.payment_method === 'wallet') {
         await this.db

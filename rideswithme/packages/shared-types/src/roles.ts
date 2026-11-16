@@ -38,6 +38,12 @@ export const PERMISSION_KEYS = [
   'buses.read',
   'buses.manage',
   'bus.operator',
+  'safety.read',
+  'safety.manage',
+  'support.read',
+  'support.manage',
+  'promotions.manage',
+  'privacy.manage',
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 

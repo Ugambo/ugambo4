@@ -42,6 +42,8 @@ export function testConfig(overrides: Record<string, string> = {}): AppConfig {
     MAINTENANCE_INTERVAL_MINUTES: '0',
     PAYMENT_RECONCILE_INTERVAL_MINUTES: '0',
     BUS_HOLD_SWEEP_MINUTES: '0',
+    DELETION_SWEEP_MINUTES: '0',
+    SOS_ALERT_PHONES: '+2348099990001,+2348099990002',
     ...overrides,
   });
 }

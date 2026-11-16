@@ -29,6 +29,10 @@ export interface UsersTable {
   created_at: CreatedAt;
   updated_at: ColumnType<Date, never, never>;
   deleted_at: Timestamp | null;
+  rating_as_driver_sum: ColumnType<number, never, number>;
+  rating_as_driver_count: ColumnType<number, never, number>;
+  rating_as_passenger_sum: ColumnType<number, never, number>;
+  rating_as_passenger_count: ColumnType<number, never, number>;
 }
 
 export interface RolesTable {
@@ -296,6 +300,7 @@ export interface RidesTable {
   final_total_kobo: ColumnType<string | null, number | null | undefined, number | null>;
   commission_kobo: ColumnType<string | null, number | null | undefined, number | null>;
   cancellation_fee_kobo: ColumnType<string, number | undefined, number>;
+  discount_kobo: ColumnType<string, number | undefined, number>;
   payment_method: PaymentMethod;
   card_id: string | null;
   search_started_at: Timestamp | null;
@@ -410,7 +415,8 @@ export type SystemAccountKey =
   | 'platform_revenue'
   | 'ride_holds'
   | 'payouts_in_transit'
-  | 'refunds_in_transit';
+  | 'refunds_in_transit'
+  | 'promotions';
 
 export interface WalletsTable {
   id: Generated<string>;
@@ -630,6 +636,18 @@ export interface Database {
   bus_schedule_fares: BusScheduleFaresTable;
   bus_bookings: BusBookingsTable;
   bus_booking_seats: BusBookingSeatsTable;
+  emergency_alerts: EmergencyAlertsTable;
+  trip_shares: TripSharesTable;
+  ride_messages: RideMessagesTable;
+  incident_reports: IncidentReportsTable;
+  ratings: RatingsTable;
+  promotions: PromotionsTable;
+  promotion_redemptions: PromotionRedemptionsTable;
+  support_tickets: SupportTicketsTable;
+  support_ticket_messages: SupportTicketMessagesTable;
+  notifications: NotificationsTable;
+  push_tokens: PushTokensTable;
+  account_deletion_requests: AccountDeletionRequestsTable;
 }
 
 export interface FleetOperatorsTable {
@@ -783,4 +801,184 @@ export interface BusBookingSeatsTable {
   ticket_code: string;
   checked_in_at: Timestamp | null;
   checked_in_by: string | null;
+}
+
+type Updated = ColumnType<Date, never, never>;
+
+export interface EmergencyAlertsTable {
+  id: Generated<string>;
+  user_id: string;
+  raised_as: 'passenger' | 'driver';
+  ride_id: string | null;
+  status: ColumnType<
+    'open' | 'acknowledged' | 'resolved',
+    'open' | undefined,
+    'open' | 'acknowledged' | 'resolved'
+  >;
+  /** geography; write with ST_MakePoint, read with ST_X/ST_Y. */
+  location: unknown;
+  location_source: 'device' | 'driver_position' | null;
+  location_recorded_at: Timestamp | null;
+  note: string | null;
+  acknowledged_by: string | null;
+  acknowledged_at: Timestamp | null;
+  resolved_by: string | null;
+  resolved_at: Timestamp | null;
+  resolution_note: string | null;
+  presses: ColumnType<number, number | undefined, number>;
+  created_at: CreatedAt;
+  updated_at: Updated;
+}
+
+export interface TripSharesTable {
+  id: Generated<string>;
+  ride_id: string;
+  created_by: string;
+  token_hash: string;
+  created_at: CreatedAt;
+  revoked_at: Timestamp | null;
+}
+
+export interface RideMessagesTable {
+  id: Generated<string>;
+  ride_id: string;
+  sender_id: string;
+  sender_role: 'passenger' | 'driver';
+  body: string;
+  created_at: CreatedAt;
+}
+
+export type IncidentCategory =
+  'safety' | 'accident' | 'harassment' | 'dangerous_driving' | 'lost_item' | 'vehicle' | 'other';
+
+export interface IncidentReportsTable {
+  id: Generated<string>;
+  reporter_id: string;
+  reported_as: 'passenger' | 'driver';
+  ride_id: string | null;
+  category: IncidentCategory;
+  priority: 'high' | 'normal';
+  description: string;
+  status: ColumnType<
+    'open' | 'investigating' | 'resolved',
+    'open' | undefined,
+    'open' | 'investigating' | 'resolved'
+  >;
+  assigned_to: string | null;
+  resolution_note: string | null;
+  resolved_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: Updated;
+}
+
+export interface RatingsTable {
+  id: Generated<string>;
+  ride_id: string;
+  rater_id: string;
+  ratee_id: string;
+  rated_role: 'driver' | 'passenger';
+  stars: number;
+  tags: ColumnType<string[], string[] | undefined, string[]>;
+  comment: string | null;
+  created_at: CreatedAt;
+}
+
+export interface PromotionsTable {
+  id: Generated<string>;
+  code: string;
+  description: string;
+  discount_type: 'percent' | 'fixed';
+  percent_bps: number | null;
+  amount_kobo: ColumnType<string | null, number | null | undefined, number | null>;
+  max_discount_kobo: ColumnType<string | null, number | null | undefined, number | null>;
+  min_fare_kobo: ColumnType<string, number | undefined, number>;
+  category_keys: ColumnType<string[], string[] | undefined, string[]>;
+  first_ride_only: ColumnType<boolean, boolean | undefined, boolean>;
+  per_user_limit: ColumnType<number, number | undefined, number>;
+  max_redemptions: number | null;
+  starts_at: Timestamp;
+  ends_at: Timestamp;
+  is_active: ColumnType<boolean, boolean | undefined, boolean>;
+  created_by: string | null;
+  created_at: CreatedAt;
+  updated_at: Updated;
+}
+
+export interface PromotionRedemptionsTable {
+  id: Generated<string>;
+  promotion_id: string;
+  user_id: string;
+  ride_id: string;
+  discount_kobo: Kobo;
+  status: ColumnType<
+    'reserved' | 'used' | 'released',
+    'reserved' | undefined,
+    'reserved' | 'used' | 'released'
+  >;
+  created_at: CreatedAt;
+  updated_at: Updated;
+}
+
+export type TicketCategory = 'payment' | 'ride' | 'bus' | 'account' | 'driver' | 'other';
+export type TicketStatus = 'open' | 'waiting_on_user' | 'resolved';
+
+export interface SupportTicketsTable {
+  id: Generated<string>;
+  user_id: string;
+  category: TicketCategory;
+  subject: string;
+  status: ColumnType<TicketStatus, TicketStatus | undefined, TicketStatus>;
+  ride_id: string | null;
+  bus_booking_id: string | null;
+  assigned_to: string | null;
+  last_message_at: ColumnType<Date, Date | undefined, Date>;
+  resolved_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: Updated;
+}
+
+export interface SupportTicketMessagesTable {
+  id: Generated<string>;
+  ticket_id: string;
+  author_id: string;
+  from_staff: boolean;
+  body: string;
+  created_at: CreatedAt;
+}
+
+export interface NotificationsTable {
+  id: Generated<string>;
+  user_id: string;
+  kind: string;
+  title: string;
+  body: string;
+  data: ColumnType<Record<string, unknown>, string | undefined, string>;
+  read_at: Timestamp | null;
+  created_at: CreatedAt;
+}
+
+export interface PushTokensTable {
+  id: Generated<string>;
+  user_id: string;
+  token: string;
+  app: 'passenger' | 'driver';
+  platform: 'ios' | 'android';
+  created_at: CreatedAt;
+  last_seen_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+export interface AccountDeletionRequestsTable {
+  id: Generated<string>;
+  user_id: string;
+  status: ColumnType<
+    'pending' | 'cancelled' | 'blocked' | 'completed',
+    'pending' | undefined,
+    'pending' | 'cancelled' | 'blocked' | 'completed'
+  >;
+  reason: string | null;
+  scheduled_for: Timestamp;
+  blocked_reason: string | null;
+  completed_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: Updated;
 }

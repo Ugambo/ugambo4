@@ -6,6 +6,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { RealtimeNotifier } from '../realtime/realtime.notifier';
 import { UsersModule } from '../users/users.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { PromotionsModule } from '../promotions/promotions.module';
 import { LocationService } from './location.service';
 import { MaintenanceService } from './maintenance.service';
 import { DashboardService } from './dashboard.service';
@@ -20,7 +21,7 @@ import { RideService } from './ride.service';
 import { RidesController } from './rides.controller';
 
 @Module({
-  imports: [DriversModule, AuthModule, UsersModule, PaymentsModule],
+  imports: [DriversModule, AuthModule, UsersModule, PaymentsModule, PromotionsModule],
   controllers: [RidesController, DriverTripsController, AdminRidesController],
   providers: [
     PresenceService,
@@ -42,6 +43,8 @@ import { RidesController } from './rides.controller';
     PresenceService,
     RealtimeGateway,
     MaintenanceService,
+    RealtimeNotifier,
+    RideViewService,
   ],
 })
 export class RidesModule {}

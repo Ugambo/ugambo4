@@ -17,6 +17,7 @@ import { DB, isUniqueViolation } from '../database/database.module';
 import { koboFromDb, point } from '../database/geo';
 import type { Database, FareRulesTable } from '../database/types';
 import { MapsService } from '../maps/maps.service';
+import { PromotionsService } from '../promotions/promotions.service';
 import { etaSecondsFromDistance, PresenceService } from '../rides/presence.service';
 import { DEFAULT_FARES } from './default-fares';
 import { calculateFare, type FareRuleValues } from './fare-engine';
@@ -60,6 +61,7 @@ export class PricingService {
     private readonly maps: MapsService,
     private readonly presence: PresenceService,
     private readonly audit: AuditService,
+    private readonly promotions: PromotionsService,
   ) {}
 
   async serviceAreaAt(location: LatLng) {
@@ -136,9 +138,30 @@ export class PricingService {
         quoteId: quote.id,
         category: { key: r.category_key, name: r.category_name, seats: r.seats },
         totalKobo: breakdown.totalKobo,
+        discountKobo: 0,
+        payableKobo: breakdown.totalKobo,
         breakdown,
         etaSeconds: nearest ? etaSecondsFromDistance(nearest.distanceMeters) : null,
         expiresAt: expiresAt.toISOString(),
+      });
+    }
+
+    let promotion: FareEstimateResponse['promotion'] = null;
+    if (input.promoCode) {
+      const r = await this.promotions.forEstimate(
+        passengerId,
+        input.promoCode,
+        options.map((o) => ({
+          categoryKey: o.category.key,
+          totalKobo: o.totalKobo,
+          bookingFeeKobo: o.breakdown.bookingFeeKobo,
+        })),
+        now,
+      );
+      promotion = r.check;
+      options.forEach((o, i) => {
+        o.discountKobo = r.discounts[i]!;
+        o.payableKobo = o.totalKobo - o.discountKobo;
       });
     }
 
@@ -148,6 +171,7 @@ export class PricingService {
       dropoff: input.dropoff,
       route,
       options,
+      promotion,
     };
   }
 

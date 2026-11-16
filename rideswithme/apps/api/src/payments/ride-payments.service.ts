@@ -10,6 +10,7 @@ import type { Database } from '../database/types';
 import { credit, debit, type LedgerLine, LedgerService } from './ledger.service';
 import { PAYMENT_PROVIDER, type PaymentProvider } from './payment.provider';
 import { PaymentsService } from './payments.service';
+import { releasePromotion, usePromotion } from '../promotions/promotions.service';
 
 export interface RideForPayment {
   id: string;
@@ -17,6 +18,8 @@ export interface RideForPayment {
   driver_id: string | null;
   payment_method: string;
   card_id: string | null;
+  /** Promotion discount: paid by RideswithMe, not the passenger. */
+  discount_kobo?: string | number;
 }
 
 export interface FareSplit {
@@ -115,6 +118,12 @@ export class RidePaymentsService {
     const fees = split.bookingFeeKobo + split.commissionKobo;
     const driver = { user: driverId, kind: 'driver' as const };
     let journalId: string | null = null;
+    // The passenger pays the fare less any promotion; RideswithMe pays the rest to the driver.
+    const discount = Math.min(koboFromDb(ride.discount_kobo ?? 0), finalKobo);
+    const payable = finalKobo - discount;
+    const promotion: LedgerLine[] =
+      discount > 0 ? [debit({ system: 'promotions' }, discount), credit(driver, discount)] : [];
+    if (discount > 0) await usePromotion(trx, ride.id);
 
     if (ride.payment_method === 'cash') {
       await trx
@@ -124,7 +133,7 @@ export class RidePaymentsService {
           payer_id: ride.passenger_id,
           method: 'cash',
           purpose: 'ride_fare',
-          amount_kobo: finalKobo,
+          amount_kobo: payable,
           status: 'collected',
           collected_by: driverId,
           collected_at: now,
@@ -136,16 +145,16 @@ export class RidePaymentsService {
         reference: `ride:${ride.id}:cash_commission`,
         rideId: ride.id,
         memo: 'Booking fee and commission on a cash trip',
-        lines: [debit(driver, fees), credit({ system: 'platform_revenue' }, fees)],
+        lines: [debit(driver, fees), credit({ system: 'platform_revenue' }, fees), ...promotion],
       });
       journalId = posted?.journalId ?? null;
     } else {
       const { lines, owed, paymentStatus } =
         ride.payment_method === 'wallet'
-          ? await this.takeFromWallet(trx, ride, finalKobo)
+          ? await this.takeFromWallet(trx, ride, payable)
           : {
-              lines: [debit({ system: 'passenger_receivables' }, finalKobo)],
-              owed: finalKobo,
+              lines: [debit({ system: 'passenger_receivables' }, payable)],
+              owed: payable,
               paymentStatus: 'pending' as const,
             };
       const paymentId = randomUUID();
@@ -157,7 +166,7 @@ export class RidePaymentsService {
           payer_id: ride.passenger_id,
           method: ride.payment_method as 'wallet' | 'card',
           purpose: 'ride_fare',
-          amount_kobo: finalKobo,
+          amount_kobo: payable,
           status: paymentStatus,
           outstanding_kobo: owed,
           card_id: ride.card_id,
@@ -177,6 +186,7 @@ export class RidePaymentsService {
           ...lines,
           credit(driver, split.driverEarningsKobo),
           credit({ system: 'platform_revenue' }, fees),
+          ...(discount > 0 ? [debit({ system: 'promotions' }, discount)] : []),
         ],
       });
       journalId = posted?.journalId ?? null;
@@ -213,6 +223,7 @@ export class RidePaymentsService {
     feeKobo: number,
     commissionBps: number,
   ): Promise<void> {
+    await releasePromotion(trx, ride.id);
     if (feeKobo <= 0) {
       if (ride.payment_method === 'wallet') await this.release(trx, ride.id, ride.passenger_id);
       return;

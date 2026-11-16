@@ -45,6 +45,9 @@ export interface FareQuoteOption {
   quoteId: string;
   category: { key: string; name: string; seats: number };
   totalKobo: number;
+  /** With a promotion code: the discount and what is left to pay (else 0 and totalKobo). */
+  discountKobo: number;
+  payableKobo: number;
   breakdown: FareBreakdown;
   /** Seconds for the nearest available driver to reach the pickup; null when none is near. */
   etaSeconds: number | null;
@@ -57,6 +60,16 @@ export interface FareEstimateResponse {
   dropoff: Place;
   route: RouteSummary;
   options: FareQuoteOption[];
+  /** The promotion code asked for, and whether it applies (reason when it does not). */
+  promotion: PromotionCheck | null;
+}
+
+export interface PromotionCheck {
+  code: string;
+  valid: boolean;
+  description: string | null;
+  /** not_found, not_started, ended, used_up, already_used, not_first_ride, min_fare, category */
+  reason: string | null;
 }
 
 export const RIDE_STATUSES = [
@@ -108,6 +121,11 @@ export interface RideFareView {
   waitingChargeKobo: number;
   finalTotalKobo: number | null;
   cancellationFeeKobo: number;
+  /** Promotion discount the passenger does not pay (the driver is paid on the full fare). */
+  discountKobo: number;
+  promotionCode: string | null;
+  /** What the passenger pays: the final (or quoted) total less the discount. Cash: what to hand the driver. */
+  payableKobo: number;
   breakdown: FareBreakdown;
 }
 
@@ -129,7 +147,11 @@ export interface RideView {
     vehicle: { make: string; model: string; colour: string; plateNumber: string };
     position: DriverPosition | null;
     hasPhoto: boolean;
+    /** Average stars (1–5, one decimal); null until rated a few times. */
+    rating: number | null;
   } | null;
+  /** Stars the viewer gave on this ride, or null; canRate while the rating window is open. */
+  rating: { given: number | null; canRate: boolean };
   requestedAt: string;
   assignedAt: string | null;
   arrivedAt: string | null;
@@ -140,7 +162,7 @@ export interface RideView {
 }
 
 export interface DriverRideView extends Omit<RideView, 'driver'> {
-  passenger: { firstName: string };
+  passenger: { firstName: string; rating: number | null };
   earnings: {
     fareKobo: number;
     bookingFeeKobo: number;

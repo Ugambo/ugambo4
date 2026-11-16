@@ -17,8 +17,19 @@ export const placeInputSchema = z
   })
   .strict();
 
+/** A promotion code as typed: case and spaces ignored. */
+export const promoCodeSchema = z
+  .string()
+  .max(40)
+  .transform((s) => s.toUpperCase().replace(/\s/g, ''))
+  .pipe(z.string().regex(/^[A-Z0-9]{4,20}$/, 'Promotion codes are 4 to 20 letters and digits'));
+
 export const fareEstimateSchema = z
-  .object({ pickup: placeInputSchema, dropoff: placeInputSchema })
+  .object({
+    pickup: placeInputSchema,
+    dropoff: placeInputSchema,
+    promoCode: promoCodeSchema.optional(),
+  })
   .strict();
 export type FareEstimateInput = z.input<typeof fareEstimateSchema>;
 
@@ -33,6 +44,8 @@ export const createRideSchema = z
     /** Required when paying by card: one of the passenger's saved cards. */
     cardId: z.string().uuid().optional(),
     scheduledFor: z.string().datetime({ offset: true }).optional(),
+    /** Applied to this ride if still valid (checked again at booking). */
+    promoCode: promoCodeSchema.optional(),
   })
   .strict()
   .refine((v) => (v.paymentMethod === 'card') === !!v.cardId, {

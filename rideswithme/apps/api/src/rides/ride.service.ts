@@ -34,6 +34,7 @@ import { PresenceService } from './presence.service';
 import { TripLocationsService } from './trip-locations.service';
 import { RidePaymentsService } from '../payments/ride-payments.service';
 import { AuditService } from '../audit/audit.service';
+import { PromotionsService } from '../promotions/promotions.service';
 import type { RequestContext } from '../common/request-context';
 
 const MAX_SCHEDULED_PER_PASSENGER = 3;
@@ -56,6 +57,7 @@ export class RideService {
     private readonly tripLocations: TripLocationsService,
     private readonly ridePayments: RidePaymentsService,
     private readonly audit: AuditService,
+    private readonly promotions: PromotionsService,
   ) {}
 
   // --- Passenger ---
@@ -192,8 +194,33 @@ export class RideService {
         }
         throw err;
       }
+      let discount = 0;
+      if (input.promoCode) {
+        discount = await this.promotions.reserve(
+          trx,
+          {
+            passengerId,
+            code: input.promoCode,
+            rideId: ride.id,
+            fareKobo: koboFromDb(q.total_kobo),
+            categoryKey: q.category_key,
+            bookingFeeKobo: snapshot.breakdown.bookingFeeKobo,
+          },
+          now,
+        );
+        await trx
+          .updateTable('rides')
+          .set({ discount_kobo: discount })
+          .where('id', '=', ride.id)
+          .execute();
+      }
       if (method === 'wallet')
-        await this.ridePayments.hold(trx, ride.id, passengerId, koboFromDb(q.total_kobo));
+        await this.ridePayments.hold(
+          trx,
+          ride.id,
+          passengerId,
+          koboFromDb(q.total_kobo) - discount,
+        );
       const actor = { actorType: 'passenger' as const, actorId: passengerId };
       await recordRideEvent(trx, {
         rideId: ride.id,
@@ -204,6 +231,7 @@ export class RideService {
         metadata: {
           scheduledFor: scheduledFor?.toISOString() ?? null,
           quotedTotalKobo: koboFromDb(q.total_kobo),
+          ...(discount > 0 && { promoCode: input.promoCode, discountKobo: discount }),
         },
       });
       if (!scheduledFor) {
@@ -636,7 +664,7 @@ export class RideService {
         paymentMethod: ride.payment_method,
         ...(cash && {
           cashCollectedKobo,
-          cashShortKobo: Math.max(0, final - cashCollectedKobo),
+          cashShortKobo: Math.max(0, final - koboFromDb(ride.discount_kobo) - cashCollectedKobo),
         }),
         drivenMeters: driven,
         ...split,
@@ -768,6 +796,7 @@ export class RideService {
         'waiting_charge_kobo',
         'payment_method',
         'card_id',
+        'discount_kobo',
         latOf('pickup').as('pickup_lat'),
         lngOf('pickup').as('pickup_lng'),
       ])

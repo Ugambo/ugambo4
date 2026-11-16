@@ -69,6 +69,10 @@ const en = {
   'error.HOLD_EXPIRED':
     'Your seats were released because payment took too long. Choose seats again.',
   'error.TICKET_INVALID': 'This ticket is not valid for your buses.',
+  'error.PROMO_INVALID': 'This promotion code cannot be used for this trip.',
+  'error.RATING_CLOSED': 'This trip can no longer be rated.',
+  'error.DELETION_BLOCKED':
+    'Your account cannot be deleted yet. Finish or settle what is open first.',
   'error.ROUTE_NOT_FOUND': 'We could not find a route between these places.',
   'sms.driver_approved':
     'Your RideswithMe driver account is approved. Open the RideswithMe Driver app to go online.',
@@ -141,6 +145,10 @@ const ha: Record<MessageKey, string> = {
   'error.BOOKING_CLOSED': 'An rufe yin oda don wannan tashi.',
   'error.HOLD_EXPIRED': 'An saki kujerunku saboda biyan kuɗi ya daɗe. Sake zaɓar kujeru.',
   'error.TICKET_INVALID': 'Wannan tikitin ba na motocinku ba ne.',
+  'error.PROMO_INVALID': 'Ba za a iya amfani da wannan lambar talla ba don wannan tafiya.',
+  'error.RATING_CLOSED': 'Ba za a iya ba wannan tafiya maki yanzu ba.',
+  'error.DELETION_BLOCKED':
+    'Ba za a iya share asusunku yanzu ba. Kammala ko daidaita abin da ke buɗe tukuna.',
   'error.ROUTE_NOT_FOUND': 'Ba mu sami hanya tsakanin waɗannan wurare ba.',
   'sms.driver_approved':
     'An amince da asusun direbanku na RideswithMe. Buɗe manhajar RideswithMe Driver don fara aiki.',

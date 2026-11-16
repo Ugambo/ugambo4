@@ -165,6 +165,28 @@ export const configSchema = z
     BUS_DEFAULT_SERVICE_FEE_BPS: z.coerce.number().int().min(0).max(5000).default(1000),
     /** How often expired seat holds are tidied up (minutes). 0 = off (holds still lapse on time). */
     BUS_HOLD_SWEEP_MINUTES: z.coerce.number().int().min(0).max(60).default(1),
+    // --- Safety, notifications, privacy (Phase 8) ---
+    /** Staff phones (E.164, comma-separated) texted at once when someone presses SOS. */
+    SOS_ALERT_PHONES: z
+      .string()
+      .default('')
+      .transform((v) =>
+        v
+          .split(',')
+          .map((x) => x.trim())
+          .filter(Boolean),
+      )
+      .pipe(z.array(z.string().regex(/^\+[1-9]\d{7,14}$/, 'E.164 phone numbers'))),
+    /** Trip share links are this address plus a token (the passenger website's /track page). */
+    TRIP_SHARE_BASE_URL: z.string().url().default('http://localhost:3002/track'),
+    /** A share link keeps working this long after the trip ends (minutes). */
+    TRIP_SHARE_AFTER_END_MINUTES: z.coerce.number().int().min(0).max(1440).default(30),
+    /** Push notifications: log (development) or expo (Expo's push service). */
+    PUSH_PROVIDER: z.enum(['log', 'expo']).default('log'),
+    EXPO_ACCESS_TOKEN: z.string().min(10).optional(),
+    /** Account deletion: days to change one's mind, and how often requests are processed (minutes; 0 = off). */
+    DELETION_GRACE_DAYS: z.coerce.number().int().min(0).max(90).default(7),
+    DELETION_SWEEP_MINUTES: z.coerce.number().int().min(0).max(1440).default(60),
   })
   .superRefine((c, ctx) => {
     if (!c.FIELD_ENCRYPTION_KEYS.has(c.FIELD_ENCRYPTION_ACTIVE_KEY_ID)) {

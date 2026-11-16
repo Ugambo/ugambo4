@@ -5,3 +5,4 @@ export * from './rides';
 export * from './payments';
 export * from './fleets';
 export * from './buses';
+export * from './safety';

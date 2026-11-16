@@ -19,6 +19,15 @@ import { PresenceService } from './presence.service';
 
 const firstName = (full: string | null) => (full ?? '').trim().split(/\s+/)[0] || 'RideswithMe';
 
+/** Ratings are shown once there are at least this many (fewer says little). */
+export const MIN_RATINGS_SHOWN = 3;
+/** Days after a trip during which either side can rate it. */
+export const RATING_WINDOW_DAYS = 7;
+
+/** Average stars to one decimal, or null with too few ratings. */
+export const averageRating = (sum: number, count: number) =>
+  count >= MIN_RATINGS_SHOWN ? Math.round((sum / count) * 10) / 10 : null;
+
 export type RideRow = Awaited<ReturnType<RideViewService['loadRow']>>;
 
 /** Builds the ride as each party sees it. Passengers see the driver's first name only, and vice versa. */
@@ -53,6 +62,24 @@ export class RideViewService {
         'v.plate_number',
         'pc.brand as card_brand',
         'pc.last4 as card_last4',
+        'd.rating_as_driver_sum',
+        'd.rating_as_driver_count',
+        'p.rating_as_passenger_sum',
+        'p.rating_as_passenger_count',
+        sql<
+          string | null
+        >`(SELECT pr.code FROM promotion_redemptions rd JOIN promotions pr ON pr.id = rd.promotion_id
+          WHERE rd.ride_id = r.id AND rd.status <> 'released')`.as('promotion_code'),
+        sql<
+          number | null
+        >`(SELECT stars FROM ratings WHERE ride_id = r.id AND rated_role = 'driver')`.as(
+          'stars_for_driver',
+        ),
+        sql<
+          number | null
+        >`(SELECT stars FROM ratings WHERE ride_id = r.id AND rated_role = 'passenger')`.as(
+          'stars_for_passenger',
+        ),
         sql<
           string | null
         >`(SELECT status FROM payments WHERE ride_id = r.id ORDER BY created_at DESC LIMIT 1)`.as(
@@ -72,8 +99,20 @@ export class RideViewService {
     return row;
   }
 
-  private base(row: RideRow): Omit<RideView, 'driver'> {
+  private base(
+    row: RideRow,
+    viewer: 'passenger' | 'driver',
+    now = new Date(),
+  ): Omit<RideView, 'driver'> {
     const snapshot = row.fare_snapshot as FareSnapshot;
+    const discount = koboFromDb(row.discount_kobo);
+    const final = row.final_total_kobo === null ? null : koboFromDb(row.final_total_kobo);
+    const gross = final ?? koboFromDb(row.quoted_total_kobo) + koboFromDb(row.waiting_charge_kobo);
+    const given = viewer === 'passenger' ? row.stars_for_driver : row.stars_for_passenger;
+    const ratingOpen =
+      row.status === 'completed' &&
+      !!row.completed_at &&
+      now.getTime() - row.completed_at.getTime() < RATING_WINDOW_DAYS * 86_400_000;
     return {
       id: row.id,
       status: row.status as RideStatus,
@@ -108,10 +147,14 @@ export class RideViewService {
         },
         quotedTotalKobo: koboFromDb(row.quoted_total_kobo),
         waitingChargeKobo: koboFromDb(row.waiting_charge_kobo),
-        finalTotalKobo: row.final_total_kobo === null ? null : koboFromDb(row.final_total_kobo),
+        finalTotalKobo: final,
         cancellationFeeKobo: koboFromDb(row.cancellation_fee_kobo),
+        discountKobo: discount,
+        promotionCode: row.promotion_code,
+        payableKobo: Math.max(0, gross - discount),
         breakdown: snapshot.breakdown,
       },
+      rating: { given: given ?? null, canRate: ratingOpen && given == null },
       requestedAt: row.requested_at.toISOString(),
       assignedAt: row.assigned_at?.toISOString() ?? null,
       arrivedAt: row.arrived_at?.toISOString() ?? null,
@@ -135,7 +178,7 @@ export class RideViewService {
         .executeTakeFirst());
     }
     return {
-      ...this.base(row),
+      ...this.base(row, 'passenger'),
       driver: row.driver_id
         ? {
             firstName: firstName(row.driver_name),
@@ -148,6 +191,7 @@ export class RideViewService {
             // Live position only while the ride is active; never afterwards.
             position: active ? await this.presence.position(row.driver_id) : null,
             hasPhoto,
+            rating: averageRating(row.rating_as_driver_sum ?? 0, row.rating_as_driver_count ?? 0),
           }
         : null,
     };
@@ -158,8 +202,11 @@ export class RideViewService {
     const final = row.final_total_kobo === null ? null : koboFromDb(row.final_total_kobo);
     const split = final === null ? null : splitFare(snapshot.rule, final);
     return {
-      ...this.base(row),
-      passenger: { firstName: firstName(row.passenger_name) },
+      ...this.base(row, 'driver'),
+      passenger: {
+        firstName: firstName(row.passenger_name),
+        rating: averageRating(row.rating_as_passenger_sum, row.rating_as_passenger_count),
+      },
       earnings: split
         ? {
             fareKobo: final!,
