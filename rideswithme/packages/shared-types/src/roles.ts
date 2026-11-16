@@ -7,6 +7,7 @@ export const ROLE_KEYS = [
   'passenger',
   'driver',
   'fleet_manager',
+  'bus_operator',
   'support_agent',
   'admin',
   'super_admin',
@@ -34,6 +35,9 @@ export const PERMISSION_KEYS = [
   'fleets.manage',
   'rides.manage',
   'fleet.portal',
+  'buses.read',
+  'buses.manage',
+  'bus.operator',
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 

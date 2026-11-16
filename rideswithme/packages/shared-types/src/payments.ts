@@ -33,7 +33,10 @@ export type WalletEntryKind =
   | 'refund'
   | 'refund_returned'
   | 'adjustment'
-  | 'opening_balance';
+  | 'opening_balance'
+  | 'bus_booking'
+  | 'bus_refund'
+  | 'operator_settlement';
 
 export interface WalletEntryView {
   id: string;
@@ -46,7 +49,8 @@ export interface WalletEntryView {
   createdAt: string;
 }
 
-export type PaymentPurpose = 'ride_fare' | 'cancellation_fee' | 'wallet_topup' | 'card_link';
+export type PaymentPurpose =
+  'ride_fare' | 'cancellation_fee' | 'wallet_topup' | 'card_link' | 'bus_booking';
 export type PaymentStatus =
   'pending' | 'succeeded' | 'collected' | 'outstanding' | 'failed' | 'abandoned';
 

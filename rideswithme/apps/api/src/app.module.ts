@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './admin/admin.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { BusesModule } from './buses/buses.module';
 import { AllExceptionsFilter } from './common/http-exception.filter';
 import { CommonModule } from './common/common.module';
 import { CryptoModule } from './common/crypto/crypto.module';
@@ -71,6 +72,7 @@ export class AppModule {
         MapsModule,
         PaymentsModule,
         FleetsModule,
+        BusesModule,
         RidesModule,
         HealthModule,
       ],

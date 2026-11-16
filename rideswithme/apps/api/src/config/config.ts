@@ -154,6 +154,17 @@ export const configSchema = z
     PAYMENT_ABANDON_AFTER_HOURS: z.coerce.number().int().min(1).max(168).default(24),
     /** How long after a ride a passenger can report a problem with what they paid (days). */
     DISPUTE_WINDOW_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+    // --- Buses (Phase 7) ---
+    /** How long seats are held while the passenger pays (minutes). */
+    BUS_HOLD_MINUTES: z.coerce.number().int().min(2).max(60).default(10),
+    /** Booking closes this long before departure (minutes). */
+    BUS_SALES_CLOSE_MINUTES: z.coerce.number().int().min(0).max(1440).default(30),
+    /** Passengers can cancel for a full refund until this long before departure (hours). */
+    BUS_CANCEL_CUTOFF_HOURS: z.coerce.number().int().min(0).max(168).default(12),
+    /** RideswithMe's share of each fare for new operators, in basis points (1000 = 10%). */
+    BUS_DEFAULT_SERVICE_FEE_BPS: z.coerce.number().int().min(0).max(5000).default(1000),
+    /** How often expired seat holds are tidied up (minutes). 0 = off (holds still lapse on time). */
+    BUS_HOLD_SWEEP_MINUTES: z.coerce.number().int().min(0).max(60).default(1),
   })
   .superRefine((c, ctx) => {
     if (!c.FIELD_ENCRYPTION_KEYS.has(c.FIELD_ENCRYPTION_ACTIVE_KEY_ID)) {

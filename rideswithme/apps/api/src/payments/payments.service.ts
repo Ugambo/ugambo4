@@ -17,10 +17,21 @@ import { APP_CONFIG, type AppConfig } from '../config/config';
 import { DB } from '../database/database.module';
 import { koboFromDb } from '../database/geo';
 import type { Database, PaymentsTable, WalletKind } from '../database/types';
-import { credit, debit, LedgerService } from './ledger.service';
+import { credit, debit, type LedgerLine, LedgerService } from './ledger.service';
 import { type ChargeResult, PAYMENT_PROVIDER, type PaymentProvider } from './payment.provider';
 
 export const cardContext = (userId: string) => `payment_cards.authorization_code:${userId}`;
+
+/**
+ * Settles a successful card payment for a bus booking (registered by the bus
+ * module). Gets the money received and posts the journal that puts it where it
+ * belongs; returns what LedgerService.post returned.
+ */
+export type BusChargeHandler = (
+  trx: Kysely<Database>,
+  payment: Selectable<PaymentsTable>,
+  received: LedgerLine[],
+) => Promise<{ journalId: string; created: boolean } | null>;
 
 type PaymentRow = Selectable<PaymentsTable> & {
   card_brand?: string | null;
@@ -52,6 +63,7 @@ export function paymentView(p: PaymentRow): PaymentView {
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
+  private busChargeHandler: BusChargeHandler | null = null;
 
   constructor(
     @Inject(DB) private readonly db: Kysely<Database>,
@@ -60,6 +72,11 @@ export class PaymentsService {
     private readonly ledger: LedgerService,
     private readonly encryption: FieldEncryption,
   ) {}
+
+  /** Called once by the bus module at start-up. */
+  onBusCharge(handler: BusChargeHandler) {
+    this.busChargeHandler = handler;
+  }
 
   // --- Checkout: top-ups and saving a card ---
 
@@ -83,7 +100,9 @@ export class PaymentsService {
         });
       }
     }
-    return this.checkout(userId, 'wallet_topup', kind, amountKobo, returnTo, kind === 'driver');
+    return this.checkout(userId, 'wallet_topup', kind, amountKobo, returnTo, {
+      driverApp: kind === 'driver',
+    });
   }
 
   /** Saves a card by charging a small amount, which goes into the passenger's wallet. */
@@ -94,18 +113,28 @@ export class PaymentsService {
       'passenger',
       this.config.CARD_LINK_AMOUNT_KOBO,
       returnTo,
-      false,
     );
+  }
+
+  /** Paying for a bus booking on the provider's page (any card, or bank transfer). */
+  startBusCheckout(
+    userId: string,
+    busBookingId: string,
+    amountKobo: number,
+    returnTo: PaymentReturnTarget,
+  ): Promise<CheckoutView> {
+    return this.checkout(userId, 'bus_booking', null, amountKobo, returnTo, { busBookingId });
   }
 
   private async checkout(
     userId: string,
-    purpose: 'wallet_topup' | 'card_link',
-    kind: WalletKind,
+    purpose: 'wallet_topup' | 'card_link' | 'bus_booking',
+    kind: WalletKind | null,
     amountKobo: number,
     returnTo: PaymentReturnTarget,
-    driverApp: boolean,
+    opts: { driverApp?: boolean; busBookingId?: string } = {},
   ): Promise<CheckoutView> {
+    const driverApp = opts.driverApp ?? false;
     const payment = await this.db
       .insertInto('payments')
       .values({
@@ -113,6 +142,7 @@ export class PaymentsService {
         method: 'card',
         purpose,
         wallet_kind: kind,
+        bus_booking_id: opts.busBookingId ?? null,
         amount_kobo: amountKobo,
         status: 'pending',
         provider: this.provider.name,
@@ -208,9 +238,22 @@ export class PaymentsService {
       }
       const amount = koboFromDb(p.amount_kobo);
       const topUp = p.purpose === 'wallet_topup' || p.purpose === 'card_link';
+      const bus = p.purpose === 'bus_booking';
 
       if (charge.status !== 'success') {
         if (p.status !== 'pending') return;
+        if (bus) {
+          // Nothing was paid; the seats stay held until the hold lapses, so the passenger can try again.
+          await trx
+            .updateTable('payments')
+            .set({
+              status: charge.status === 'abandoned' ? 'abandoned' : 'failed',
+              failure_reason: charge.message ?? 'Card declined',
+            })
+            .where('id', '=', p.id)
+            .execute();
+          return;
+        }
         await trx
           .updateTable('payments')
           .set(
@@ -249,7 +292,10 @@ export class PaymentsService {
         debit({ system: 'provider_fees' }, fee),
       ];
       let posted;
-      if (topUp) {
+      if (bus) {
+        if (!this.busChargeHandler) throw new Error('Bus payments are not set up');
+        posted = await this.busChargeHandler(trx, p, received);
+      } else if (topUp) {
         // A late success after we gave up on the checkout still counts.
         posted = await this.ledger.post(trx, {
           kind: 'wallet_topup',

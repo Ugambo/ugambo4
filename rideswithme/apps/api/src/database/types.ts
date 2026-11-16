@@ -354,7 +354,8 @@ export interface RideEventsTable {
   created_at: CreatedAt;
 }
 
-export type PaymentPurpose = 'ride_fare' | 'cancellation_fee' | 'wallet_topup' | 'card_link';
+export type PaymentPurpose =
+  'ride_fare' | 'cancellation_fee' | 'wallet_topup' | 'card_link' | 'bus_booking';
 export type PaymentStatus =
   'pending' | 'succeeded' | 'collected' | 'outstanding' | 'failed' | 'abandoned';
 export type ProviderName = 'paystack' | 'fake';
@@ -374,6 +375,7 @@ export interface PaymentsTable {
   provider: ProviderName | null;
   provider_reference: string | null;
   card_id: string | null;
+  bus_booking_id: string | null;
   fee_kobo: ColumnType<string, number | undefined, number>;
   outstanding_kobo: ColumnType<string, number | undefined, number>;
   refunded_kobo: ColumnType<string, number | undefined, number>;
@@ -400,7 +402,7 @@ export interface CommissionsTable {
   created_at: CreatedAt;
 }
 
-export type LedgerAccountKind = 'passenger' | 'driver' | 'system';
+export type LedgerAccountKind = 'passenger' | 'driver' | 'system' | 'bus_operator';
 export type SystemAccountKey =
   | 'paystack_balance'
   | 'passenger_receivables'
@@ -413,6 +415,7 @@ export type SystemAccountKey =
 export interface WalletsTable {
   id: Generated<string>;
   owner_id: string | null;
+  operator_id: string | null;
   kind: LedgerAccountKind;
   system_key: SystemAccountKey | null;
   normal_side: 'debit' | 'credit';
@@ -440,7 +443,10 @@ export type JournalKind =
   | 'refund_returned'
   | 'chargeback'
   | 'adjustment'
-  | 'opening_balance';
+  | 'opening_balance'
+  | 'bus_booking'
+  | 'bus_refund'
+  | 'operator_settlement';
 
 export interface LedgerJournalsTable {
   id: Generated<string>;
@@ -451,6 +457,8 @@ export interface LedgerJournalsTable {
   payout_id: string | null;
   refund_id: string | null;
   dispute_id: string | null;
+  bus_booking_id: string | null;
+  bus_operator_id: string | null;
   memo: string | null;
   created_by: string | null;
   tx_id: ColumnType<string, never, never>;
@@ -613,6 +621,15 @@ export interface Database {
   payment_webhook_events: PaymentWebhookEventsTable;
   fleet_operators: FleetOperatorsTable;
   fleet_members: FleetMembersTable;
+  bus_operators: BusOperatorsTable;
+  bus_operator_members: BusOperatorMembersTable;
+  bus_routes: BusRoutesTable;
+  bus_seat_layouts: BusSeatLayoutsTable;
+  bus_seats: BusSeatsTable;
+  bus_schedules: BusSchedulesTable;
+  bus_schedule_fares: BusScheduleFaresTable;
+  bus_bookings: BusBookingsTable;
+  bus_booking_seats: BusBookingSeatsTable;
 }
 
 export interface FleetOperatorsTable {
@@ -642,4 +659,128 @@ export interface FleetMembersTable {
   removed_at: Timestamp | null;
   removed_by: string | null;
   updated_at: ColumnType<Date, never, never>;
+}
+
+export type SeatClass = 'standard' | 'executive' | 'vip';
+type ActiveOrSuspended = ColumnType<
+  'active' | 'suspended',
+  'active' | 'suspended' | undefined,
+  'active' | 'suspended'
+>;
+
+export interface BusOperatorsTable {
+  id: Generated<string>;
+  name: string;
+  status: ActiveOrSuspended;
+  service_fee_bps: number;
+  contact_phone: string | null;
+  contact_email: string | null;
+  created_by: string | null;
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export interface BusOperatorMembersTable {
+  id: Generated<string>;
+  operator_id: string;
+  user_id: string;
+  status: ColumnType<'active' | 'removed', 'active' | 'removed' | undefined, 'active' | 'removed'>;
+  added_by: string | null;
+  added_at: CreatedAt;
+  removed_at: Timestamp | null;
+  removed_by: string | null;
+}
+
+export interface BusRoutesTable {
+  id: Generated<string>;
+  operator_id: string;
+  origin_city: string;
+  origin_terminal: string;
+  destination_city: string;
+  destination_terminal: string;
+  duration_minutes: number;
+  is_active: ColumnType<boolean, boolean | undefined, boolean>;
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export interface BusSeatLayoutsTable {
+  id: Generated<string>;
+  operator_id: string;
+  name: string;
+  rows: number;
+  columns: number;
+  created_at: CreatedAt;
+}
+
+export interface BusSeatsTable {
+  id: Generated<string>;
+  layout_id: string;
+  label: string;
+  row_no: number;
+  col_no: number;
+  seat_class: SeatClass;
+}
+
+export interface BusSchedulesTable {
+  id: Generated<string>;
+  route_id: string;
+  operator_id: string;
+  layout_id: string;
+  departs_at: Timestamp;
+  arrives_at: Timestamp;
+  vehicle_plate: string | null;
+  status: ColumnType<'scheduled' | 'cancelled', 'scheduled' | undefined, 'scheduled' | 'cancelled'>;
+  cancel_reason: string | null;
+  cancelled_at: Timestamp | null;
+  cancelled_by: string | null;
+  created_by: string | null;
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export interface BusScheduleFaresTable {
+  schedule_id: string;
+  seat_class: SeatClass;
+  fare_kobo: Kobo;
+}
+
+export type BusBookingStatus = 'held' | 'confirmed' | 'expired' | 'cancelled';
+
+export interface BusBookingsTable {
+  id: Generated<string>;
+  reference: string;
+  passenger_id: string;
+  schedule_id: string;
+  status: ColumnType<BusBookingStatus, BusBookingStatus | undefined, BusBookingStatus>;
+  hold_expires_at: Timestamp;
+  total_kobo: Kobo;
+  service_fee_kobo: Kobo;
+  service_fee_bps: number;
+  payment_method: 'wallet' | 'card' | null;
+  confirmed_at: Timestamp | null;
+  cancelled_at: Timestamp | null;
+  cancelled_by: 'passenger' | 'operator' | 'admin' | null;
+  cancel_reason: string | null;
+  refunded_kobo: ColumnType<string, number | undefined, number>;
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, never, never>;
+}
+
+export interface BusBookingSeatsTable {
+  id: Generated<string>;
+  booking_id: string;
+  schedule_id: string;
+  seat_id: string;
+  status: ColumnType<
+    'active' | 'released',
+    'active' | 'released' | undefined,
+    'active' | 'released'
+  >;
+  passenger_name: string;
+  seat_class: SeatClass;
+  fare_kobo: Kobo;
+  ticket_code: string;
+  checked_in_at: Timestamp | null;
+  checked_in_by: string | null;
 }

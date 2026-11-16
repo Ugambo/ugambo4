@@ -64,6 +64,10 @@ const en = {
   'error.REFUND_NOT_ALLOWED': 'This refund cannot be made.',
   'error.DISPUTE_EXISTS': 'You have already reported a problem with this ride.',
   'error.WEBHOOK_SIGNATURE_INVALID': 'Invalid signature.',
+  'error.SEAT_UNAVAILABLE': 'Someone else has just taken that seat. Choose another.',
+  'error.BOOKING_CLOSED': 'Booking for this departure has closed.',
+  'error.HOLD_EXPIRED': 'Your seats were released because payment took too long. Choose seats again.',
+  'error.TICKET_INVALID': 'This ticket is not valid for your buses.',
   'error.ROUTE_NOT_FOUND': 'We could not find a route between these places.',
   'sms.driver_approved':
     'Your RideswithMe driver account is approved. Open the RideswithMe Driver app to go online.',
@@ -132,6 +136,10 @@ const ha: Record<MessageKey, string> = {
   'error.REFUND_NOT_ALLOWED': 'Ba za a iya mayar da wannan kuɗin ba.',
   'error.DISPUTE_EXISTS': 'Kun riga kun bayar da rahoton matsala game da wannan tafiya.',
   'error.WEBHOOK_SIGNATURE_INVALID': 'Sa hannu ba daidai ba ne.',
+  'error.SEAT_UNAVAILABLE': 'Wani ya riga ya ɗauki wannan kujera. Zaɓi wata.',
+  'error.BOOKING_CLOSED': 'An rufe yin oda don wannan tashi.',
+  'error.HOLD_EXPIRED': 'An saki kujerunku saboda biyan kuɗi ya daɗe. Sake zaɓar kujeru.',
+  'error.TICKET_INVALID': 'Wannan tikitin ba na motocinku ba ne.',
   'error.ROUTE_NOT_FOUND': 'Ba mu sami hanya tsakanin waɗannan wurare ba.',
   'sms.driver_approved':
     'An amince da asusun direbanku na RideswithMe. Buɗe manhajar RideswithMe Driver don fara aiki.',

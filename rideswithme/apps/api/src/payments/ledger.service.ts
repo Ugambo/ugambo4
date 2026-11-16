@@ -8,7 +8,11 @@ import type { Database, JournalKind, SystemAccountKey, WalletKind } from '../dat
 
 /** Which account a line touches. User wallets are created on first use. */
 export type WalletRef =
-  { id: string } | { system: SystemAccountKey } | { user: string; kind: WalletKind };
+  | { id: string }
+  | { system: SystemAccountKey }
+  | { user: string; kind: WalletKind }
+  /** A bus operator's account: what RideswithMe owes it (may go negative after refunds). */
+  | { operator: string };
 
 /** One side of a journal. Debits are positive, credits negative. */
 export interface LedgerLine {
@@ -34,6 +38,8 @@ export interface JournalInput {
   payoutId?: string | null;
   refundId?: string | null;
   disputeId?: string | null;
+  busBookingId?: string | null;
+  busOperatorId?: string | null;
   memo?: string | null;
   createdBy?: string | null;
   lines: LedgerLine[];
@@ -98,6 +104,8 @@ export class LedgerService {
         payout_id: input.payoutId ?? null,
         refund_id: input.refundId ?? null,
         dispute_id: input.disputeId ?? null,
+        bus_booking_id: input.busBookingId ?? null,
+        bus_operator_id: input.busOperatorId ?? null,
         memo: input.memo ?? null,
         created_by: input.createdBy ?? null,
       })
@@ -180,6 +188,16 @@ export class LedgerService {
     return w ? koboFromDb(w.balance_kobo) : 0;
   }
 
+  /** A bus operator's balance (0 before its first sale). */
+  async operatorBalance(operatorId: string, db: Kysely<Database> = this.db): Promise<number> {
+    const w = await db
+      .selectFrom('wallets')
+      .select('balance_kobo')
+      .where('operator_id', '=', operatorId)
+      .executeTakeFirst();
+    return w ? koboFromDb(w.balance_kobo) : 0;
+  }
+
   async systemBalance(key: SystemAccountKey, db: Kysely<Database> = this.db): Promise<number> {
     const w = await db
       .selectFrom('wallets')
@@ -214,6 +232,19 @@ export class LedgerService {
 
   private async walletId(trx: Kysely<Database>, ref: WalletRef): Promise<string> {
     if ('id' in ref) return ref.id;
+    if ('operator' in ref) {
+      await trx
+        .insertInto('wallets')
+        .values({ operator_id: ref.operator, kind: 'bus_operator', normal_side: 'credit' })
+        .onConflict((oc) => oc.column('operator_id').doNothing())
+        .execute();
+      const w = await trx
+        .selectFrom('wallets')
+        .select('id')
+        .where('operator_id', '=', ref.operator)
+        .executeTakeFirstOrThrow();
+      return w.id;
+    }
     if ('system' in ref) {
       const w = await trx
         .selectFrom('wallets')

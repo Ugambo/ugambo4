@@ -41,6 +41,7 @@ export function testConfig(overrides: Record<string, string> = {}): AppConfig {
     DISPATCH_INTERVAL_MS: '0',
     MAINTENANCE_INTERVAL_MINUTES: '0',
     PAYMENT_RECONCILE_INTERVAL_MINUTES: '0',
+    BUS_HOLD_SWEEP_MINUTES: '0',
     ...overrides,
   });
 }
