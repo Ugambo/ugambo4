@@ -35,9 +35,9 @@ foreach ( array( 'litespeed-cache/litespeed-cache.php', 'w3-total-cache/w3-total
 	ek12( ! is_plugin_active( $dup ), 'No duplicate plugin: ' . dirname( $dup ) );
 }
 $done = (array) get_option( Integrations::DONE );
-ek12( 10 === count( $done ), 'All 10 helper plugins set up once (re-run keeps wp-admin changes)' );
+ek12( count( $done ) >= 10, 'All ' . count( $done ) . ' set-up steps done once: 10 helper plugins + share picture, security and speed (Phase 14); re-run keeps wp-admin changes' );
 $again = Integrations::setup();
-ek12( 10 === count( array_filter( $again, static fn( $v ) => 'already set up' === $v ) ), 'Setup is safe to re-run' );
+ek12( count( $done ) === count( array_filter( $again, static fn( $v ) => 'already set up' === $v ) ), 'Setup is safe to re-run' );
 
 WP_CLI::line( 'SEO (Rank Math)' );
 $mods = (array) get_option( 'rank_math_modules' );

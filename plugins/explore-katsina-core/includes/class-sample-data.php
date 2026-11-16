@@ -392,11 +392,11 @@ final class Sample_Data {
 		}
 	}
 
-	/** Keep an unpaid booking "awaiting payment" for 2 days, so the status can be seen. */
+	/** Keep a booking "awaiting payment" / "waiting for the venue" for 30 days, so the owner can see the status while reviewing. */
 	private function keep_waiting( $b ) {
 		global $wpdb;
 		if ( ! is_wp_error( $b ) ) {
-			$wpdb->update( $wpdb->prefix . 'ek_bookings', array( 'hold_expires' => gmdate( 'Y-m-d H:i:s', time() + 2 * DAY_IN_SECONDS ) ), array( 'id' => $b->id ) );
+			$wpdb->update( $wpdb->prefix . 'ek_bookings', array( 'hold_expires' => gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS ) ), array( 'id' => $b->id ) );
 		}
 	}
 
@@ -502,10 +502,11 @@ final class Sample_Data {
 				}
 				return $b;
 			};
-			$ev( $ven[0], 40, 600 );                                                                 // Requested.
+			$this->keep_waiting( $ev( $ven[0], 40, 600 ) );                                          // Requested.
 			$a = $ev( $ven[0], 45, 800 );                                                            // Accepted, deposit due.
 			if ( ! is_wp_error( $a ) ) {
 				Booking::transition( $a, 'confirmed', $owner( $ven[0] ) );
+				$this->keep_waiting( $a );
 			}
 			$p = $ev( $ven[0], 50, 900 );                                                            // Deposit paid.
 			if ( ! is_wp_error( $p ) ) {
