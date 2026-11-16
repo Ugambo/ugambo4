@@ -10,6 +10,9 @@ authenticator app. Screens (each shown only to roles with the permission):
   and cancelling a ride as staff (with a reason, audited).
 - **Users:** search, details, suspend and reactivate.
 - **Driver verification** (Phase 2), **Fleets** (create, managers, suspend).
+- **Buses:** operators (create, service fee, managers, suspend, record payments to
+  them, statement), departures with passenger lists and cancellation, and booking
+  lookup by reference or phone with cancellation and full refund.
 - **Pricing** per service area and category, **Service areas** drawn on a map.
 - **Payments:** wallets and adjustments, refunds, payouts, disputes.
 - **Roles** and the **audit log**.

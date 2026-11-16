@@ -15,9 +15,9 @@ describe('passenger proxy allowlist', () => {
     'v1/payments/0b1c6f0e-3a4b-4c5d-8e9f-0a1b2c3d4e5f',
     'v1/payment-cards',
     'v1/rides/0b1c6f0e-3a4b-4c5d-8e9f-0a1b2c3d4e5f/dispute',
-      'v1/bus/search',
+    'v1/bus/search',
     'v1/bus/bookings/0b1c6f0e-3a4b-4c5d-8e9f-0a1b2c3d4e5f/pay',
-])('allows %s', (p) => expect(isAllowedPassengerPath(p)).toBe(true));
+  ])('allows %s', (p) => expect(isAllowedPassengerPath(p)).toBe(true));
   it.each([
     'v1/admin/users',
     'v1/driver/offers/current',
@@ -28,7 +28,7 @@ describe('passenger proxy allowlist', () => {
     'v1/driver/wallet',
     'v1/admin/payments',
     'v1/webhooks/paystack',
-      'v1/operator/check-in',
+    'v1/operator/check-in',
     'v1/admin/bus-bookings',
-])('refuses %s', (p) => expect(isAllowedPassengerPath(p)).toBe(false));
+  ])('refuses %s', (p) => expect(isAllowedPassengerPath(p)).toBe(false));
 });

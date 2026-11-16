@@ -15,7 +15,7 @@ it differs from the brief, `DECISIONS.md` explains why.
 | Driver          | Mobile app      | Get approved, receive fair requests, navigate, get paid, keep working on poor connections  |
 | Admin / support | Admin dashboard | Verify drivers, manage rides, pricing and payments, respond to SOS first                   |
 | Fleet operator  | Fleet portal    | Manage their own drivers and vehicles, see their trips and earnings, nothing else          |
-| Bus operator    | (Phase 7)       | List routes, schedules and seat maps                                                       |
+| Bus operator    | Partner portal  | List routes, departures, seat maps and fares; see passengers; check tickets at boarding    |
 
 ## Requirements by area
 
@@ -74,13 +74,19 @@ tested backups; rate limits on OTP, login and booking.
 | 3 Core ride flow         | Location search, fare estimate, ride request, matching, state machine, cash                  | Approved (passenger web moved to Phase 4) |
 | 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness; passenger web booking          | Approved                                  |
 | 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              | Approved                                  |
-| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                | Built, awaiting approval (see note)       |
-| 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          |                                           |
+| 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                | Approved                                  |
+| 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          | Built, awaiting approval                  |
 | 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds |                                           |
 
 Phase 6 note: the admin dashboard's promotions screen and SOS panel are built with
-those features in Phase 8, and bus screens with buses in Phase 7, as the phase plan
-lists them there.
+those features in Phase 8, as the phase plan lists them there (confirmed).
+
+**Buses (Phase 7):** operators list point-to-point routes, draw seat layouts with
+standard, executive and VIP seats, and create departures with fares per seat class;
+passengers search by cities and day, choose seats on a seat map, hold them while
+paying (wallet, saved card or the payment page), and board with a QR code per seat;
+operators check tickets in; cancellations refund to the wallet; RideswithMe keeps a
+service fee from each fare and records what it owes each operator.
 
 ## Open decisions (defaults in use)
 

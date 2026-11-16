@@ -263,10 +263,30 @@ driver app ── accept invitation ──► api /v1/driver/fleet-invitations/:
   `@rideswithme/web-core` for both staff websites; browser-test helpers (sign-in,
   driver applications, rides) are in `@rideswithme/e2e-support`.
 
+## Buses (Phase 7)
+
+```
+operator manager ── partner portal ── /v1/operator/* ── routes, layouts, departures, check-in
+passenger ── app / website ── /v1/bus/search → departures/:id (seat map)
+          → POST bookings (hold, locks the departure) → pay (wallet | saved card | checkout)
+paid      ─► passenger wallet / Paystack → operator account (fare − fee) + platform_revenue (fee)
+cancelled ─► operator account + platform_revenue → passenger wallet
+staff     ── admin dashboard ── /v1/admin/bus-* ── fees, settlements, cancellations, lookups
+```
+
+- `apps/api/src/buses`: `CatalogService` (routes, layouts, departures, search, seat
+  maps), `BookingsService` (holds, payment, cancellations, the hold sweep, check-in)
+  and `OperatorsService` (staff management, the operator scope, statements). Every
+  seat change locks the departure row first; the partial unique index on active seats
+  is the backstop (DECISIONS D-064).
+- Card payments for bus tickets settle through the same `PaymentsService.applyCharge`
+  as everything else; the bus module registers a handler that confirms the booking or,
+  if its seats are gone, credits the passenger's wallet.
+- The seat map (`SeatMap`) and QR image (`QrImage`) are shared web components in
+  `@rideswithme/web-core`; the app has its own native versions.
+
 ## Planned shape of later phases
 
-- **Buses (Phase 7):** seats held with short-lived locks and booked in a transaction
-  with a unique constraint per seat and departure, paid through the same ledger.
 - **Safety and launch (Phase 8):** SOS alerts over the realtime connection with
   priority handling, monitoring (including the ledger and partition checks), backups,
   load tests and store builds.

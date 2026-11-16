@@ -283,6 +283,38 @@ transaction, as Postgres requires for a new enum value used later) and
 - **Indexes for the dashboard and fleets:** completed rides by `completed_at`, and
   rides by driver and `assigned_at`.
 
+## Buses (Phase 7)
+
+Migration `0011_buses`.
+
+- **bus_operators:** name (unique ignoring case), status, `service_fee_bps`
+  (RideswithMe's share of each fare), contacts. **bus_operator_members:** the people
+  who run an operator (one operator per person while active).
+- **bus_routes:** operator, origin and destination city and terminal, journey time,
+  `is_active`.
+- **bus_seat_layouts** (rows × columns, name unique per operator) and **bus_seats**
+  (label, row, column, class: standard, executive or VIP; unique label and position per
+  layout; append-only, because tickets refer to them).
+- **bus_schedules** (departures): route, operator (copied for scoping), layout,
+  departure and arrival times, plate, `scheduled` or `cancelled` with reason; unique
+  per route and departure time. **bus_schedule_fares:** fare per departure and seat
+  class.
+- **bus_bookings:** 8-character reference, passenger, departure, status (held,
+  confirmed, expired, cancelled), `hold_expires_at`, and the snapshot of total, service
+  fee and fee rate; payment method, cancellation (when, by whom, reason) and amount
+  refunded.
+- **bus_booking_seats:** one row per seat in a booking, which becomes its ticket:
+  passenger name, class and fare snapshot, a unique 10-character `ticket_code`,
+  check-in time and who checked them in, and `status` (`active` or `released`). The
+  partial unique index `bus_booking_seats_one_active (schedule_id, seat_id) WHERE
+status = 'active'` means a seat is held or sold once per departure, and can be sold
+  again once released (DECISIONS B-6, D-064).
+- **Ledger:** wallets gain kind `bus_operator` (`operator_id`, one per operator);
+  journals gain kinds `bus_booking`, `bus_refund` and `operator_settlement` and links to
+  the booking and operator; payments gain purpose `bus_booking` and `bus_booking_id`.
+- **Roles and permissions:** `bus_operator` role (two-factor) with `bus.operator`;
+  `buses.read` (support agents, admins) and `buses.manage` (admins, super admins).
+
 ## Not in the database
 
 - One-time codes, rate-limit counters, job locks, cached routes: Redis, with expiry.
@@ -293,7 +325,7 @@ transaction, as Postgres requires for a new enum value used later) and
 
 ## Planned domains
 
-Tables listed in the brief for later phases (passenger_profiles, bus_*, emergency_alerts,
+Tables listed in the brief for later phases (passenger_profiles, emergency_alerts,
 incident_reports, ratings, reviews, promotions, notifications, support_tickets)
 are added by the phase that first needs them. `driver_locations` is not needed:
 the live position is in Redis and the history in `trip_locations` (DECISIONS D-042).

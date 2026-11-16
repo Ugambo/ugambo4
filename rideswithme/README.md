@@ -3,7 +3,7 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** Phase 6 (admin and fleet) is built and awaiting approval:
+**Status:** Phase 7 (buses) is built and awaiting approval:
 
 - **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
   admin two-factor authentication, audit log, Docker and CI.
@@ -26,6 +26,11 @@ bus seats, for passengers, drivers, admins and fleet operators.
   (wallets, refunds, payouts, disputes), roles and the audit log; fleet operators
   and the fleet portal, where a manager invites drivers (who accept in the driver
   app) and sees only their own fleet's drivers, vehicles, trips and earnings.
+- **Phase 7:** bus operators (in the partner portal, the former fleet portal) list
+  routes, seat layouts drawn on a grid, and departures with fares per seat class, see
+  their passengers and check tickets in; passengers find a bus, choose seats on a seat
+  map, pay by wallet, card or bank transfer, and board with a QR code, on the website
+  and in the app; staff manage operators, their service fee and payments to them.
 
 The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
@@ -74,11 +79,12 @@ production use a tile provider you have an agreement with (see DECISIONS D-057).
 For the live map's updates the browser connects to the API directly: set
 `API_PUBLIC_URL` and add the dashboard's address to the API's `CORS_ORIGINS`.
 
-### Fleet portal
+### Partner portal (fleets and bus operators)
 
-Staff create a fleet in the admin dashboard (Fleets → New fleet) with the
-manager's phone number. The manager then signs in to the portal with an SMS code
-and sets up an authenticator app, as staff do.
+Staff create a fleet (Fleets → New fleet) or a bus operator (Buses → New bus
+operator) in the admin dashboard with the manager's phone number. The manager then
+signs in to the portal with an SMS code and sets up an authenticator app, as staff
+do, and sees the fleet pages, the bus pages, or both.
 
 ```bash
 cp apps/fleet-portal/.env.example apps/fleet-portal/.env.local   # set FLEET_SESSION_SECRET
@@ -135,7 +141,7 @@ Run from `rideswithme/`.
 | `pnpm typecheck` / `pnpm lint` / `pnpm format:check`    | Static checks (CI runs all of these)                                   |
 | `pnpm --filter @rideswithme/admin-dashboard e2e`        | Browser tests of the admin dashboard against a real API (build first)  |
 | `pnpm --filter @rideswithme/passenger-web e2e`          | Browser tests of the passenger website: booking with live updates      |
-| `pnpm --filter @rideswithme/fleet-portal e2e`           | Browser tests of the fleet portal: invitations, isolation from others  |
+| `pnpm --filter @rideswithme/fleet-portal e2e`           | Browser tests of the partner portal: fleets and bus operators          |
 | `pnpm --filter @rideswithme/driver-mobile bundle:check` | Bundles the driver app for Android with Metro (same for passenger)     |
 | `pnpm db:migrate` / `pnpm db:status`                    | Apply or list migrations (`DATABASE_URL`)                              |
 | `pnpm dev:api`                                          | API with reload, reading `apps/api/.env`                               |
