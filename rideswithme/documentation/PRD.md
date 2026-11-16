@@ -76,7 +76,7 @@ tested backups; rate limits on OTP, login and booking.
 | 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              | Approved                                  |
 | 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                | Approved                                  |
 | 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          | Approved                                  |
-| 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds | Built, awaiting approval                  |
+| 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds | Approved                                  |
 
 Phase 6 note: the admin dashboard's promotions screen and SOS panel are built with
 those features in Phase 8, as the phase plan lists them there (confirmed).
@@ -96,7 +96,7 @@ service fee from each fare and records what it owes each operator.
 - **Ratings:** both ways after each trip.
 - **In-ride messages:** between passenger and driver.
 - **Problem reports:** with high-priority safety categories.
-- **Support tickets:** for passengers.
+- **Support tickets:** for passengers and drivers.
 - **Promotion codes:** funded by the platform, not the driver.
 - **Notifications:** an in-app inbox and push notifications.
 - **Account deletion:** with a grace period, as the NDPA requires.

@@ -9,14 +9,16 @@
  */
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
+// Shared catalogues from the built package (relative imports inside it need the build).
 import {
+  catalogs,
   checkCatalog,
+  passengerMessages,
   reviewCsv,
   reviewRows,
+  supportMessages,
   type ReviewRow,
-} from '../packages/utilities/src/catalog-check.ts';
-import { catalogs } from '../packages/utilities/src/i18n.ts';
-import { passengerMessages } from '../packages/utilities/src/passenger-messages.ts';
+} from '../packages/utilities/dist/index.js';
 import { commonEn, commonHa } from '../packages/mobile-core/src/messages.ts';
 import { staffSignInMessages } from '../packages/web-core/src/client/staff-sign-in-messages.ts';
 import { messages as admin } from '../apps/admin-dashboard/src/lib/messages.ts';
@@ -35,17 +37,19 @@ const notifications = (lang: 'en' | 'ha'): Catalog =>
     ]),
   );
 
+const supportShared = Object.keys(supportMessages.en);
 const passengerShared = Object.keys(passengerMessages.en);
 const staffShared = Object.keys(staffSignInMessages.en);
 const sources: [string, Catalog, Catalog, string[]][] = [
   ['SMS and error messages (all apps)', catalogs.en, catalogs.ha, []],
-  ['Passenger rides (app and website)', passengerMessages.en, passengerMessages.ha, []],
+  ['Support requests (passenger and driver)', supportMessages.en, supportMessages.ha, []],
+  ['Passenger rides (app and website)', passengerMessages.en, passengerMessages.ha, supportShared],
   ['Mobile apps: common', commonEn, commonHa, []],
   ['Staff sign-in (admin, partner portal)', staffSignInMessages.en, staffSignInMessages.ha, []],
   ['Push notifications', notifications('en'), notifications('ha'), []],
   ['Passenger app', passengerApp.en, passengerApp.ha, passengerShared],
   ['Passenger website', passengerWeb.en, passengerWeb.ha, passengerShared],
-  ['Driver app', driverApp.en, driverApp.ha, []],
+  ['Driver app', driverApp.en, driverApp.ha, supportShared],
   ['Partner portal (fleets, bus operators)', fleet.en, fleet.ha, staffShared],
   ['Admin dashboard', admin.en, admin.ha, staffShared],
 ];

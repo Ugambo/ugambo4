@@ -28,19 +28,20 @@ The TypeScript types also refuse to build an app whose Hausa catalogue lacks a
 key. **No automatic check can tell whether the Hausa is correct, natural or
 polite.** Only the reviewer can.
 
-| Catalogue                              | File                                                     |     Texts |
-| -------------------------------------- | -------------------------------------------------------- | --------: |
-| SMS and error messages (all apps)      | `packages/utilities/src/i18n.ts`                         |        59 |
-| Passenger rides (app and website)      | `packages/utilities/src/passenger-messages.ts`           |       306 |
-| Mobile apps: common                    | `packages/mobile-core/src/messages.ts`                   |        19 |
-| Staff sign-in (admin, partner portal)  | `packages/web-core/src/client/staff-sign-in-messages.ts` |        15 |
-| Push notifications                     | `apps/api/src/notifications/templates.ts`                |        20 |
-| Passenger app                          | `apps/passenger-mobile/src/lib/messages.ts`              |        12 |
-| Passenger website                      | `apps/passenger-web/src/lib/messages.ts`                 |        44 |
-| Driver app                             | `apps/driver-mobile/src/lib/messages.ts`                 |       227 |
-| Partner portal (fleets, bus operators) | `apps/fleet-portal/src/lib/messages.ts`                  |       195 |
-| Admin dashboard                        | `apps/admin-dashboard/src/lib/messages.ts`               |       522 |
-| **Total**                              |                                                          | **1,419** |
+| Catalogue                               | File                                                     |     Texts |
+| --------------------------------------- | -------------------------------------------------------- | --------: |
+| SMS and error messages (all apps)       | `packages/utilities/src/i18n.ts`                         |        59 |
+| Passenger rides (app and website)       | `packages/utilities/src/passenger-messages.ts`           |       285 |
+| Mobile apps: common                     | `packages/mobile-core/src/messages.ts`                   |        19 |
+| Staff sign-in (admin, partner portal)   | `packages/web-core/src/client/staff-sign-in-messages.ts` |        15 |
+| Push notifications                      | `apps/api/src/notifications/templates.ts`                |        20 |
+| Passenger app                           | `apps/passenger-mobile/src/lib/messages.ts`              |        12 |
+| Passenger website                       | `apps/passenger-web/src/lib/messages.ts`                 |        44 |
+| Driver app                              | `apps/driver-mobile/src/lib/messages.ts`                 |       231 |
+| Partner portal (fleets, bus operators)  | `apps/fleet-portal/src/lib/messages.ts`                  |       195 |
+| Admin dashboard                         | `apps/admin-dashboard/src/lib/messages.ts`               |       522 |
+| Support requests (passenger and driver) | `packages/utilities/src/support-messages.ts`             |        21 |
+| **Total**                               |                                                          | **1,423** |
 
 ## Exporting the text for review
 

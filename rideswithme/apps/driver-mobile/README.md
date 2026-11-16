@@ -22,6 +22,7 @@ Phase 8 adds:
 - rating the passenger and reporting a problem after a trip
 - the driver's own rating on the earnings screen
 - push notifications, and an explanation before asking for background location
+- contacting support and following requests (also before approval, from the checklist)
 
 Development builds are required (not Expo Go), because background location
 arrives in Phase 4:

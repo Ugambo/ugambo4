@@ -9,3 +9,4 @@ export * from './checkout';
 export * from './payment-wait';
 export * from './safety';
 export * from './push';
+export * from './support';

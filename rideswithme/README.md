@@ -3,7 +3,7 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** all eight phases are built. Phase 8 (safety, polish, launch) is awaiting approval:
+**Status:** all eight phases are built and approved. What remains before going live needs accounts, keys and decisions from the business (see [documentation/LAUNCH.md](documentation/LAUNCH.md)):
 
 - **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
   admin two-factor authentication, audit log, Docker and CI.

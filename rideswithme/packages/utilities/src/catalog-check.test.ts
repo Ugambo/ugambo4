@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkCatalog, describeIssues, placeholders, reviewCsv, reviewRows } from './catalog-check';
 import { catalogs } from './i18n';
 import { passengerMessages } from './passenger-messages';
+import { supportMessages } from './support-messages';
 
 describe('checkCatalog', () => {
   it('finds missing, extra, empty, mismatched and untranslated text', () => {
@@ -62,5 +63,10 @@ describe('shared catalogues', () => {
   it('passenger ride text is complete in Hausa', () => {
     const issues = checkCatalog(passengerMessages.en, passengerMessages.ha);
     expect(issues, describeIssues('utilities/passenger', issues)).toEqual([]);
+  });
+
+  it('support request text is complete in Hausa', () => {
+    const issues = checkCatalog(supportMessages.en, supportMessages.ha);
+    expect(issues, describeIssues('utilities/support', issues)).toEqual([]);
   });
 });

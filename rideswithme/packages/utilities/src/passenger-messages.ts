@@ -1,9 +1,12 @@
+import { supportMessages } from './support-messages';
+
 /**
  * Passenger ride text shared by the passenger app and the passenger website:
  * places, choosing a ride, the live ride, receipts, history and ride statuses.
  * Every key must exist in Hausa (the type enforces it). Hausa needs native-speaker review.
  */
 const en = {
+  ...supportMessages.en,
   'saved.home': 'Home',
   'saved.work': 'Work',
   'saved.setHome': 'Set home',
@@ -261,27 +264,6 @@ const en = {
   'incidentStatus.open': 'Received',
   'incidentStatus.investigating': 'Being looked into',
   'incidentStatus.resolved': 'Resolved',
-  'help.title': 'Help',
-  'help.new': 'Contact support',
-  'help.category': 'About',
-  'help.subject': 'Subject',
-  'help.body': 'How can we help?',
-  'help.send': 'Send',
-  'help.requests': 'Your requests',
-  'help.none': 'No requests yet.',
-  'help.reports': 'Your reports',
-  'help.reply': 'Reply',
-  'help.support': 'RideswithMe support',
-  'help.you': 'You',
-  'ticketStatus.open': 'Waiting for us',
-  'ticketStatus.waiting_on_user': 'We replied',
-  'ticketStatus.resolved': 'Resolved',
-  'ticketCategory.payment': 'Payment',
-  'ticketCategory.ride': 'A ride',
-  'ticketCategory.bus': 'A bus trip',
-  'ticketCategory.account': 'My account',
-  'ticketCategory.driver': 'Driving with RideswithMe',
-  'ticketCategory.other': 'Something else',
   'promo.label': 'Promotion code',
   'promo.apply': 'Apply',
   'promo.remove': 'Remove',
@@ -321,6 +303,7 @@ const en = {
 export type PassengerMessageKey = keyof typeof en;
 
 const ha: Record<PassengerMessageKey, string> = {
+  ...supportMessages.ha,
   'saved.home': 'Gida',
   'saved.work': 'Wurin aiki',
   'saved.setHome': 'Saita gida',
@@ -578,27 +561,6 @@ const ha: Record<PassengerMessageKey, string> = {
   'incidentStatus.open': 'An karɓa',
   'incidentStatus.investigating': 'Ana duba',
   'incidentStatus.resolved': 'An warware',
-  'help.title': 'Taimako',
-  'help.new': 'Tuntuɓi tallafi',
-  'help.category': 'Game da',
-  'help.subject': 'Batu',
-  'help.body': 'Ta yaya za mu taimaka?',
-  'help.send': 'Aika',
-  'help.requests': 'Buƙatunku',
-  'help.none': 'Babu buƙata tukuna.',
-  'help.reports': 'Rahotanninku',
-  'help.reply': 'Amsa',
-  'help.support': 'Tallafin RideswithMe',
-  'help.you': 'Ku',
-  'ticketStatus.open': 'Ana jiran mu',
-  'ticketStatus.waiting_on_user': 'Mun amsa',
-  'ticketStatus.resolved': 'An warware',
-  'ticketCategory.payment': 'Biyan kuɗi',
-  'ticketCategory.ride': 'Tafiya',
-  'ticketCategory.bus': 'Tafiyar bas',
-  'ticketCategory.account': 'Asusuna',
-  'ticketCategory.driver': 'Tuƙi da RideswithMe',
-  'ticketCategory.other': 'Wani abu dabam',
   'promo.label': 'Lambar talla',
   'promo.apply': 'Yi amfani',
   'promo.remove': 'Cire',

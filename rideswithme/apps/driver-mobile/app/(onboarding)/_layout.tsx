@@ -31,6 +31,8 @@ export default function OnboardingLayout() {
         <Stack.Screen name="earnings" options={{ title: t('earnings.title') }} />
         <Stack.Screen name="chat/[id]" options={{ title: t('chat.title') }} />
         <Stack.Screen name="report/[id]" options={{ title: t('report.button') }} />
+        <Stack.Screen name="help/index" options={{ title: t('help.title') }} />
+        <Stack.Screen name="help/[id]" options={{ title: t('help.title') }} />
       </Stack>
     </OnboardingProvider>
   );

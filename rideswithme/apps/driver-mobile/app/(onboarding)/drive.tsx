@@ -294,6 +294,11 @@ export default function Drive() {
           <Text style={styles.linkText}>{t('earnings.title')} →</Text>
         </Pressable>
       </Link>
+      <Link href="/help" asChild>
+        <Pressable accessibilityRole="button" style={styles.link}>
+          <Text style={styles.linkText}>{t('help.new')} →</Text>
+        </Pressable>
+      </Link>
     </Screen>
   );
 

@@ -1,9 +1,12 @@
 /**
  * Driver app text. English is the source; every key must exist in Hausa (the
  * type enforces it). Hausa needs review by a native speaker before launch.
- * Error messages come from @rideswithme/utilities.
+ * Error messages and the support screens' text come from @rideswithme/utilities.
  */
+import { supportMessages } from '@rideswithme/utilities';
+
 const en = {
+  ...supportMessages.en,
   'signIn.title': 'Drive with RideswithMe',
   'signIn.subtitle': 'Sign in with your phone number to start your driver application.',
 
@@ -258,6 +261,7 @@ const en = {
 export type MessageKey = keyof typeof en;
 
 const ha: Record<MessageKey, string> = {
+  ...supportMessages.ha,
   'signIn.title': 'Tuƙa da RideswithMe',
   'signIn.subtitle': 'Shiga da lambar wayarku don fara bukatar zama direba.',
 

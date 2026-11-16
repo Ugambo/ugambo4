@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { OnlineBlocker } from '@rideswithme/shared-types';
@@ -96,6 +96,7 @@ export default function Home() {
         </View>
       )}
 
+      <Button title={t('help.new')} variant="secondary" onPress={() => router.push('/help')} />
       <Button title={t('common.signOut')} variant="secondary" onPress={() => void signOut()} />
     </Screen>
   );
