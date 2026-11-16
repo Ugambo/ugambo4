@@ -43,7 +43,7 @@ export function createWebI18n<K extends string>(
 
     const value = useMemo<WebI18n<K | CommonWebKey>>(() => {
       const t = (key: K | CommonWebKey, params: Record<string, string | number> = {}) =>
-        (messages[lang][key] ?? messages.en[key]).replace(/\{(\w+)\}/g, (m, name: string) =>
+        (messages[lang][key] ?? messages.en[key] ?? key).replace(/\{(\w+)\}/g, (m, name: string) =>
           name in params ? String(params[name]) : m,
         );
       const locale = lang === 'ha' ? 'ha-NG' : 'en-NG';

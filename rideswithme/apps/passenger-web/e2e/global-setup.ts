@@ -18,6 +18,7 @@ import {
   DRIVER_FILE,
   DRIVER_PHONE,
   BUS_MANAGER_PHONE,
+  STAFF_FILE,
   STAFF_PHONE,
   E2E_DATABASE_URL,
   OUT,
@@ -86,4 +87,19 @@ export default async function globalSetup() {
   const staff = await api.signInWithTotp(STAFF_PHONE);
   const { managerToken } = await buses.operator(staff.token, 'Kano Line', BUS_MANAGER_PHONE);
   await buses.service(managerToken, [2, 3]);
+
+  // A promotion for the safety and promotions tests, and the staff token for checking SOS.
+  await api.call('/v1/admin/promotions', {
+    method: 'POST',
+    token: staff.token,
+    body: {
+      code: 'WEB20',
+      description: '20% off your ride',
+      discountType: 'percent',
+      percentBps: 2000,
+      startsAt: new Date(Date.now() - 3_600_000).toISOString(),
+      endsAt: new Date(Date.now() + 86_400_000).toISOString(),
+    },
+  });
+  writeFileSync(STAFF_FILE, JSON.stringify({ token: staff.token }));
 }

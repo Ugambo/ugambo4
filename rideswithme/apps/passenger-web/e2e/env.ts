@@ -13,6 +13,8 @@ export const DRIVER_FILE = path.join(OUT, 'driver.json');
 export const BUS_PASSENGER_PHONE = '+2348035550004';
 export const STAFF_PHONE = '+2348035550005';
 export const BUS_MANAGER_PHONE = '+2348035550006';
+export const SAFETY_PASSENGER_PHONE = '+2348035550007';
+export const STAFF_FILE = path.join(OUT, 'staff.json');
 
 const s3 = process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:9000';
 

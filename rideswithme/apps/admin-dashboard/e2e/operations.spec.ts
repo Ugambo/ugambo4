@@ -186,10 +186,70 @@ test.describe('operations', () => {
     await expect(page.getByText('Refunded ₦12,000 to the wallet')).toBeVisible();
   });
 
+  test('shows an SOS on every page the moment it is pressed, and handles it', async ({ page }) => {
+    await page.goto('/overview');
+    await expect(page.getByTestId('sos-banner')).toHaveCount(0);
+    const passenger = await api.signIn('+2348037770010');
+    await api.call('/v1/sos', {
+      method: 'POST',
+      token: passenger.token,
+      body: { location: { lat: 12.0021, lng: 8.5203 }, note: 'Please call me' },
+    });
+    // Arrives over the live connection (no reload).
+    await expect(page.getByTestId('sos-banner')).toContainText('SOS: 1 open alert(s)');
+    await expect(page).toHaveTitle(/^\(SOS\)/);
+    await shot(page, '15-sos-banner');
+    await page.getByRole('link', { name: 'Open the SOS panel' }).click();
+    const card = page.getByTestId('sos-card').first();
+    await expect(card).toContainText('Please call me');
+    await expect(card.getByRole('link', { name: 'Open in maps' })).toHaveAttribute(
+      'href',
+      'https://maps.google.com/?q=12.0021,8.5203',
+    );
+    await card.getByRole('button', { name: 'Acknowledge (we are responding)' }).click();
+    await expect(card).toContainText('Responding');
+    await card.getByLabel('What happened and what was done').fill('Called; passenger is safe');
+    await card.getByRole('button', { name: 'Resolve' }).click();
+    await expect(page.getByText('No open SOS alerts.')).toBeVisible();
+    await expect(page.getByTestId('sos-banner')).toHaveCount(0);
+  });
+
+  test('handles a safety report and creates a promotion', async ({ page }) => {
+    const passenger = await api.signIn('+2348037770011');
+    await api.call('/v1/incidents', {
+      method: 'POST',
+      token: passenger.token,
+      body: { category: 'harassment', description: 'The driver shouted at me' },
+    });
+    await page.goto('/incidents');
+    const report = page.getByTestId('incident-card').first();
+    await expect(report).toContainText('Harassment');
+    await expect(report).toContainText('High');
+    await report
+      .getByLabel('Resolution (the reporter sees this)')
+      .fill('Driver warned and retrained');
+    await report.getByRole('button', { name: 'Resolve' }).click();
+    await expect(page.getByText('No open reports.')).toBeVisible();
+
+    await page.goto('/promotions');
+    await page.getByRole('button', { name: 'New promotion' }).click();
+    await page.getByLabel('Code').fill('KANO10');
+    await page.getByLabel('Description (passengers see this)').fill('10% off in Kano');
+    await page.getByLabel('Percent (%)').fill('10');
+    await page.getByLabel('Most off per ride (₦, optional)').fill('500');
+    await page.getByRole('dialog').getByRole('button', { name: 'New promotion' }).click();
+    const row = page.getByTestId('promotions-table').locator('tr').filter({ hasText: 'KANO10' });
+    await expect(row).toContainText('10% (≤ ₦500)');
+    await expect(row).toContainText('Active');
+    await row.getByRole('button', { name: 'Switch off' }).click();
+    await expect(row).toContainText('Off');
+  });
+
   test('lists roles with their permissions', async ({ page }) => {
     await page.goto('/roles');
     await expect(page.getByTestId('role-super_admin')).toContainText('wallets.adjust');
     await expect(page.getByTestId('role-fleet_manager')).toContainText('fleet.portal');
     await expect(page.getByTestId('role-bus_operator')).toContainText('bus.operator');
+    await expect(page.getByTestId('role-support_agent')).toContainText('safety.manage');
   });
 });
