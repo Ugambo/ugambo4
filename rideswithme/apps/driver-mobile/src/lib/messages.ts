@@ -198,6 +198,14 @@ const en = {
   'entry.ride_hold_release': 'Hold returned',
   'entry.outstanding_collection': 'Paid what you owed',
   'entry.refund_returned': 'Refund',
+  'fleet.invited': 'Invitation from {fleet}',
+  'fleet.inviteBody':
+    'If you join, {fleet} sees your trips and earnings from now on. Your payouts still go to your own bank account.',
+  'fleet.accept': 'Join this fleet',
+  'fleet.decline': 'Decline',
+  'fleet.member': 'You drive for {fleet}.',
+  'fleet.leave': 'Leave fleet',
+  'fleet.leaveConfirm': 'Leave {fleet}? They will no longer see your new trips.',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -399,6 +407,14 @@ const ha: Record<MessageKey, string> = {
   'entry.ride_hold_release': 'An mayar da abin da aka riƙe',
   'entry.outstanding_collection': 'An biya bashin',
   'entry.refund_returned': 'Mayar da kuɗi',
+  'fleet.invited': 'Gayyata daga {fleet}',
+  'fleet.inviteBody':
+    'Idan kun shiga, {fleet} za ta ga tafiye-tafiyenku da kuɗin da kuka samu daga yanzu. Biyan kuɗinku zai ci gaba da shiga asusun bankinku.',
+  'fleet.accept': 'Shiga wannan rukuni',
+  'fleet.decline': 'Ƙi',
+  'fleet.member': 'Kuna tuƙi don {fleet}.',
+  'fleet.leave': 'Bar rukuni',
+  'fleet.leaveConfirm': 'Bar {fleet}? Ba za su ƙara ganin sababbin tafiye-tafiyenku ba.',
 };
 
 export const messages = { en, ha };

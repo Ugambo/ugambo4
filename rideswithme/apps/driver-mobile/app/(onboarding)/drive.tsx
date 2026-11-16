@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { Link, router } from 'expo-router';
+import { FleetCard } from '@/components/fleet-card';
 import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -259,6 +260,7 @@ export default function Drive() {
         <Availability />
       )}
       <ErrorText error={error} />
+      {!ride && !offer && <FleetCard />}
       <Link href="/earnings" asChild>
         <Pressable accessibilityRole="button" style={styles.link}>
           <Text style={styles.linkText}>{t('earnings.title')} →</Text>
