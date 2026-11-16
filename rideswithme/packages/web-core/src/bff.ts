@@ -284,7 +284,9 @@ export function contentSecurityPolicy(o: {
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${o.nonce}' 'strict-dynamic'${o.dev ? " 'unsafe-eval'" : ''}`,
-    `style-src 'self' 'nonce-${o.nonce}'`,
+    // Development only: Next.js's dev toolbar injects inline styles. With a
+    // nonce present 'unsafe-inline' is ignored, so dev drops the nonce instead.
+    `style-src 'self' ${o.dev ? "'unsafe-inline'" : `'nonce-${o.nonce}'`}`,
     `img-src 'self' blob: data: ${list(o.imgSrc)}`.trim(),
     `frame-src ${list(o.frameSrc) || "'none'"}`,
     "font-src 'self'",

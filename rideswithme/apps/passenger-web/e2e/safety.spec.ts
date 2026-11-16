@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { accessibilityProblems } from '@rideswithme/e2e-support';
+import { accessibilityProblems, horizontalOverflow } from '@rideswithme/e2e-support';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { OUT, SAFETY_PASSENGER_PHONE, STAFF_FILE } from './env';
@@ -151,6 +151,12 @@ test.describe('safety and support', () => {
       await expect(p.locator('h1').first()).toBeVisible();
       await p.waitForLoadState('networkidle');
       for (const x of await accessibilityProblems(p)) problems.push(`${url}: ${x}`);
+      // Most passengers use a phone: nothing may scroll sideways at 320 px (WCAG 1.4.10).
+      const wide = await horizontalOverflow(p);
+      if (wide)
+        problems.push(
+          `${url}: ${wide.extra}px wider than a 320px screen (${wide.elements.join(', ')})`,
+        );
     };
     for (const url of ['/', '/rides', '/wallet', '/buses', '/buses/bookings', '/help', '/account'])
       await check(page, url);

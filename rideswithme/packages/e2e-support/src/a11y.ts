@@ -25,3 +25,34 @@ export async function accessibilityProblems(
       return `${v.id} (${v.impact}): ${v.help}. At ${where}`;
     });
 }
+
+/**
+ * WCAG 1.4.10 Reflow (which axe-core does not test): at the given width the
+ * page must not scroll sideways. Returns null when it fits, or how many CSS
+ * pixels too wide it is and the innermost elements that stick out. Checked
+ * at 320 px, the width the criterion names.
+ */
+export async function horizontalOverflow(
+  page: Page,
+  width = 320,
+): Promise<{ extra: number; elements: string[] } | null> {
+  const before = page.viewportSize();
+  await page.setViewportSize({ width, height: before?.height ?? 800 });
+  // A string expression: this package is compiled without the browser's types.
+  const result = (await page.evaluate(`(() => {
+    const root = document.documentElement;
+    const extra = root.scrollWidth - root.clientWidth;
+    if (extra <= 0) return null;
+    const out = [];
+    for (const el of document.body.querySelectorAll('*')) {
+      if (el.getBoundingClientRect().right <= root.clientWidth + 1) continue;
+      if ([...el.children].some((c) => c.getBoundingClientRect().right > root.clientWidth + 1)) continue;
+      const cls = typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\\s+/).join('.') : '';
+      out.push(el.tagName.toLowerCase() + cls + ' (right ' + Math.round(el.getBoundingClientRect().right) + 'px)');
+      if (out.length >= 4) break;
+    }
+    return { extra, elements: out };
+  })()`)) as { extra: number; elements: string[] } | null;
+  if (before) await page.setViewportSize(before);
+  return result;
+}

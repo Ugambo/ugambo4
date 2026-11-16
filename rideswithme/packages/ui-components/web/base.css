@@ -186,6 +186,7 @@ textarea {
 }
 .auth-card {
   width: 100%;
+  min-width: 0;
   max-width: 420px;
   background: var(--c-bg);
   border-radius: var(--r-lg);
@@ -309,6 +310,7 @@ textarea {
 
 /* Cards, tables */
 .card {
+  min-width: 0;
   background: var(--c-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
@@ -570,7 +572,7 @@ details summary {
 /* Charts: single-series bars; marks use the data colour, text uses text colours. */
 .charts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: var(--s-4);
 }
 .chart {
@@ -903,4 +905,15 @@ button.seat {
 }
 .card-alert {
   border: 3px solid var(--c-danger);
+}
+
+/*
+ * Phones down to 320px wide (WCAG 1.4.10): form controls have a built-in
+ * minimum width that would otherwise push cards, and the page, sideways.
+ */
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
 }

@@ -277,7 +277,10 @@ export type AppConfig = z.output<typeof configSchema>;
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  const result = configSchema.safeParse(env);
+  // A blank line in .env ("S3_PUBLIC_ENDPOINT=") means "not set", as the
+  // examples say, not an empty value that then fails validation.
+  const set = Object.fromEntries(Object.entries(env).filter(([, v]) => v !== ''));
+  const result = configSchema.safeParse(set);
   if (!result.success) {
     const problems = result.error.issues
       .map((i) => `  - ${i.path.join('.') || '(root)'}: ${i.message}`)
