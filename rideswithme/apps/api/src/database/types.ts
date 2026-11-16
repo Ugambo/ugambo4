@@ -22,6 +22,7 @@ export interface UsersTable {
   preferred_language: ColumnType<Language, Language | undefined, Language>;
   status: ColumnType<UserStatus, UserStatus | undefined, UserStatus>;
   suspended_reason: string | null;
+  deleted_reason: string | null;
   totp_secret_encrypted: string | null;
   totp_enabled_at: Timestamp | null;
   totp_last_used_step: ColumnType<string | null, number | null, number | null>;

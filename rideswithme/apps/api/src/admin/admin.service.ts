@@ -10,20 +10,26 @@ import {
   type RoleSummary,
 } from '@rideswithme/shared-types';
 import {
+  type adminUpdateUserSchema,
+  type createUserSchema,
   type ListAuditLogsQuery,
   type ListUsersQuery,
   normalizeNigerianPhone,
 } from '@rideswithme/validation';
+import type { z } from 'zod';
 import { AuditService } from '../audit/audit.service';
 import type { Principal } from '../auth/principal';
 import { SessionService } from '../auth/session.service';
 import { AppException } from '../common/app-exception';
 import { decodeCursor, encodeCursor } from '../common/cursor';
 import type { RequestContext } from '../common/request-context';
-import { DB } from '../database/database.module';
+import { DB, isUniqueViolation } from '../database/database.module';
 import type { Database } from '../database/types';
+import { DeletionService } from '../privacy/deletion.service';
 
 type Actor = { type: 'user'; userId: string; principal: Principal } | { type: 'system' };
+type CreateUserOutput = z.output<typeof createUserSchema>;
+type AdminUpdateUserOutput = z.output<typeof adminUpdateUserSchema>;
 
 @Injectable()
 export class AdminService {
@@ -31,6 +37,7 @@ export class AdminService {
     @Inject(DB) private readonly db: Kysely<Database>,
     private readonly audit: AuditService,
     private readonly sessions: SessionService,
+    private readonly deletion: DeletionService,
   ) {}
 
   async listUsers(q: ListUsersQuery): Promise<Paginated<AdminUserSummary>> {
@@ -185,6 +192,151 @@ export class AdminService {
     return this.getUser(targetUserId);
   }
 
+  /** Opens an account with the passenger role plus any others chosen. They sign in by SMS code later. */
+  async createUser(input: CreateUserOutput, actor: Actor, ctx: Partial<RequestContext>) {
+    const roleKeys = [...new Set<RoleKey>(['passenger', ...input.roles])];
+    const id = await this.db.transaction().execute(async (trx) => {
+      const roles = await Promise.all(roleKeys.map((k) => this.loadRole(trx, k)));
+      for (const role of roles) this.assertCanManageRole(actor, role);
+      let user: { id: string };
+      try {
+        user = await trx
+          .insertInto('users')
+          .values({
+            phone_e164: input.phone,
+            full_name: input.fullName,
+            email: input.email ?? null,
+            preferred_language: input.preferredLanguage,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+      } catch (err) {
+        throw duplicateDetails(err) ?? err;
+      }
+      await trx
+        .insertInto('user_roles')
+        .values(
+          roles.map((r) => ({
+            user_id: user.id,
+            role_id: r.id,
+            granted_by: actor.type === 'user' ? actor.userId : null,
+          })),
+        )
+        .execute();
+      await this.audit.record(
+        {
+          actor: auditActor(actor),
+          action: 'admin.user.created',
+          target: { type: 'user', id: user.id },
+          metadata: { roles: roleKeys },
+          context: ctx,
+        },
+        trx,
+      );
+      return user.id;
+    });
+    return this.getUser(id);
+  }
+
+  /**
+   * Corrects someone's details, with a reason for the audit log. A new phone
+   * number signs them out everywhere (it is how they sign in); a new email
+   * starts unverified.
+   */
+  async updateUser(
+    targetUserId: string,
+    input: AdminUpdateUserOutput,
+    actor: Actor,
+    ctx: Partial<RequestContext>,
+  ) {
+    await this.db.transaction().execute(async (trx) => {
+      await this.loadUserForUpdate(trx, targetUserId);
+      await this.assertCanManageUser(trx, actor, targetUserId);
+      const current = await trx
+        .selectFrom('users')
+        .select(['status', 'full_name', 'phone_e164', 'email', 'preferred_language'])
+        .where('id', '=', targetUserId)
+        .executeTakeFirstOrThrow();
+      if (current.status === 'deleted')
+        throw new AppException(ErrorCode.CONFLICT, 'User is deleted');
+
+      const changed: string[] = [];
+      const set: Record<string, unknown> = {};
+      if (input.fullName !== undefined && input.fullName !== current.full_name) {
+        set.full_name = input.fullName;
+        changed.push('fullName');
+      }
+      if (input.phone !== undefined && input.phone !== current.phone_e164) {
+        set.phone_e164 = input.phone;
+        set.phone_verified_at = null;
+        changed.push('phone');
+      }
+      if (input.email !== undefined && (input.email ?? null) !== current.email) {
+        set.email = input.email ?? null;
+        set.email_verified_at = null;
+        changed.push('email');
+      }
+      if (
+        input.preferredLanguage !== undefined &&
+        input.preferredLanguage !== current.preferred_language
+      ) {
+        set.preferred_language = input.preferredLanguage;
+        changed.push('preferredLanguage');
+      }
+      if (changed.length === 0) return;
+
+      try {
+        await trx.updateTable('users').set(set).where('id', '=', targetUserId).execute();
+      } catch (err) {
+        throw duplicateDetails(err) ?? err;
+      }
+      if (changed.includes('phone'))
+        await this.sessions.revokeAllForUser(targetUserId, 'revoked_by_admin', trx);
+      // Field names only: the audit log keeps who changed what and why, not the personal data.
+      await this.audit.record(
+        {
+          actor: auditActor(actor),
+          action: 'admin.user.updated',
+          target: { type: 'user', id: targetUserId },
+          metadata: { fields: changed, reason: input.reason },
+          context: ctx,
+        },
+        trx,
+      );
+    });
+    return this.getUser(targetUserId);
+  }
+
+  /**
+   * Deletes an account now: personal data is erased as for a deletion request,
+   * trips and payments stay (DECISIONS D-074). Not one's own account, and not
+   * the last active super admin.
+   */
+  async deleteUser(
+    targetUserId: string,
+    reason: string,
+    actor: Extract<Actor, { type: 'user' }>,
+    ctx: Partial<RequestContext>,
+  ) {
+    if (actor.userId === targetUserId) {
+      throw new AppException(ErrorCode.FORBIDDEN, 'You cannot delete your own account here');
+    }
+    await this.deletion.deleteByStaff(
+      targetUserId,
+      reason,
+      { userId: actor.userId, ctx },
+      async (trx) => {
+        await this.lockSuperAdminRole(trx);
+        const target = await this.loadUserForUpdate(trx, targetUserId);
+        if (target.status === 'deleted')
+          throw new AppException(ErrorCode.CONFLICT, 'User is already deleted');
+        await this.assertCanManageUser(trx, actor, targetUserId);
+        await this.assertNotLastSuperAdmin(trx, targetUserId);
+      },
+    );
+    return this.getUser(targetUserId);
+  }
+
   async suspend(targetUserId: string, reason: string, actor: Actor, ctx: Partial<RequestContext>) {
     if (actor.type === 'user' && actor.userId === targetUserId) {
       throw new AppException(ErrorCode.FORBIDDEN, 'You cannot suspend your own account');
@@ -294,7 +446,10 @@ export class AdminService {
         'u.phone_e164',
         'u.email',
         'u.full_name',
+        'u.preferred_language',
         'u.status',
+        'u.suspended_reason',
+        'u.deleted_reason',
         'u.created_at',
         'u.last_login_at',
         sql<
@@ -316,7 +471,14 @@ export class AdminService {
               phone: r.phone_e164,
               email: r.email,
               fullName: r.full_name,
+              preferredLanguage: r.preferred_language,
               status: r.status,
+              statusReason:
+                r.status === 'suspended'
+                  ? r.suspended_reason
+                  : r.status === 'deleted'
+                    ? r.deleted_reason
+                    : null,
               roles: r.roles as RoleKey[],
               createdAt: r.created_at.toISOString(),
               lastLoginAt: r.last_login_at?.toISOString() ?? null,
@@ -408,6 +570,19 @@ export class AdminService {
       );
     }
   }
+}
+
+/** A friendly conflict when the phone or email belongs to someone else, or null. */
+function duplicateDetails(err: unknown): AppException | null {
+  if (isUniqueViolation(err, 'users_phone_e164_key'))
+    return new AppException(ErrorCode.CONFLICT, 'That phone number already has an account', {
+      details: { field: 'phone' },
+    });
+  if (isUniqueViolation(err, 'users_email_key'))
+    return new AppException(ErrorCode.CONFLICT, 'Email is already in use', {
+      details: { field: 'email' },
+    });
+  return null;
 }
 
 function auditActor(actor: Actor) {

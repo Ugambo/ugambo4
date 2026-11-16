@@ -17,6 +17,9 @@ export type RoleKey = (typeof ROLE_KEYS)[number];
 export const PERMISSION_KEYS = [
   'users.read',
   'users.manage',
+  'users.create',
+  'users.update',
+  'users.delete',
   'roles.read',
   'roles.assign',
   'roles.assign_privileged',

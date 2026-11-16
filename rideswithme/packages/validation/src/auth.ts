@@ -74,6 +74,39 @@ export type AssignRoleInput = z.input<typeof assignRoleSchema>;
 export const suspendUserSchema = z.object({ reason: z.string().trim().min(3).max(500) }).strict();
 export type SuspendUserInput = z.input<typeof suspendUserSchema>;
 
+const reasonSchema = z.string().trim().min(3).max(500);
+const fullNameSchema = z.string().trim().min(2).max(120);
+const emailSchema = z.string().trim().toLowerCase().email().max(254);
+
+/** A super admin opens an account for someone. They sign in later with an SMS code as usual. */
+export const createUserSchema = z
+  .object({
+    phone: phoneSchema,
+    fullName: fullNameSchema,
+    email: emailSchema.nullable().optional(),
+    preferredLanguage: z.enum(LANGUAGES).default('en'),
+    /** Roles besides passenger, which every account has. */
+    roles: z.array(z.enum(ROLE_KEYS)).max(ROLE_KEYS.length).default([]),
+  })
+  .strict();
+export type CreateUserInput = z.input<typeof createUserSchema>;
+
+/** A super admin corrects someone's details. The reason is kept in the audit log. */
+export const adminUpdateUserSchema = z
+  .object({
+    fullName: fullNameSchema.optional(),
+    phone: phoneSchema.optional(),
+    email: emailSchema.nullable().optional(),
+    preferredLanguage: z.enum(LANGUAGES).optional(),
+    reason: reasonSchema,
+  })
+  .strict()
+  .refine((v) => Object.keys(v).length > 1, { message: 'Nothing to update' });
+export type AdminUpdateUserInput = z.input<typeof adminUpdateUserSchema>;
+
+export const deleteUserSchema = z.object({ reason: reasonSchema }).strict();
+export type DeleteUserInput = z.input<typeof deleteUserSchema>;
+
 const limitSchema = z.coerce.number().int().min(1).max(100).default(25);
 
 export const listUsersQuerySchema = z

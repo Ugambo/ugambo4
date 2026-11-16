@@ -1,11 +1,109 @@
 'use client';
 
-import { useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
+import type { Language } from '@rideswithme/shared-types';
 import { useResource } from '@rideswithme/web-core/client';
 import { api } from '@/lib/api';
 import { Empty, InlineError, Loading, useI18n } from '@/lib/i18n';
 
-/** Notifications, and asking for the account to be deleted (NDPA). */
+/** Name, email and message language. The phone number is the sign-in, so it is shown, not edited. */
+function ProfileSection() {
+  const { t } = useI18n();
+  const me = useResource(() => api().me.get(), []);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [language, setLanguage] = useState<Language>('en');
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    if (!me.data) return;
+    setFullName(me.data.fullName ?? '');
+    setEmail(me.data.email ?? '');
+    setLanguage(me.data.preferredLanguage);
+  }, [me.data]);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    setBusy(true);
+    try {
+      await api().me.update({ fullName, email: email.trim() || null, preferredLanguage: language });
+      await me.reload();
+      setSaved(true);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="card" data-testid="profile">
+      <h1>{t('profile.title')}</h1>
+      {!me.data ? (
+        <Loading />
+      ) : (
+        <form onSubmit={(e) => void submit(e)}>
+          <div className="field">
+            <label htmlFor="profile-phone">{t('profile.phone')}</label>
+            <input
+              id="profile-phone"
+              value={me.data.phone}
+              readOnly
+              aria-describedby="profile-phone-note"
+            />
+            <p id="profile-phone-note" className="small">
+              {t('profile.phoneNote')}
+            </p>
+          </div>
+          <div className="field">
+            <label htmlFor="profile-name">{t('profile.name')}</label>
+            <input
+              id="profile-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              minLength={2}
+              maxLength={120}
+              autoComplete="name"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="profile-email">{t('profile.email')}</label>
+            <input
+              id="profile-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="profile-language">{t('profile.language')}</label>
+            <select
+              id="profile-language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as Language)}
+            >
+              <option value="en">English</option>
+              <option value="ha">Hausa</option>
+            </select>
+          </div>
+          {saved && <p className="notice notice-ok">{t('profile.saved')}</p>}
+          <InlineError error={error} />
+          <button className="btn btn-primary" disabled={busy}>
+            {t('profile.save')}
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}
+
+/** Your details, notifications, and asking for the account to be deleted (NDPA). */
 export default function AccountPage() {
   const { t, formatDate } = useI18n();
   const inbox = useResource(() => api().notifications.list(), []);
@@ -25,9 +123,10 @@ export default function AccountPage() {
 
   return (
     <>
+      <ProfileSection />
       <section className="card">
         <div className="receipt-head">
-          <h1>{t('account.notifications')}</h1>
+          <h2>{t('account.notifications')}</h2>
           {(inbox.data?.unread ?? 0) > 0 && (
             <button
               type="button"

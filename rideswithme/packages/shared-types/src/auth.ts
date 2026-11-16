@@ -65,7 +65,10 @@ export interface AdminUserSummary {
   phone: string | null;
   email: string | null;
   fullName: string | null;
+  preferredLanguage: Language;
   status: UserStatus;
+  /** Why staff suspended or deleted the account, if they did. */
+  statusReason: string | null;
   roles: RoleKey[];
   createdAt: string;
   lastLoginAt: string | null;

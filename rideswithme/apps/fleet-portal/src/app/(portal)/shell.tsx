@@ -2,13 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { type ReactNode, useEffect } from 'react';
+import { createContext, type ReactNode, useContext, useEffect } from 'react';
 import { useResource } from '@rideswithme/web-core/client';
 import { api, auth, isSignedOut } from '@/lib/api';
 import { ErrorState, Loading, useI18n } from '@/lib/i18n';
 import type { MessageKey } from '@/lib/messages';
 
 type NavItem = { href: string; label: MessageKey; exact?: boolean };
+
+const MeReloadContext = createContext<() => Promise<unknown>>(async () => undefined);
+/** Fetches the signed-in user again (the sidebar shows their name), after they edit their profile. */
+export const useReloadMe = () => useContext(MeReloadContext);
 
 const FLEET_NAV: NavItem[] = [
   { href: '/overview', label: 'nav.overview' },
@@ -47,15 +51,17 @@ export function Shell({ children }: { children: ReactNode }) {
     [isBus],
   );
   const onBusPage = pathname.startsWith('/buses');
+  const onProfile = pathname.startsWith('/profile');
 
   useEffect(() => {
     if (me.error && isSignedOut(me.error)) router.replace('/login');
     const user = me.data;
     if (!user) return;
     if (user.mfa.required && !user.mfa.verifiedForSession) router.replace('/login?step=mfa');
+    else if (onProfile) return;
     else if (onBusPage && !isBus && isFleet) router.replace('/overview');
     else if (!onBusPage && !isFleet && isBus) router.replace('/buses');
-  }, [me.data, me.error, router, onBusPage, isBus, isFleet]);
+  }, [me.data, me.error, router, onBusPage, onProfile, isBus, isFleet]);
 
   const signOut = () => void auth.logout().then(() => router.replace('/login'));
   const loading =
@@ -117,7 +123,9 @@ export function Shell({ children }: { children: ReactNode }) {
           {isBus && BUS_NAV.map(link)}
         </nav>
         <div className="sidebar-footer">
-          <span className="small">{me.data?.fullName ?? me.data?.phone}</span>
+          <Link href="/profile" className="small" aria-current={onProfile ? 'page' : undefined}>
+            {me.data?.fullName ?? me.data?.phone} · {t('profile.title')}
+          </Link>
           <label className="small" htmlFor="shell-lang">
             {t('common.language')}
           </label>
@@ -134,7 +142,9 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="content">{children}</main>
+      <main className="content">
+        <MeReloadContext.Provider value={me.reload}>{children}</MeReloadContext.Provider>
+      </main>
     </div>
   );
 }

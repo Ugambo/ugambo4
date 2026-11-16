@@ -40,6 +40,10 @@ export function useCan() {
 }
 export const useMe = () => useContext(MeContext);
 
+const MeReloadContext = createContext<() => Promise<unknown>>(async () => undefined);
+/** Fetches the signed-in user again, after they change their own profile. */
+export const useReloadMe = () => useContext(MeReloadContext);
+
 /** Left sidebar and content area. Sends the user to sign-in or two-factor when needed. */
 export function Shell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
@@ -64,47 +68,55 @@ export function Shell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <MeContext.Provider value={me.data}>
-      <div className="shell">
-        <aside className="sidebar">
-          <div className="brand">
-            <span className="brand-mark">R</span>
-            {t('app.name')}
-          </div>
-          <nav aria-label="Main">
-            {NAV.filter((n) => me.data!.permissions.includes(n.permission)).map((n) => (
+    <MeReloadContext.Provider value={me.reload}>
+      <MeContext.Provider value={me.data}>
+        <div className="shell">
+          <aside className="sidebar">
+            <div className="brand">
+              <span className="brand-mark">R</span>
+              {t('app.name')}
+            </div>
+            <nav aria-label="Main">
+              {NAV.filter((n) => me.data!.permissions.includes(n.permission)).map((n) => (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  aria-current={pathname.startsWith(n.href) ? 'page' : undefined}
+                >
+                  {t(n.label)}
+                </Link>
+              ))}
+            </nav>
+            <div className="sidebar-footer">
               <Link
-                key={n.href}
-                href={n.href}
-                aria-current={pathname.startsWith(n.href) ? 'page' : undefined}
+                href="/profile"
+                className="small"
+                aria-current={pathname.startsWith('/profile') ? 'page' : undefined}
               >
-                {t(n.label)}
+                {me.data.fullName ?? me.data.phone} · {t('profile.title')}
               </Link>
-            ))}
-          </nav>
-          <div className="sidebar-footer">
-            <span className="small">{me.data.fullName ?? me.data.phone}</span>
-            <label className="small" htmlFor="shell-lang">
-              {t('common.language')}
-            </label>
-            <select
-              id="shell-lang"
-              value={lang}
-              onChange={(e) => setLang(e.target.value as 'en' | 'ha')}
-            >
-              <option value="en">English</option>
-              <option value="ha">Hausa</option>
-            </select>
-            <button type="button" className="btn btn-secondary" onClick={() => void signOut()}>
-              {t('common.signOut')}
-            </button>
-          </div>
-        </aside>
-        <main className="content">
-          {me.data.permissions.includes('safety.read') && <SosBanner />}
-          {children}
-        </main>
-      </div>
-    </MeContext.Provider>
+              <label className="small" htmlFor="shell-lang">
+                {t('common.language')}
+              </label>
+              <select
+                id="shell-lang"
+                value={lang}
+                onChange={(e) => setLang(e.target.value as 'en' | 'ha')}
+              >
+                <option value="en">English</option>
+                <option value="ha">Hausa</option>
+              </select>
+              <button type="button" className="btn btn-secondary" onClick={() => void signOut()}>
+                {t('common.signOut')}
+              </button>
+            </div>
+          </aside>
+          <main className="content">
+            {me.data.permissions.includes('safety.read') && <SosBanner />}
+            {children}
+          </main>
+        </div>
+      </MeContext.Provider>
+    </MeReloadContext.Provider>
   );
 }

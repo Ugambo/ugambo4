@@ -321,6 +321,224 @@ describe('suspension', () => {
   });
 });
 
+describe('user management by super admins', () => {
+  it('creates an account the person can then sign in to, with the roles chosen', async () => {
+    const root = await signInWithMfa(h, nextPhone(), 'super_admin');
+    const phone = nextPhone();
+    const created = await h.http
+      .post('/v1/admin/users')
+      .set('Authorization', root.auth)
+      .send({ phone, fullName: 'Aisha Bello', email: 'Aisha@Example.com', roles: ['driver'] })
+      .expect(201);
+    expect(created.body).toMatchObject({
+      phone,
+      fullName: 'Aisha Bello',
+      email: 'aisha@example.com',
+      preferredLanguage: 'en',
+      status: 'active',
+      roles: ['driver', 'passenger'],
+    });
+
+    // Same phone again: a clear conflict, not a second account.
+    const dup = await h.http
+      .post('/v1/admin/users')
+      .set('Authorization', root.auth)
+      .send({ phone, fullName: 'Someone Else' })
+      .expect(409);
+    expect(dup.body.error.details).toEqual({ field: 'phone' });
+
+    const signedIn = await signIn(h, phone);
+    expect(signedIn.user.id).toBe(created.body.id);
+    expect(signedIn.isNewUser).toBe(false);
+  });
+
+  it('keeps create, edit and delete to super admins; admins may not', async () => {
+    const admin = await signInWithMfa(h, nextPhone(), 'admin');
+    const target = await signIn(h, nextPhone());
+    const forbidden = await h.http
+      .post('/v1/admin/users')
+      .set('Authorization', admin.auth)
+      .send({ phone: nextPhone(), fullName: 'Nope' })
+      .expect(403);
+    expect(forbidden.body.error.details).toEqual({ missing: ['users.create'] });
+    await h.http
+      .patch(`/v1/admin/users/${target.user.id}`)
+      .set('Authorization', admin.auth)
+      .send({ fullName: 'New Name', reason: 'typo' })
+      .expect(403);
+    await h.http
+      .post(`/v1/admin/users/${target.user.id}/delete`)
+      .set('Authorization', admin.auth)
+      .send({ reason: 'test' })
+      .expect(403);
+  });
+
+  it('edits details with a reason; a new phone number signs them out everywhere', async () => {
+    const root = await signInWithMfa(h, nextPhone(), 'super_admin');
+    const target = await signIn(h, nextPhone());
+    const other = await signIn(h, nextPhone());
+
+    await h.http
+      .patch(`/v1/admin/users/${target.user.id}`)
+      .set('Authorization', root.auth)
+      .send({ fullName: 'Musa Ibrahim' })
+      .expect(422); // the reason is required
+
+    const renamed = await h.http
+      .patch(`/v1/admin/users/${target.user.id}`)
+      .set('Authorization', root.auth)
+      .send({ fullName: 'Musa Ibrahim', preferredLanguage: 'ha', reason: 'Name misspelt' })
+      .expect(200);
+    expect(renamed.body).toMatchObject({ fullName: 'Musa Ibrahim', preferredLanguage: 'ha' });
+    // A name change keeps them signed in.
+    await h.http
+      .get('/v1/me')
+      .set('Authorization', `Bearer ${target.tokens.accessToken}`)
+      .expect(200);
+
+    await h.http
+      .patch(`/v1/admin/users/${target.user.id}`)
+      .set('Authorization', root.auth)
+      .send({ phone: other.user.phone, reason: 'New SIM' })
+      .expect(409);
+
+    const newPhone = nextPhone();
+    const moved = await h.http
+      .patch(`/v1/admin/users/${target.user.id}`)
+      .set('Authorization', root.auth)
+      .send({ phone: newPhone, reason: 'Lost their old SIM' })
+      .expect(200);
+    expect(moved.body.phone).toBe(newPhone);
+    await h.http
+      .post('/v1/auth/refresh')
+      .send({ refreshToken: target.tokens.refreshToken })
+      .expect(401);
+
+    const audit = await h.db
+      .selectFrom('audit_logs')
+      .select(['action', 'metadata'])
+      .where('target_id', '=', target.user.id)
+      .where('action', '=', 'admin.user.updated')
+      .orderBy('created_at')
+      .execute();
+    expect(audit.map((a) => a.metadata)).toEqual([
+      { fields: ['fullName', 'preferredLanguage'], reason: 'Name misspelt' },
+      { fields: ['phone'], reason: 'Lost their old SIM' },
+    ]);
+  });
+
+  it('deletes an account with a reason: personal data erased, sessions ended, reason kept', async () => {
+    const root = await signInWithMfa(h, nextPhone(), 'super_admin');
+    const target = await signIn(h, nextPhone());
+    await grantRole(h, target.user.id, 'driver');
+
+    await h.http
+      .post(`/v1/admin/users/${target.user.id}/delete`)
+      .set('Authorization', root.auth)
+      .send({})
+      .expect(422);
+    const deleted = await h.http
+      .post(`/v1/admin/users/${target.user.id}/delete`)
+      .set('Authorization', root.auth)
+      .send({ reason: 'Duplicate account' })
+      .expect(200);
+    expect(deleted.body).toMatchObject({
+      phone: null,
+      fullName: null,
+      email: null,
+      status: 'deleted',
+      statusReason: 'Duplicate account',
+      roles: [],
+    });
+    await h.http
+      .post('/v1/auth/refresh')
+      .send({ refreshToken: target.tokens.refreshToken })
+      .expect(401);
+    const audit = await h.db
+      .selectFrom('audit_logs')
+      .select(['actor_user_id', 'metadata'])
+      .where('target_id', '=', target.user.id)
+      .where('action', '=', 'admin.user.deleted')
+      .executeTakeFirstOrThrow();
+    expect(audit).toMatchObject({
+      actor_user_id: root.userId,
+      metadata: { reason: 'Duplicate account' },
+    });
+
+    // Already gone: no second deletion, no edits.
+    await h.http
+      .post(`/v1/admin/users/${target.user.id}/delete`)
+      .set('Authorization', root.auth)
+      .send({ reason: 'again' })
+      .expect(409);
+    await h.http
+      .patch(`/v1/admin/users/${target.user.id}`)
+      .set('Authorization', root.auth)
+      .send({ fullName: 'Back Again', reason: 'test' })
+      .expect(409);
+  });
+
+  it('never deletes your own account or the last super admin, and waits for open money', async () => {
+    const root = await signInWithMfa(h, nextPhone(), 'super_admin');
+    await h.http
+      .post(`/v1/admin/users/${root.userId}/delete`)
+      .set('Authorization', root.auth)
+      .send({ reason: 'test' })
+      .expect(403);
+
+    // With another active super admin left, deleting one is allowed.
+    const second = await signInWithMfa(h, nextPhone(), 'super_admin');
+    await h.http
+      .post(`/v1/admin/users/${second.userId}/delete`)
+      .set('Authorization', root.auth)
+      .send({ reason: 'Left the company' })
+      .expect(200);
+
+    // A wallet balance must be settled first.
+    const target = await signIn(h, nextPhone());
+    await h.db
+      .insertInto('wallets')
+      .values({
+        owner_id: target.user.id,
+        kind: 'passenger',
+        normal_side: 'credit',
+        balance_kobo: 50_000,
+      } as never)
+      .execute();
+    const blocked = await h.http
+      .post(`/v1/admin/users/${target.user.id}/delete`)
+      .set('Authorization', root.auth)
+      .send({ reason: 'test' })
+      .expect(409);
+    expect(blocked.body.error).toMatchObject({
+      code: 'DELETION_BLOCKED',
+      details: { blockers: ['wallet_balance'] },
+    });
+  });
+});
+
+describe('own profile', () => {
+  it('lets anyone change their own name, email and language, but not their phone', async () => {
+    const me = await signIn(h, nextPhone());
+    const auth = `Bearer ${me.tokens.accessToken}`;
+    const updated = await h.http
+      .patch('/v1/me')
+      .set('Authorization', auth)
+      .send({ fullName: 'Zainab Umar', email: 'zainab@example.com', preferredLanguage: 'ha' })
+      .expect(200);
+    expect(updated.body).toMatchObject({
+      fullName: 'Zainab Umar',
+      email: 'zainab@example.com',
+      preferredLanguage: 'ha',
+    });
+    await h.http
+      .patch('/v1/me')
+      .set('Authorization', auth)
+      .send({ phone: nextPhone() })
+      .expect(422);
+  });
+});
+
 describe('user list and audit log', () => {
   it('paginates users with a stable cursor and searches by phone or name', async () => {
     const admin = await signInWithMfa(h, nextPhone(), 'admin');

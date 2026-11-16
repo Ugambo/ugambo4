@@ -4,7 +4,8 @@ import { messages } from './messages';
 
 describe('messages', () => {
   it('has every English text in Hausa, with the same placeholders', () => {
-    const issues = checkCatalog(messages.en, messages.ha, { sameAllowed: ['app.name'] }); // the product's name;
+    // The product's name, and the language's own name ("Hausa" in both).
+    const issues = checkCatalog(messages.en, messages.ha, { sameAllowed: ['app.name', 'lang.ha'] });
     expect(issues, describeIssues('admin-dashboard', issues)).toEqual([]);
   });
 });

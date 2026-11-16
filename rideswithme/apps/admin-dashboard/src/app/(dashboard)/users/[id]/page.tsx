@@ -6,7 +6,12 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { ApiError, newIdempotencyKey } from '@rideswithme/api-client';
-import { ROLE_KEYS, type RoleKey, type WalletEntryView } from '@rideswithme/shared-types';
+import {
+  type Language,
+  ROLE_KEYS,
+  type RoleKey,
+  type WalletEntryView,
+} from '@rideswithme/shared-types';
 import { formatKobo, nairaToKobo } from '@rideswithme/utilities';
 import { useResource } from '@rideswithme/web-core/client';
 import { Modal } from '@/components/modal';
@@ -37,6 +42,9 @@ export default function UserPage() {
   }, [id]);
   const [role, setRole] = useState<RoleKey>('driver');
   const [suspending, setSuspending] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [edit, setEdit] = useState({ fullName: '', phone: '', email: '', language: 'en' });
   const [adjusting, setAdjusting] = useState(false);
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
@@ -67,6 +75,49 @@ export default function UserPage() {
     void act(
       () => api().admin.suspendUser(u.id, reason),
       () => setSuspending(false),
+    );
+  };
+
+  const openEdit = () => {
+    setError(null);
+    setReason('');
+    setEdit({
+      fullName: u.fullName ?? '',
+      phone: u.phone ?? '',
+      email: u.email ?? '',
+      language: u.preferredLanguage,
+    });
+    setEditing(true);
+  };
+
+  const saveEdit = (e: FormEvent) => {
+    e.preventDefault();
+    void act(
+      () =>
+        api().admin.updateUser(u.id, {
+          // Only what changed; the phone is compared after the API normalises it.
+          ...(edit.fullName.trim() !== (u.fullName ?? '') && { fullName: edit.fullName }),
+          ...(edit.phone.trim() !== (u.phone ?? '') && { phone: edit.phone }),
+          ...(edit.email.trim().toLowerCase() !== (u.email ?? '') && {
+            email: edit.email.trim() || null,
+          }),
+          ...(edit.language !== u.preferredLanguage && {
+            preferredLanguage: edit.language as Language,
+          }),
+          reason,
+        }),
+      () => {
+        setEditing(false);
+        setNotice(t('user.saved'));
+      },
+    );
+  };
+
+  const remove = (e: FormEvent) => {
+    e.preventDefault();
+    void act(
+      () => api().admin.deleteUser(u.id, reason),
+      () => setDeleting(false),
     );
   };
 
@@ -122,6 +173,24 @@ export default function UserPage() {
               {t('user.reactivate')}
             </button>
           ) : null)}
+        {can('users.update') && u.status !== 'deleted' && (
+          <button type="button" className="btn btn-secondary" onClick={openEdit}>
+            {t('user.edit')}
+          </button>
+        )}
+        {can('users.delete') && u.status !== 'deleted' && (
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => {
+              setError(null);
+              setReason('');
+              setDeleting(true);
+            }}
+          >
+            {t('user.delete')}
+          </button>
+        )}
       </div>
       {notice && <p className="notice notice-ok">{notice}</p>}
       <InlineError error={error} />
@@ -132,9 +201,23 @@ export default function UserPage() {
             <dd>{u.phone ?? '—'}</dd>
           </div>
           <div>
+            <dt>{t('col.email')}</dt>
+            <dd>{u.email ?? '—'}</dd>
+          </div>
+          <div>
+            <dt>{t('col.language')}</dt>
+            <dd>{t(`lang.${u.preferredLanguage}`)}</dd>
+          </div>
+          <div>
             <dt>{t('col.joined')}</dt>
             <dd>{formatDate(u.createdAt)}</dd>
           </div>
+          {u.statusReason && (
+            <div>
+              <dt>{t('user.statusReason')}</dt>
+              <dd data-testid="status-reason">{u.statusReason}</dd>
+            </div>
+          )}
         </dl>
       </div>
 
@@ -244,6 +327,93 @@ export default function UserPage() {
               {t('common.cancel')}
             </button>
             <button className="btn btn-danger">{t('user.suspend')}</button>
+          </div>
+        </form>
+      </Modal>
+      <Modal title={t('user.edit')} open={editing} onClose={() => setEditing(false)}>
+        <form onSubmit={saveEdit}>
+          <div className="field">
+            <label htmlFor="edit-name">{t('col.name')}</label>
+            <input
+              id="edit-name"
+              value={edit.fullName}
+              onChange={(e) => setEdit({ ...edit, fullName: e.target.value })}
+              required
+              minLength={2}
+              maxLength={120}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="edit-phone">{t('col.phone')}</label>
+            <input
+              id="edit-phone"
+              type="tel"
+              value={edit.phone}
+              onChange={(e) => setEdit({ ...edit, phone: e.target.value })}
+              required
+            />
+            <p className="small muted">{t('user.editPhoneNote')}</p>
+          </div>
+          <div className="field">
+            <label htmlFor="edit-email">{t('col.email')}</label>
+            <input
+              id="edit-email"
+              type="email"
+              value={edit.email}
+              onChange={(e) => setEdit({ ...edit, email: e.target.value })}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="edit-language">{t('col.language')}</label>
+            <select
+              id="edit-language"
+              value={edit.language}
+              onChange={(e) => setEdit({ ...edit, language: e.target.value })}
+            >
+              <option value="en">{t('lang.en')}</option>
+              <option value="ha">{t('lang.ha')}</option>
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="edit-reason">{t('user.editReason')}</label>
+            <textarea
+              id="edit-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              required
+              minLength={3}
+              rows={2}
+            />
+          </div>
+          <InlineError error={error} />
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => setEditing(false)}>
+              {t('common.cancel')}
+            </button>
+            <button className="btn btn-primary">{t('common.save')}</button>
+          </div>
+        </form>
+      </Modal>
+      <Modal title={t('user.delete')} open={deleting} onClose={() => setDeleting(false)}>
+        <form onSubmit={remove}>
+          <p className="notice notice-wait">{t('user.deleteExplain')}</p>
+          <div className="field">
+            <label htmlFor="delete-reason">{t('user.deleteReason')}</label>
+            <textarea
+              id="delete-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              required
+              minLength={3}
+              rows={2}
+            />
+          </div>
+          <InlineError error={error} />
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => setDeleting(false)}>
+              {t('common.cancel')}
+            </button>
+            <button className="btn btn-danger">{t('user.delete')}</button>
           </div>
         </form>
       </Modal>

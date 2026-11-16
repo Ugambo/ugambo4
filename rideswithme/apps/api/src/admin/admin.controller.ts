@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import type {
   AdminUserSummary,
   AuditLogEntry,
@@ -7,7 +7,10 @@ import type {
 } from '@rideswithme/shared-types';
 import { ROLE_KEYS } from '@rideswithme/shared-types';
 import {
+  adminUpdateUserSchema,
   assignRoleSchema,
+  createUserSchema,
+  deleteUserSchema,
   listAuditLogsQuerySchema,
   listUsersQuerySchema,
   suspendUserSchema,
@@ -37,6 +40,50 @@ export class AdminController {
   @RequirePermissions('users.read')
   getUser(@Param('id', zod(uuidSchema)) id: string): Promise<AdminUserSummary> {
     return this.admin.getUser(id);
+  }
+
+  @Post('users')
+  @RequirePermissions('users.create')
+  createUser(
+    @CurrentPrincipal() principal: Principal,
+    @Body(zod(createUserSchema)) body: z.output<typeof createUserSchema>,
+    @ReqContext() ctx: RequestContext,
+  ): Promise<AdminUserSummary> {
+    return this.admin.createUser(body, { type: 'user', userId: principal.userId, principal }, ctx);
+  }
+
+  @Patch('users/:id')
+  @RequirePermissions('users.update')
+  updateUser(
+    @CurrentPrincipal() principal: Principal,
+    @Param('id', zod(uuidSchema)) id: string,
+    @Body(zod(adminUpdateUserSchema)) body: z.output<typeof adminUpdateUserSchema>,
+    @ReqContext() ctx: RequestContext,
+  ): Promise<AdminUserSummary> {
+    return this.admin.updateUser(
+      id,
+      body,
+      { type: 'user', userId: principal.userId, principal },
+      ctx,
+    );
+  }
+
+  /** POST with a body (the reason): some proxies drop DELETE bodies. */
+  @Post('users/:id/delete')
+  @HttpCode(200)
+  @RequirePermissions('users.delete')
+  deleteUser(
+    @CurrentPrincipal() principal: Principal,
+    @Param('id', zod(uuidSchema)) id: string,
+    @Body(zod(deleteUserSchema)) body: z.output<typeof deleteUserSchema>,
+    @ReqContext() ctx: RequestContext,
+  ): Promise<AdminUserSummary> {
+    return this.admin.deleteUser(
+      id,
+      body.reason,
+      { type: 'user', userId: principal.userId, principal },
+      ctx,
+    );
   }
 
   @Post('users/:id/roles')

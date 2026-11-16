@@ -266,13 +266,54 @@ export class DeletionService implements OnModuleInit, OnApplicationShutdown {
     return result;
   }
 
-  private async erase(userId: string, requestId: string, now: Date) {
+  /**
+   * A super admin deletes an account now, with a reason (no grace period). The
+   * same things stop it as stop a person's own request, except being staff:
+   * the roles go with the account. `guard` runs first inside the transaction,
+   * for the caller's own checks (not their own account, not the last super admin).
+   */
+  async deleteByStaff(
+    userId: string,
+    reason: string,
+    staff: { userId: string; ctx: Partial<RequestContext> },
+    guard: (trx: Kysely<Database>) => Promise<void>,
+    now = new Date(),
+  ): Promise<void> {
+    const blockers = (await this.blockers(userId, now)).filter((b) => b !== 'staff_account');
+    if (blockers.length) {
+      throw new AppException(
+        ErrorCode.DELETION_BLOCKED,
+        `Cannot delete yet: ${blockers.join(', ').replace(/_/g, ' ')}`,
+        { details: { blockers } },
+      );
+    }
+    const open = await this.db
+      .selectFrom('account_deletion_requests')
+      .select('id')
+      .where('user_id', '=', userId)
+      .where('status', 'in', ['pending', 'blocked'])
+      .executeTakeFirst();
+    await this.erase(userId, open?.id ?? null, now, { ...staff, reason, guard });
+  }
+
+  private async erase(
+    userId: string,
+    requestId: string | null,
+    now: Date,
+    staff?: {
+      userId: string;
+      reason: string;
+      ctx: Partial<RequestContext>;
+      guard: (trx: Kysely<Database>) => Promise<void>;
+    },
+  ) {
     const documents = await this.db
       .selectFrom('driver_documents')
       .select('object_key')
       .where('driver_user_id', '=', userId)
       .execute();
     await this.db.transaction().execute(async (trx) => {
+      if (staff) await staff.guard(trx);
       await trx
         .updateTable('users')
         .set({
@@ -283,6 +324,8 @@ export class DeletionService implements OnModuleInit, OnApplicationShutdown {
           full_name: null,
           status: 'deleted',
           deleted_at: now,
+          deleted_reason: staff?.reason ?? null,
+          suspended_reason: null,
           totp_secret_encrypted: null,
           totp_enabled_at: null,
         })
@@ -313,18 +356,27 @@ export class DeletionService implements OnModuleInit, OnApplicationShutdown {
         })
         .where('user_id', '=', userId)
         .execute();
-      await trx
-        .updateTable('account_deletion_requests')
-        .set({ status: 'completed', completed_at: now, blocked_reason: null })
-        .where('id', '=', requestId)
-        .execute();
+      if (requestId)
+        await trx
+          .updateTable('account_deletion_requests')
+          .set({ status: 'completed', completed_at: now, blocked_reason: null })
+          .where('id', '=', requestId)
+          .execute();
       await this.audit.record(
-        {
-          actor: { type: 'system' },
-          action: 'privacy.account_deleted',
-          target: { type: 'user', id: userId },
-          metadata: { documents: documents.length },
-        },
+        staff
+          ? {
+              actor: { type: 'user', userId: staff.userId },
+              action: 'admin.user.deleted',
+              target: { type: 'user', id: userId },
+              metadata: { reason: staff.reason, documents: documents.length },
+              context: staff.ctx,
+            }
+          : {
+              actor: { type: 'system' },
+              action: 'privacy.account_deleted',
+              target: { type: 'user', id: userId },
+              metadata: { documents: documents.length },
+            },
         trx,
       );
     });

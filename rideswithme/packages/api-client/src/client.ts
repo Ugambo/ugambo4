@@ -124,6 +124,8 @@ import type {
   ListAuditLogsQuery,
   ListDriversQuery,
   ListUsersQuery,
+  CreateUserInput,
+  AdminUpdateUserInput,
   PayoutAccountInput,
   RejectDocumentInput,
   RequestDocumentUploadInput,
@@ -317,6 +319,18 @@ export function createApiClient(options: ApiClientOptions) {
       listRoles: () => request<RoleSummary[]>('/v1/admin/roles'),
       getUser: (userId: string) =>
         request<AdminUserSummary>(`/v1/admin/users/${encodeURIComponent(userId)}`),
+      createUser: (input: CreateUserInput) =>
+        request<AdminUserSummary>('/v1/admin/users', { method: 'POST', body: input }),
+      updateUser: (userId: string, input: AdminUpdateUserInput) =>
+        request<AdminUserSummary>(`/v1/admin/users/${encodeURIComponent(userId)}`, {
+          method: 'PATCH',
+          body: input,
+        }),
+      deleteUser: (userId: string, reason: string) =>
+        request<AdminUserSummary>(`/v1/admin/users/${encodeURIComponent(userId)}/delete`, {
+          method: 'POST',
+          body: { reason },
+        }),
       assignRole: (userId: string, role: RoleKey) =>
         request<AdminUserSummary>(`/v1/admin/users/${encodeURIComponent(userId)}/roles`, {
           method: 'POST',
