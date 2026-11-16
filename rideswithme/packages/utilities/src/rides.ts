@@ -158,7 +158,7 @@ export function paymentSummary(
       ? { key: 'receipt.paidCash', tone: 'info' }
       : {
           key: 'ride.payCash',
-          amountKobo: ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo,
+          amountKobo: ride.fare.payableKobo,
           tone: 'action',
         };
   }

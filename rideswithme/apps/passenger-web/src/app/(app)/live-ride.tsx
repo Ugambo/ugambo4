@@ -11,6 +11,7 @@ import {
 } from '@rideswithme/utilities';
 import { DriverCard, FareLines, PaymentLine } from '@/components/ride-parts';
 import { RouteSketch } from '@/components/route-sketch';
+import { RateRide, RideChat, ShareTrip, SosButton } from '@/components/safety';
 import { api } from '@/lib/api';
 import { InlineError, useI18n } from '@/lib/i18n';
 
@@ -76,7 +77,10 @@ export function LiveRide({
         data-testid="live-ride"
         data-status={ride.status}
       >
-        <h1 data-testid="ride-headline">{headline}</h1>
+        <div className="receipt-head">
+          <h1 data-testid="ride-headline">{headline}</h1>
+          {active && <SosButton rideId={ride.id} />}
+        </div>
         {phase === 'searching' && (
           <p className="searching">
             <span className="spinner" aria-hidden /> {t('ride.searchingHint')}
@@ -91,6 +95,7 @@ export function LiveRide({
         )}
 
         {ride.driver && active && <DriverCard ride={ride} />}
+        {active && <ShareTrip rideId={ride.id} />}
         {age?.stale && active && (
           <p className="small muted" data-testid="position-age">
             {t('ride.lastUpdated', { seconds: age.seconds })}
@@ -114,6 +119,13 @@ export function LiveRide({
         <h2>{phase === 'completed' ? t('receipt.title') : t('ride.fare')}</h2>
         <FareLines ride={ride} />
 
+        {ride.driver &&
+          ['driver_assigned', 'driver_arrived', 'in_progress'].includes(ride.status) && (
+            <RideChat ride={ride} />
+          )}
+        {phase === 'completed' && (
+          <RateRide ride={ride} onRated={() => void api().rides.get(ride.id).then(onChange)} />
+        )}
         <InlineError error={error} />
         {canCancel(ride.status) &&
           (confirming ? (

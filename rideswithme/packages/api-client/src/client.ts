@@ -1,4 +1,20 @@
 import type {
+  AdminDeletionRequestView,
+  AdminIncidentView,
+  AdminSosAlertView,
+  AdminTicketView,
+  DeletionRequestView,
+  IncidentView,
+  NotificationView,
+  PromotionView,
+  PublicTripView,
+  RatingSummary,
+  RatingView,
+  RideMessageView,
+  SosAlertView,
+  TicketStatus,
+  TicketView,
+  TripShareView,
   AdminBusBookingView,
   BusBookingView,
   BusCityPair,
@@ -63,6 +79,15 @@ import type {
   VerifyOtpResponse,
 } from '@rideswithme/shared-types';
 import type {
+  AdminTicketsQuery,
+  CreateTicketInput,
+  PromotionInput,
+  PushTokenInput,
+  RaiseSosInput,
+  RateRideInput,
+  ReportIncidentInput,
+  UpdateIncidentInput,
+  UpdatePromotionInput,
   AdminBusBookingsQuery,
   BusRouteInput,
   BusSearchQuery,
@@ -393,6 +418,63 @@ export function createApiClient(options: ApiClientOptions) {
             { method: 'POST' },
           ),
       },
+      safety: {
+        sos: (status?: 'open' | 'resolved') =>
+          request<AdminSosAlertView[]>('/v1/admin/sos', { query: { status } }),
+        sosAlert: (id: string) =>
+          request<AdminSosAlertView>(`/v1/admin/sos/${encodeURIComponent(id)}`),
+        acknowledge: (id: string) =>
+          request<AdminSosAlertView>(`/v1/admin/sos/${encodeURIComponent(id)}/acknowledge`, {
+            method: 'POST',
+          }),
+        resolve: (id: string, note: string) =>
+          request<AdminSosAlertView>(`/v1/admin/sos/${encodeURIComponent(id)}/resolve`, {
+            method: 'POST',
+            body: { note },
+          }),
+        incidents: (status?: 'open' | 'resolved') =>
+          request<AdminIncidentView[]>('/v1/admin/incidents', { query: { status } }),
+        incident: (id: string) =>
+          request<AdminIncidentView>(`/v1/admin/incidents/${encodeURIComponent(id)}`),
+        updateIncident: (id: string, input: UpdateIncidentInput) =>
+          request<AdminIncidentView>(`/v1/admin/incidents/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            body: input,
+          }),
+        rideMessages: (rideId: string) =>
+          request<RideMessageView[]>(`/v1/admin/rides/${encodeURIComponent(rideId)}/messages`),
+      },
+      support: {
+        tickets: (query: Partial<AdminTicketsQuery> = {}) =>
+          request<AdminTicketView[]>('/v1/admin/support/tickets', { query: { ...query } }),
+        ticket: (id: string) =>
+          request<AdminTicketView>(`/v1/admin/support/tickets/${encodeURIComponent(id)}`),
+        reply: (id: string, body: string) =>
+          request<AdminTicketView>(`/v1/admin/support/tickets/${encodeURIComponent(id)}/messages`, {
+            method: 'POST',
+            body: { body },
+          }),
+        setStatus: (id: string, status: TicketStatus) =>
+          request<AdminTicketView>(`/v1/admin/support/tickets/${encodeURIComponent(id)}/status`, {
+            method: 'POST',
+            body: { status },
+          }),
+      },
+      promotions: {
+        list: () => request<PromotionView[]>('/v1/admin/promotions'),
+        create: (input: PromotionInput) =>
+          request<PromotionView>('/v1/admin/promotions', { method: 'POST', body: input }),
+        update: (id: string, input: UpdatePromotionInput) =>
+          request<PromotionView>(`/v1/admin/promotions/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            body: input,
+          }),
+      },
+      userRatings: (userId: string) =>
+        request<{ asDriver: RatingSummary; asPassenger: RatingSummary }>(
+          `/v1/admin/users/${encodeURIComponent(userId)}/ratings`,
+        ),
+      deletionRequests: () => request<AdminDeletionRequestView[]>('/v1/admin/deletion-requests'),
       buses: {
         operators: () => request<BusOperatorSummary[]>('/v1/admin/bus-operators'),
         createOperator: (input: CreateBusOperatorInput) =>
@@ -527,6 +609,68 @@ export function createApiClient(options: ApiClientOptions) {
         >('/v1/fleet/vehicles'),
       trips: (query: Partial<FleetTripsQuery> = {}) =>
         request<Paginated<FleetTripView>>('/v1/fleet/trips', { query: { ...query } }),
+    },
+    safety: {
+      sos: (input: RaiseSosInput = {}) =>
+        request<SosAlertView>('/v1/sos', { method: 'POST', body: input }),
+      currentSos: () => request<SosAlertView | null>('/v1/sos/current'),
+      share: (rideId: string) =>
+        request<TripShareView>(`/v1/rides/${encodeURIComponent(rideId)}/share`, { method: 'POST' }),
+      stopSharing: (rideId: string) =>
+        request<void>(`/v1/rides/${encodeURIComponent(rideId)}/share`, { method: 'DELETE' }),
+      messages: (rideId: string) =>
+        request<RideMessageView[]>(`/v1/rides/${encodeURIComponent(rideId)}/messages`),
+      sendMessage: (rideId: string, body: string) =>
+        request<RideMessageView>(`/v1/rides/${encodeURIComponent(rideId)}/messages`, {
+          method: 'POST',
+          body: { body },
+        }),
+      report: (input: ReportIncidentInput) =>
+        request<IncidentView>('/v1/incidents', { method: 'POST', body: input }),
+      reports: () => request<IncidentView[]>('/v1/incidents'),
+    },
+    /** Anyone with a share link (no account needed). */
+    sharedTrip: (token: string) =>
+      request<PublicTripView>(`/v1/share/${encodeURIComponent(token)}`),
+    ratings: {
+      rate: (rideId: string, input: RateRideInput) =>
+        request<RatingView>(`/v1/rides/${encodeURIComponent(rideId)}/rating`, {
+          method: 'POST',
+          body: input,
+        }),
+      mineAsDriver: () => request<RatingSummary>('/v1/driver/ratings'),
+    },
+    support: {
+      create: (input: CreateTicketInput) =>
+        request<TicketView>('/v1/support/tickets', { method: 'POST', body: input }),
+      list: () => request<TicketView[]>('/v1/support/tickets'),
+      get: (id: string) => request<TicketView>(`/v1/support/tickets/${encodeURIComponent(id)}`),
+      reply: (id: string, body: string) =>
+        request<TicketView>(`/v1/support/tickets/${encodeURIComponent(id)}/messages`, {
+          method: 'POST',
+          body: { body },
+        }),
+    },
+    notifications: {
+      list: () => request<{ items: NotificationView[]; unread: number }>('/v1/me/notifications'),
+      markRead: (ids: string[] | 'all') =>
+        request<void>('/v1/me/notifications/read', {
+          method: 'POST',
+          body: ids === 'all' ? { all: true } : { ids },
+        }),
+      registerPushToken: (input: PushTokenInput) =>
+        request<void>('/v1/me/push-token', { method: 'PUT', body: input }),
+      forgetPushToken: (token: string) =>
+        request<void>('/v1/me/push-token', { method: 'DELETE', body: { token } }),
+    },
+    privacy: {
+      deletionRequest: () => request<DeletionRequestView | null>('/v1/me/deletion-request'),
+      requestDeletion: (reason?: string) =>
+        request<DeletionRequestView>('/v1/me/deletion-request', {
+          method: 'POST',
+          body: reason ? { reason } : {},
+        }),
+      cancelDeletion: () => request<void>('/v1/me/deletion-request', { method: 'DELETE' }),
     },
     bus: {
       cities: () => request<BusCityPair[]>('/v1/bus/cities'),

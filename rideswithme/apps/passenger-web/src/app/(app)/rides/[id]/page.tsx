@@ -6,6 +6,7 @@ import { useResource } from '@rideswithme/web-core/client';
 import { DisputeSection } from '@/components/dispute-section';
 import { DriverCard, FareLines, PaymentLine, StatusPill } from '@/components/ride-parts';
 import { RouteSketch } from '@/components/route-sketch';
+import { RateRide, ReportProblem } from '@/components/safety';
 import { api } from '@/lib/api';
 import { ErrorState, Loading, useI18n } from '@/lib/i18n';
 
@@ -55,7 +56,9 @@ export default function RidePage() {
         {r.driver && <DriverCard ride={r} />}
         <FareLines ride={r} />
         <PaymentLine ride={r} past />
+        <RateRide ride={r} onRated={() => void ride.reload()} />
         <DisputeSection ride={r} onRaised={() => void ride.reload()} />
+        <ReportProblem rideId={r.id} />
       </section>
       <section className="map-panel">
         <RouteSketch pickup={r.pickup} dropoff={r.dropoff} polyline={r.route.polyline} />

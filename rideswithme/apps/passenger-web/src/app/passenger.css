@@ -515,3 +515,40 @@
 .bus-cancel {
   margin-top: var(--s-4);
 }
+
+/* --- Safety --- */
+.sos {
+  margin: var(--s-3) 0;
+}
+.sos-button {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  min-width: 6rem;
+}
+.share,
+.ride-chat,
+.rate {
+  margin-top: var(--s-4);
+}
+.stars {
+  display: flex;
+  gap: var(--s-1);
+}
+.star {
+  font-size: 2rem;
+  line-height: 1;
+  background: none;
+  border: none;
+  color: var(--c-border);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+}
+.star-on {
+  color: var(--c-accent);
+}
+.chip-on {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+}

@@ -1,5 +1,7 @@
 'use client';
 
+import { RideMessages } from '@/components/safety-parts';
+
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
@@ -141,6 +143,7 @@ export default function RidePage() {
         </table>
       </div>
 
+      {can('safety.read') && <RideMessages rideId={id} />}
       <h2>{t('ride.timeline')}</h2>
       <ol className="timeline" data-testid="timeline">
         {r.events.map((e) => (

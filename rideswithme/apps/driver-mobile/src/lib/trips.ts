@@ -5,9 +5,12 @@ export function secondsLeft(expiresAt: string, now = Date.now()): number {
   return Math.max(0, Math.ceil((Date.parse(expiresAt) - now) / 1000));
 }
 
-/** What to collect from the passenger in cash: the booked price plus any waiting charge. */
+/**
+ * What to collect from the passenger in cash: the booked price plus any waiting
+ * charge, less any promotion (RideswithMe pays the driver the promotion).
+ */
 export function cashToCollect(ride: Pick<DriverRideView, 'fare'>): number {
-  return ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo + ride.fare.waitingChargeKobo;
+  return ride.fare.payableKobo;
 }
 
 /** Opens turn-by-turn directions in Google Maps (app if installed, else browser). */

@@ -1,5 +1,7 @@
 'use client';
 
+import { UserRatings } from '@/components/safety-parts';
+
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
@@ -206,6 +208,7 @@ export default function UserPage() {
         </>
       )}
 
+      <UserRatings userId={u.id} />
       <h2>{t('user.rides')}</h2>
       <ul className="plain-list">
         {(rides.data ?? []).map((r) => (

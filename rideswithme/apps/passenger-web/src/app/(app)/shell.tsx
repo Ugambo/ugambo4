@@ -63,6 +63,12 @@ export function Shell({ children }: { children: ReactNode }) {
           <Link href="/wallet" aria-current={pathname.startsWith('/wallet') ? 'page' : undefined}>
             {t('wallet.title')}
           </Link>
+          <Link href="/help" aria-current={pathname.startsWith('/help') ? 'page' : undefined}>
+            {t('nav.help')}
+          </Link>
+          <Link href="/account" aria-current={pathname.startsWith('/account') ? 'page' : undefined}>
+            {t('nav.account')}
+          </Link>
         </nav>
         <div className="topbar-end">
           <LanguageSelect />

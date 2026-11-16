@@ -865,3 +865,42 @@ button.seat {
   grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
   gap: var(--s-4);
 }
+/* SOS: the most visible thing on any staff page. */
+.sos-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-danger);
+  color: #fff;
+}
+.sos-banner .btn-danger {
+  background: #fff;
+  color: var(--c-danger);
+}
+.chat {
+  display: grid;
+  gap: var(--s-2);
+  list-style: none;
+  padding: 0;
+}
+.chat li {
+  max-width: 80%;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+}
+.chat li.mine {
+  justify-self: end;
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+  border-color: var(--c-primary);
+}
+.card-alert {
+  border: 3px solid var(--c-danger);
+}

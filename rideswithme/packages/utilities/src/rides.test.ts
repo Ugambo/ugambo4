@@ -136,7 +136,7 @@ describe('paymentSummary', () => {
   const ride = (payment: Partial<RideView['payment']>, status: RideView['status'] = 'completed') =>
     ({
       status,
-      fare: { finalTotalKobo: 205_000, quotedTotalKobo: 200_000 },
+      fare: { finalTotalKobo: 205_000, quotedTotalKobo: 200_000, payableKobo: 205_000 },
       payment: {
         method: 'cash',
         status: null,

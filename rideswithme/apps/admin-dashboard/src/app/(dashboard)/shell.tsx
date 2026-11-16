@@ -9,8 +9,10 @@ import { ErrorState, Loading } from '@/components/states';
 import { api, auth, isSignedOut } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useResource } from '@rideswithme/web-core/client';
+import { SosBanner } from '@/components/sos-banner';
 
 const NAV: { href: string; label: MessageKey; permission: PermissionKey }[] = [
+  { href: '/sos', label: 'nav.sos', permission: 'safety.read' },
   { href: '/overview', label: 'nav.overview', permission: 'rides.read' },
   { href: '/live', label: 'nav.live', permission: 'rides.read' },
   { href: '/rides', label: 'nav.rides', permission: 'rides.read' },
@@ -21,6 +23,10 @@ const NAV: { href: string; label: MessageKey; permission: PermissionKey }[] = [
   { href: '/pricing', label: 'nav.pricing', permission: 'rides.read' },
   { href: '/areas', label: 'nav.areas', permission: 'rides.read' },
   { href: '/payments', label: 'nav.payments', permission: 'payments.read' },
+  { href: '/promotions', label: 'nav.promotions', permission: 'rides.read' },
+  { href: '/incidents', label: 'nav.incidents', permission: 'safety.read' },
+  { href: '/support', label: 'nav.support', permission: 'support.read' },
+  { href: '/privacy', label: 'nav.privacy', permission: 'privacy.manage' },
   { href: '/roles', label: 'nav.roles', permission: 'roles.read' },
   { href: '/audit', label: 'nav.audit', permission: 'audit_logs.read' },
 ];
@@ -76,7 +82,6 @@ export function Shell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
-          <p className="later">{t('nav.laterPhases')}</p>
           <div className="sidebar-footer">
             <span className="small">{me.data.fullName ?? me.data.phone}</span>
             <label className="small" htmlFor="shell-lang">
@@ -95,7 +100,10 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </aside>
-        <main className="content">{children}</main>
+        <main className="content">
+          {me.data.permissions.includes('safety.read') && <SosBanner />}
+          {children}
+        </main>
       </div>
     </MeContext.Provider>
   );

@@ -49,7 +49,10 @@ export function VehicleOption({
           {eta} · {t('choose.seats', { seats: option.category.seats })}
         </span>
       </span>
-      <strong className="vehicle-price">{formatKobo(option.totalKobo)}</strong>
+      <strong className="vehicle-price">
+        {option.discountKobo > 0 && <s className="small muted">{formatKobo(option.totalKobo)}</s>}{' '}
+        {formatKobo(option.payableKobo)}
+      </strong>
     </label>
   );
 }
@@ -114,9 +117,7 @@ export function FareLines({ ride }: { ride: RideView }) {
   ];
   const cancelled =
     ride.status === 'cancelled_by_passenger' || ride.status === 'cancelled_by_driver';
-  const total = cancelled
-    ? ride.fare.cancellationFeeKobo
-    : (ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo);
+  const total = cancelled ? ride.fare.cancellationFeeKobo : ride.fare.payableKobo;
   return (
     <dl className="fare-lines" data-testid="fare-lines">
       {!cancelled &&
@@ -132,6 +133,12 @@ export function FareLines({ ride }: { ride: RideView }) {
         <div className="fare-line">
           <dt>{t('receipt.cancellationFee')}</dt>
           <dd>{formatKobo(ride.fare.cancellationFeeKobo)}</dd>
+        </div>
+      )}
+      {!cancelled && ride.fare.discountKobo > 0 && (
+        <div className="fare-line" data-testid="promotion-line">
+          <dt>{t('fare.promotion', { code: ride.fare.promotionCode ?? '' })}</dt>
+          <dd>−{formatKobo(ride.fare.discountKobo)}</dd>
         </div>
       )}
       <div className="fare-line fare-total">

@@ -11,14 +11,14 @@ describe('driver trip helpers', () => {
   it('asks for the booked price plus waiting charge in cash', () => {
     expect(
       cashToCollect({
-        fare: { quotedTotalKobo: 180_000, waitingChargeKobo: 14_000, finalTotalKobo: null },
+        fare: { payableKobo: 194_000 },
       } as never),
     ).toBe(194_000);
     expect(
       cashToCollect({
-        fare: { quotedTotalKobo: 180_000, waitingChargeKobo: 0, finalTotalKobo: 185_000 },
+        fare: { payableKobo: 175_000 },
       } as never),
-    ).toBe(185_000);
+    ).toBe(175_000);
   });
 
   it('links to Google Maps directions', () => {

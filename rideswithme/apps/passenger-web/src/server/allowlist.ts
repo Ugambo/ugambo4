@@ -15,6 +15,11 @@ export const PASSENGER_API_ALLOW = [
   /^v1\/payment-cards(\/[0-9a-f-]{36})?$/,
   /^v1\/vehicle-categories$/,
   /^v1\/bus\/(cities|search|bookings)$/,
+  /^v1\/sos(\/current)?$/,
+  /^v1\/rides\/[0-9a-f-]{36}\/(share|messages|rating)$/,
+  /^v1\/incidents$/,
+  /^v1\/support\/tickets(\/[0-9a-f-]{36}(\/messages)?)?$/,
+  /^v1\/me\/(notifications(\/read)?|deletion-request)$/,
   /^v1\/bus\/departures\/[0-9a-f-]{36}$/,
   /^v1\/bus\/bookings\/[0-9a-f-]{36}(\/(pay|cancel))?$/,
 ];

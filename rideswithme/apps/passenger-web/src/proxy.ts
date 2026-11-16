@@ -9,7 +9,10 @@ const SESSION_COOKIE = 'rwm_session';
  * public address is allowed for the live (WebSocket) connection.
  */
 export function proxy(request: NextRequest) {
-  if (!request.cookies.has(SESSION_COOKIE) && request.nextUrl.pathname !== '/sign-in') {
+  // Shared-trip pages (/track/...) are for anyone with the link.
+  const open =
+    request.nextUrl.pathname === '/sign-in' || request.nextUrl.pathname.startsWith('/track/');
+  if (!request.cookies.has(SESSION_COOKIE) && !open) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');

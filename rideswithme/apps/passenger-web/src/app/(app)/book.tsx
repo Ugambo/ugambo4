@@ -17,6 +17,7 @@ import {
   applyActiveRides,
   applyRideUpdate,
   formatKobo,
+  type PassengerMessageKey,
   type PassengerRides,
   scheduleSlots,
   toPlaceInput,
@@ -111,8 +112,10 @@ export function Book() {
     return () => clearInterval(poll);
   }, [rideId, rideActive]);
 
-  // Price the trip whenever both ends are set.
+  // Price the trip whenever both ends are set (and again when a promotion code is applied).
   const [quoteRound, setQuoteRound] = useState(0);
+  const [promo, setPromo] = useState('');
+  const [promoInput, setPromoInput] = useState('');
   useEffect(() => {
     setEstimate(null);
     if (!pickup || !dropoff) return;
@@ -120,7 +123,11 @@ export function Book() {
     setPricing(true);
     setError(null);
     api()
-      .fares.estimate({ pickup: toPlaceInput(pickup), dropoff: toPlaceInput(dropoff) })
+      .fares.estimate({
+        pickup: toPlaceInput(pickup),
+        dropoff: toPlaceInput(dropoff),
+        ...(promo && { promoCode: promo }),
+      })
       .then(
         (e) => {
           if (cancelled) return;
@@ -136,7 +143,7 @@ export function Book() {
     return () => {
       cancelled = true;
     };
-  }, [pickup, dropoff, quoteRound]);
+  }, [pickup, dropoff, quoteRound, promo]);
 
   const option = estimate?.options.find((o) => o.category.key === selected) ?? null;
 
@@ -149,7 +156,13 @@ export function Book() {
         ? { paymentMethod: 'card' as const, cardId: pay.slice(5) }
         : { paymentMethod: pay as 'cash' | 'wallet' };
       const booked = await api().rides.book(
-        { quoteId: option.quoteId, ...payment, ...(when !== 'now' && { scheduledFor: when }) },
+        {
+          quoteId: option.quoteId,
+          ...payment,
+          ...(when !== 'now' && { scheduledFor: when }),
+          ...(estimate?.promotion?.valid &&
+            option.discountKobo > 0 && { promoCode: estimate.promotion.code }),
+        },
         bookingKey.current,
       );
       bookingKey.current = newIdempotencyKey();
@@ -266,8 +279,55 @@ export function Book() {
                 )}
               </div>
             </div>
+            <form
+              className="toolbar promo"
+              data-testid="promo"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setPromo(promoInput.trim());
+              }}
+            >
+              <input
+                aria-label={t('promo.label')}
+                placeholder={t('promo.label')}
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value)}
+                maxLength={40}
+              />
+              {promo ? (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-small"
+                  onClick={() => {
+                    setPromo('');
+                    setPromoInput('');
+                  }}
+                >
+                  {t('promo.remove')}
+                </button>
+              ) : (
+                <button className="btn btn-secondary btn-small" disabled={!promoInput.trim()}>
+                  {t('promo.apply')}
+                </button>
+              )}
+            </form>
+            {estimate.promotion &&
+              (estimate.promotion.valid ? (
+                <p className="notice notice-ok" data-testid="promo-result">
+                  {estimate.promotion.description}
+                  {option &&
+                    option.discountKobo > 0 &&
+                    ` · ${t('promo.saving', { amount: formatKobo(option.discountKobo) })}`}
+                </p>
+              ) : (
+                <p className="notice notice-bad" data-testid="promo-result">
+                  {t(
+                    `promo.reason.${estimate.promotion.reason ?? 'not_found'}` as PassengerMessageKey,
+                  )}
+                </p>
+              ))}
             <p className="small muted">{t('choose.priceNote')}</p>
-            {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.totalKobo && (
+            {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.payableKobo && (
               <p className="notice notice-wait">{t('pay.walletShort')}</p>
             )}
             {wallet && wallet.owedKobo > 0 && (
@@ -289,7 +349,7 @@ export function Book() {
                   : when === 'now'
                     ? t('choose.request', {
                         category: option.category.name,
-                        price: formatKobo(option.totalKobo),
+                        price: formatKobo(option.payableKobo),
                       })
                     : t('choose.schedule', {
                         category: option.category.name,

@@ -58,7 +58,7 @@ export default function History() {
               <StatusLabel ride={r} />
             </View>
             <Text style={styles.price}>
-              {formatKobo(r.fare.finalTotalKobo ?? r.fare.quotedTotalKobo)}
+              {formatKobo(r.fare.payableKobo)}
             </Text>
           </Pressable>
         </Link>

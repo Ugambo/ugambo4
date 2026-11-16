@@ -128,9 +128,7 @@ export function FareLines({ ride }: { ride: RideView }) {
   ];
   const cancelled =
     ride.status === 'cancelled_by_passenger' || ride.status === 'cancelled_by_driver';
-  const total = cancelled
-    ? ride.fare.cancellationFeeKobo
-    : (ride.fare.finalTotalKobo ?? ride.fare.quotedTotalKobo);
+  const total = cancelled ? ride.fare.cancellationFeeKobo : ride.fare.payableKobo;
   return (
     <View style={styles.lines}>
       {!cancelled &&
@@ -146,6 +144,14 @@ export function FareLines({ ride }: { ride: RideView }) {
         <View style={styles.line}>
           <Text style={styles.lineLabel}>{t('receipt.cancellationFee')}</Text>
           <Text style={styles.lineValue}>{formatKobo(ride.fare.cancellationFeeKobo)}</Text>
+        </View>
+      )}
+      {!cancelled && ride.fare.discountKobo > 0 && (
+        <View style={styles.line}>
+          <Text style={styles.lineLabel}>
+            {t('fare.promotion', { code: ride.fare.promotionCode ?? '' })}
+          </Text>
+          <Text style={styles.lineValue}>−{formatKobo(ride.fare.discountKobo)}</Text>
         </View>
       )}
       <View style={[styles.line, styles.totalLine]}>

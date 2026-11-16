@@ -12,7 +12,7 @@ import { Empty, ErrorState, InlineError, Loading, useI18n } from '@/lib/i18n';
 const shownTotal = (r: RideView) =>
   r.status === 'cancelled_by_passenger' || r.status === 'cancelled_by_driver'
     ? r.fare.cancellationFeeKobo
-    : (r.fare.finalTotalKobo ?? r.fare.quotedTotalKobo);
+    : r.fare.payableKobo;
 
 export default function RidesPage() {
   const { t, formatDate } = useI18n();
