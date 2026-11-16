@@ -1,9 +1,17 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import type Redis from 'ioredis';
 import type { Kysely } from 'kysely';
 import type { Server } from 'socket.io';
-import type { DriverOfferView, DriverPosition } from '@rideswithme/shared-types';
+import type {
+  AdminSosAlertView,
+  DriverOfferView,
+  DriverPosition,
+  RideMessageView,
+} from '@rideswithme/shared-types';
 import { DB } from '../database/database.module';
 import type { Database } from '../database/types';
+import { NotificationsService } from '../notifications/notifications.service';
+import { REDIS } from '../redis/redis.module';
 import { RideViewService } from '../rides/ride-view.service';
 
 export const userRoom = (userId: string) => `user:${userId}`;
@@ -25,6 +33,8 @@ export class RealtimeNotifier {
   constructor(
     @Inject(DB) private readonly db: Kysely<Database>,
     private readonly views: RideViewService,
+    @Optional() private readonly notifications?: NotificationsService,
+    @Optional() @Inject(REDIS) private readonly redis?: Redis,
   ) {}
 
   attach(server: Server) {
@@ -35,6 +45,7 @@ export class RealtimeNotifier {
   async rideChanged(rideId: string): Promise<void> {
     await this.safely(async (server) => {
       const row = await this.views.loadRow(rideId);
+      await this.pushMilestone(row);
       const passengerView = await this.views.passengerView(row);
       server.to(userRoom(row.passenger_id)).emit('ride:updated', passengerView);
       server.to(rideRoom(rideId)).emit('ride:updated', passengerView);
@@ -89,6 +100,42 @@ export class RealtimeNotifier {
       server.to(userRoom(ride.passenger_id)).emit('driver:position', payload);
       server.to(rideRoom(ride.id)).emit('driver:position', payload);
     });
+  }
+
+  /** An SOS alert, to every staff member watching operations. */
+  async sos(alert: AdminSosAlertView): Promise<void> {
+    await this.safely(async (server) => {
+      server.to(OPS_ROOM).emit('sos:alert', alert);
+    });
+  }
+
+  /** A chat message, to the other side of the ride (each gets their own `mine` flag). */
+  async rideMessage(recipients: { userId: string; view: RideMessageView }[]): Promise<void> {
+    await this.safely(async (server) => {
+      for (const r of recipients) server.to(userRoom(r.userId)).emit('ride:message', r.view);
+    });
+  }
+
+  /**
+   * Push to the passenger's phone when the driver is assigned or arrives (the
+   * app may be in the background). Once per ride and status.
+   */
+  private async pushMilestone(row: Awaited<ReturnType<RideViewService['loadRow']>>) {
+    if (!this.notifications || !this.redis) return;
+    if (row.status !== 'driver_assigned' && row.status !== 'driver_arrived') return;
+    const fresh = await this.redis.set(`pushed:${row.id}:${row.status}`, '1', 'EX', 86_400, 'NX');
+    if (fresh !== 'OK') return;
+    const name = (row.driver_name ?? '').trim().split(/\s+/)[0] || 'Your driver';
+    await this.notifications.notify(
+      row.passenger_id,
+      row.status,
+      {
+        name,
+        vehicle: `${row.colour ?? ''} ${row.make ?? ''} ${row.model ?? ''}`.trim(),
+        plate: row.plate_number ?? '',
+      },
+      { inbox: false, data: { rideId: row.id } },
+    );
   }
 
   private async safely(fn: (server: Server) => Promise<void>) {

@@ -16,6 +16,10 @@ import { DriversModule } from './drivers/drivers.module';
 import { HealthModule } from './health/health.module';
 import { FleetsModule } from './fleets/fleets.module';
 import { MapsModule } from './maps/maps.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { EngagementModule } from './engagement/engagement.module';
+import { PrivacyModule } from './privacy/privacy.module';
+import { SafetyModule } from './safety/safety.module';
 import { PaymentsModule } from './payments/payments.module';
 import { RedisModule } from './redis/redis.module';
 import { RidesModule } from './rides/rides.module';
@@ -73,6 +77,10 @@ export class AppModule {
         PaymentsModule,
         FleetsModule,
         BusesModule,
+        NotificationsModule,
+        SafetyModule,
+        EngagementModule,
+        PrivacyModule,
         RidesModule,
         HealthModule,
       ],

@@ -33,6 +33,7 @@ import type { BusBookingsTable, Database, PaymentsTable } from '../database/type
 import { credit, debit, type LedgerLine, LedgerService } from '../payments/ledger.service';
 import { PAYMENT_PROVIDER, type PaymentProvider } from '../payments/payment.provider';
 import { PaymentsService } from '../payments/payments.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { REDIS } from '../redis/redis.module';
 import { CatalogService } from './catalog.service';
 import { bookingReference, qrPayload, ticketCode } from './codes';
@@ -64,6 +65,7 @@ export class BookingsService implements OnModuleInit, OnApplicationShutdown {
     private readonly payments: PaymentsService,
     private readonly catalog: CatalogService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {
     payments.onBusCharge((trx, p, received) => this.onCardPaid(trx, p, received));
   }
@@ -534,7 +536,7 @@ export class BookingsService implements OnModuleInit, OnApplicationShutdown {
     now = new Date(),
   ): Promise<OperatorDepartureDetail> {
     const by: CancelledBy = operatorId ? 'operator' : 'admin';
-    await this.db.transaction().execute(async (trx) => {
+    const affected = await this.db.transaction().execute(async (trx) => {
       const s = await this.lockSchedule(trx, scheduleId);
       if (operatorId && s.operator_id !== operatorId)
         throw new AppException(ErrorCode.NOT_FOUND, 'Departure not found');
@@ -561,9 +563,14 @@ export class BookingsService implements OnModuleInit, OnApplicationShutdown {
         .orderBy('id')
         .execute();
       let refunded = 0;
+      const people: { passengerId: string; refundKobo: number }[] = [];
       for (const { id } of bookings) {
         const b = await this.lockBooking(trx, id);
         if (b.status === 'confirmed') refunded += koboFromDb(b.total_kobo);
+        people.push({
+          passengerId: b.passenger_id,
+          refundKobo: b.status === 'confirmed' ? koboFromDb(b.total_kobo) : 0,
+        });
         await this.refundAndCancel(trx, b, by, reason, principal.userId, now);
       }
       await this.audit.record(
@@ -576,8 +583,26 @@ export class BookingsService implements OnModuleInit, OnApplicationShutdown {
         },
         trx,
       );
+      return people;
     });
-    return this.catalog.departureDetail(operatorId, scheduleId, now);
+    const detail = await this.catalog.departureDetail(operatorId, scheduleId, now);
+    // Everyone booked hears at once, by SMS too: they may be on their way to the park.
+    for (const p of affected)
+      await this.notifications.notify(
+        p.passengerId,
+        'bus_departure_cancelled',
+        {
+          route: `${detail.route.originCity} → ${detail.route.destinationCity}`,
+          date: new Date(new Date(detail.departsAt).getTime() + 3_600_000)
+            .toISOString()
+            .slice(0, 16)
+            .replace('T', ' '),
+          reason,
+          amount: `₦${(p.refundKobo / 100).toLocaleString('en-NG')}`,
+        },
+        { sms: true, data: { scheduleId } },
+      );
+    return detail;
   }
 
   private async refundAndCancel(

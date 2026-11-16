@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
@@ -106,6 +107,15 @@ export class ObjectStorageService implements OnModuleInit {
         { expiresIn: this.config.DOWNLOAD_URL_TTL_SECONDS },
       ),
     );
+  }
+
+  /** Deletes an object (no error if it is already gone). */
+  async delete(key: string): Promise<void> {
+    try {
+      await this.internal.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    } catch (err) {
+      throw this.unavailable(err);
+    }
   }
 
   /** Size and type of an uploaded object, or null if it does not exist. */

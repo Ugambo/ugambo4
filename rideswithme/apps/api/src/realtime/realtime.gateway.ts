@@ -107,7 +107,11 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnAp
   @SubscribeMessage('ops:subscribe')
   async subscribeOps(@ConnectedSocket() socket: Socket): Promise<Ack> {
     const identity = socket.data.identity as RealtimeIdentity;
-    if (!identity.permissions.includes('rides.read'))
+    // Ride watchers and the safety team (SOS alerts arrive here too).
+    if (
+      !identity.permissions.includes('rides.read') &&
+      !identity.permissions.includes('safety.read')
+    )
       return { ok: false, code: ErrorCode.FORBIDDEN };
     await socket.join(OPS_ROOM);
     return { ok: true };
