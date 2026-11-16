@@ -1,0 +1,16 @@
+{
+  "name": "@rideswithme/load-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Load tests: fare estimates, booking and matching, driver locations and bus seat contention against a local API, with latency percentiles and correctness checks",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "load-test": "node dist/run.js"
+  },
+  "dependencies": {
+    "@rideswithme/e2e-support": "workspace:*"
+  }
+}

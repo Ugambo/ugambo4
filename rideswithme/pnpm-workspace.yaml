@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - infrastructure/database
+  - infrastructure/load-tests
 onlyBuiltDependencies:
   - '@swc/core'
   - esbuild

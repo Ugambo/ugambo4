@@ -514,6 +514,12 @@ importers:
         specifier: ^8.23.1
         version: 8.23.1
 
+  infrastructure/load-tests:
+    dependencies:
+      '@rideswithme/e2e-support':
+        specifier: workspace:*
+        version: link:../../packages/e2e-support
+
   packages/api-client:
     dependencies:
       '@rideswithme/shared-types':
