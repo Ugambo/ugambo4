@@ -7,6 +7,8 @@ describe('proxy allowlist', () => {
     'v1/admin/drivers',
     'v1/admin/drivers/abc/documents/def/view-url',
     'v1/auth/mfa/totp/verify',
+    'v1/admin/bus-operators',
+    'v1/admin/bus-bookings/abc/cancel',
   ])('allows %s', (p) => expect(isAllowedApiPath(p)).toBe(true));
   it.each([
     'v1/auth/refresh',

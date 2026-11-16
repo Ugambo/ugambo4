@@ -1,4 +1,17 @@
 import type {
+  AdminBusBookingView,
+  BusBookingView,
+  BusCityPair,
+  BusDepartureDetail,
+  BusDepartureSummary,
+  BusOperatorSummary,
+  BusPayResult,
+  BusRouteView,
+  BusSeatLayoutView,
+  CheckInResult,
+  OperatorDepartureDetail,
+  OperatorDepartureView,
+  OperatorOverview,
   AdminRideDetail,
   DashboardView,
   DriverFleetView,
@@ -50,6 +63,19 @@ import type {
   VerifyOtpResponse,
 } from '@rideswithme/shared-types';
 import type {
+  AdminBusBookingsQuery,
+  BusRouteInput,
+  BusSearchQuery,
+  BusSeatLayoutInput,
+  CreateBusBookingInput,
+  CreateBusDeparturesInput,
+  CreateBusOperatorInput,
+  OperatorDeparturesQuery,
+  OperatorSettlementInput,
+  PayBusBookingInput,
+  UpdateBusDepartureInput,
+  UpdateBusOperatorInput,
+  UpdateBusRouteInput,
   AdminCancelRideInput,
   CreateFleetInput,
   FareRuleInput,
@@ -367,6 +393,58 @@ export function createApiClient(options: ApiClientOptions) {
             { method: 'POST' },
           ),
       },
+      buses: {
+        operators: () => request<BusOperatorSummary[]>('/v1/admin/bus-operators'),
+        createOperator: (input: CreateBusOperatorInput) =>
+          request<BusOperatorSummary>('/v1/admin/bus-operators', { method: 'POST', body: input }),
+        operator: (id: string) =>
+          request<BusOperatorSummary>(`/v1/admin/bus-operators/${encodeURIComponent(id)}`),
+        updateOperator: (id: string, input: UpdateBusOperatorInput) =>
+          request<BusOperatorSummary>(`/v1/admin/bus-operators/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            body: input,
+          }),
+        addManager: (id: string, phone: string) =>
+          request<BusOperatorSummary>(
+            `/v1/admin/bus-operators/${encodeURIComponent(id)}/managers`,
+            { method: 'POST', body: { phone } },
+          ),
+        setStatus: (id: string, status: 'active' | 'suspended') =>
+          request<BusOperatorSummary>(
+            `/v1/admin/bus-operators/${encodeURIComponent(id)}/${status === 'active' ? 'reactivate' : 'suspend'}`,
+            { method: 'POST' },
+          ),
+        settle: (id: string, input: OperatorSettlementInput) =>
+          request<BusOperatorSummary>(
+            `/v1/admin/bus-operators/${encodeURIComponent(id)}/settlements`,
+            { method: 'POST', body: input },
+          ),
+        statement: (id: string) =>
+          request<WalletEntryView[]>(`/v1/admin/bus-operators/${encodeURIComponent(id)}/statement`),
+        routes: (id: string) =>
+          request<BusRouteView[]>(`/v1/admin/bus-operators/${encodeURIComponent(id)}/routes`),
+        departures: (id: string, query: Partial<OperatorDeparturesQuery> = {}) =>
+          request<OperatorDepartureView[]>(
+            `/v1/admin/bus-operators/${encodeURIComponent(id)}/departures`,
+            { query: { ...query } },
+          ),
+        departure: (id: string) =>
+          request<OperatorDepartureDetail>(`/v1/admin/bus-departures/${encodeURIComponent(id)}`),
+        cancelDeparture: (id: string, reason: string) =>
+          request<OperatorDepartureDetail>(
+            `/v1/admin/bus-departures/${encodeURIComponent(id)}/cancel`,
+            { method: 'POST', body: { reason } },
+          ),
+        bookings: (query: Partial<AdminBusBookingsQuery>) =>
+          request<AdminBusBookingView[]>('/v1/admin/bus-bookings', { query: { ...query } }),
+        booking: (id: string) =>
+          request<AdminBusBookingView>(`/v1/admin/bus-bookings/${encodeURIComponent(id)}`),
+        cancelBooking: (id: string, reason: string) =>
+          request<AdminBusBookingView>(`/v1/admin/bus-bookings/${encodeURIComponent(id)}/cancel`, {
+            method: 'POST',
+            body: { reason },
+          }),
+      },
       drivers: {
         list: (query: Partial<ListDriversQuery> = {}) =>
           request<Paginated<AdminDriverListItem>>('/v1/admin/drivers', { query }),
@@ -449,6 +527,69 @@ export function createApiClient(options: ApiClientOptions) {
         >('/v1/fleet/vehicles'),
       trips: (query: Partial<FleetTripsQuery> = {}) =>
         request<Paginated<FleetTripView>>('/v1/fleet/trips', { query: { ...query } }),
+    },
+    bus: {
+      cities: () => request<BusCityPair[]>('/v1/bus/cities'),
+      search: (query: BusSearchQuery) =>
+        request<BusDepartureSummary[]>('/v1/bus/search', { query: { ...query } }),
+      departure: (id: string) =>
+        request<BusDepartureDetail>(`/v1/bus/departures/${encodeURIComponent(id)}`),
+      /** Holds seats while you pay. Reuse the idempotencyKey when retrying the same choice. */
+      hold: (input: CreateBusBookingInput, idempotencyKey: string) =>
+        request<BusBookingView>('/v1/bus/bookings', {
+          method: 'POST',
+          body: input,
+          idempotencyKey,
+        }),
+      bookings: () => request<BusBookingView[]>('/v1/bus/bookings'),
+      booking: (id: string) =>
+        request<BusBookingView>(`/v1/bus/bookings/${encodeURIComponent(id)}`),
+      pay: (id: string, input: PayBusBookingInput, idempotencyKey: string) =>
+        request<BusPayResult>(`/v1/bus/bookings/${encodeURIComponent(id)}/pay`, {
+          method: 'POST',
+          body: input,
+          idempotencyKey,
+        }),
+      cancel: (id: string) =>
+        request<BusBookingView>(`/v1/bus/bookings/${encodeURIComponent(id)}/cancel`, {
+          method: 'POST',
+        }),
+    },
+    operator: {
+      overview: () => request<OperatorOverview>('/v1/operator'),
+      routes: () => request<BusRouteView[]>('/v1/operator/routes'),
+      createRoute: (input: BusRouteInput) =>
+        request<BusRouteView>('/v1/operator/routes', { method: 'POST', body: input }),
+      updateRoute: (id: string, input: UpdateBusRouteInput) =>
+        request<BusRouteView>(`/v1/operator/routes/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: input,
+        }),
+      layouts: () => request<BusSeatLayoutView[]>('/v1/operator/layouts'),
+      createLayout: (input: BusSeatLayoutInput) =>
+        request<BusSeatLayoutView>('/v1/operator/layouts', { method: 'POST', body: input }),
+      departures: (query: Partial<OperatorDeparturesQuery> = {}) =>
+        request<OperatorDepartureView[]>('/v1/operator/departures', { query: { ...query } }),
+      createDepartures: (input: CreateBusDeparturesInput) =>
+        request<OperatorDepartureView[]>('/v1/operator/departures', {
+          method: 'POST',
+          body: input,
+        }),
+      departure: (id: string) =>
+        request<OperatorDepartureDetail>(`/v1/operator/departures/${encodeURIComponent(id)}`),
+      updateDeparture: (id: string, input: UpdateBusDepartureInput) =>
+        request<OperatorDepartureDetail>(`/v1/operator/departures/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: input,
+        }),
+      cancelDeparture: (id: string, reason: string) =>
+        request<OperatorDepartureDetail>(
+          `/v1/operator/departures/${encodeURIComponent(id)}/cancel`,
+          { method: 'POST', body: { reason } },
+        ),
+      checkIn: (code: string) =>
+        request<CheckInResult>('/v1/operator/check-in', { method: 'POST', body: { code } }),
+      statement: () => request<WalletEntryView[]>('/v1/operator/statement'),
     },
     driverFleet: {
       get: () => request<DriverFleetView>('/v1/driver/fleet'),

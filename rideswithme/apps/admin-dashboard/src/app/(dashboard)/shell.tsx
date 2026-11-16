@@ -17,6 +17,7 @@ const NAV: { href: string; label: MessageKey; permission: PermissionKey }[] = [
   { href: '/users', label: 'nav.users', permission: 'users.read' },
   { href: '/drivers', label: 'nav.drivers', permission: 'drivers.read' },
   { href: '/fleets', label: 'nav.fleets', permission: 'fleets.read' },
+  { href: '/buses', label: 'nav.buses', permission: 'buses.read' },
   { href: '/pricing', label: 'nav.pricing', permission: 'rides.read' },
   { href: '/areas', label: 'nav.areas', permission: 'rides.read' },
   { href: '/payments', label: 'nav.payments', permission: 'payments.read' },

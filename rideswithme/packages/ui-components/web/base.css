@@ -267,6 +267,16 @@ textarea {
   background: rgba(255, 255, 255, 0.14);
   box-shadow: inset 4px 0 0 var(--c-accent);
 }
+.sidebar .nav-group {
+  display: block;
+  margin-top: var(--s-3);
+  padding: 0 var(--s-3);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-on-primary);
+  opacity: 0.75;
+}
 .sidebar .later {
   font-size: var(--fs-sm);
   opacity: 0.75;
@@ -738,4 +748,116 @@ details summary {
   display: block;
   font-weight: 400;
   opacity: 0.75;
+}
+
+/* --- Bus seat maps (web-core SeatMap) --- */
+.seat-map {
+  margin: 0;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 1rem 1rem 0.5rem 0.5rem;
+  background: var(--c-surface);
+  max-width: 100%;
+  overflow-x: auto;
+}
+.seat-front {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--c-muted);
+  border-bottom: 1px dashed var(--c-border);
+  padding-bottom: 0.25rem;
+}
+.seat-grid {
+  display: grid;
+  gap: 0.4rem;
+}
+.seat,
+.seat-gap {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+.seat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  border-radius: 0.5rem 0.5rem 0.3rem 0.3rem;
+  border: 2px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0;
+}
+button.seat {
+  cursor: pointer;
+}
+.seat-executive {
+  border-color: var(--c-primary);
+}
+.seat-vip {
+  border-color: var(--c-accent);
+  border-width: 3px;
+}
+.seat-taken {
+  background: var(--c-border);
+  color: var(--c-muted);
+  cursor: not-allowed;
+}
+.seat-yours,
+.seat-selected {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+}
+.seat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+  align-items: center;
+}
+.seat-legend .seat {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.65rem;
+}
+.ticket-qr {
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  display: inline-block;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0 var(--s-4);
+}
+.checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+.checkbox-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-weight: 400;
+}
+.checkbox-row input {
+  min-height: auto;
+}
+.seat-gap-edit {
+  border-style: dashed;
+  background: transparent;
+  color: var(--c-muted);
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--s-4);
 }

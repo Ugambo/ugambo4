@@ -8,3 +8,5 @@ export * from './use-resource';
 export * from '../language';
 export * from './staff-sign-in';
 export * from './staff-sign-in-messages';
+export * from './seat-map';
+export * from './qr-image';

@@ -6,7 +6,7 @@ export const ADMIN_API_ALLOW = [
   /^v1\/auth\/mfa\/totp\/(setup|activate|verify)$/,
   /^v1\/auth\/sessions(\/[0-9a-f-]{36})?$/,
   /^v1\/auth\/realtime-ticket$/,
-  /^v1\/admin\/(users|roles|audit-logs|drivers|rides|service-areas|fare-rules|fleets|payments|disputes|payouts)(\/.*)?$/,
+  /^v1\/admin\/(users|roles|audit-logs|drivers|rides|service-areas|fare-rules|fleets|payments|disputes|payouts|bus-operators|bus-departures|bus-bookings)(\/.*)?$/,
   /^v1\/admin\/(dashboard|live|ledger)$/,
   /^v1\/vehicle-categories$/,
 ];
