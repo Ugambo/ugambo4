@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { totp } from './totp';
 
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(300, 9)]);
 const PDF = Buffer.from('%PDF-1.4\n%e2e\n');
@@ -137,7 +138,30 @@ export function testApi(o: { apiUrl: string; apiLog: string; policyVersion: stri
     return { token, userId };
   }
 
-  return { logLineCount, latestOtp, call, signIn, submitDriverApplication };
+  /** Signs a staff member (or manager) in and sets up two-factor, as the web apps would. */
+  async function signInWithTotp(phone: string): Promise<{ token: string; userId: string }> {
+    const session = await signIn(phone);
+    const setup = await call<{ secret: string }>('/v1/auth/mfa/totp/setup', {
+      method: 'POST',
+      token: session.token,
+    });
+    await call('/v1/auth/mfa/totp/activate', {
+      method: 'POST',
+      token: session.token,
+      body: { code: totp(setup.secret) },
+    });
+    return session;
+  }
+
+  return {
+    apiUrl: o.apiUrl,
+    logLineCount,
+    latestOtp,
+    call,
+    signIn,
+    signInWithTotp,
+    submitDriverApplication,
+  };
 }
 
 export type TestApi = ReturnType<typeof testApi>;

@@ -1,8 +1,9 @@
 import { expect, type Page, test } from '@playwright/test';
 import path from 'node:path';
-import { OUT, SUPER_ADMIN_PHONE } from './env';
+import { testBuses } from '@rideswithme/e2e-support';
+import { E2E_DATABASE_URL, OUT, SUPER_ADMIN_PHONE } from './env';
 import { prepareOperations } from './ops-data';
-import { latestOtp, logLineCount, totp } from './support';
+import { api, latestOtp, logLineCount, totp } from './support';
 
 const shot = (page: Page, name: string) =>
   page.screenshot({ path: path.join(OUT, 'screenshots', `${name}.png`), fullPage: true });
@@ -135,9 +136,60 @@ test.describe('operations', () => {
     await shot(page, '13-audit-log');
   });
 
+  test('creates a bus operator, records a payment to it and cancels a booking', async ({
+    page,
+  }) => {
+    await page.goto('/buses');
+    await page.getByRole('button', { name: 'New bus operator' }).click();
+    await page.getByLabel('Operator name').fill('Arewa Coaches');
+    await page.getByLabel("Manager's phone number").fill('0803 777 0002');
+    await page.getByLabel('Service fee (%)').fill('8');
+    await page.getByRole('dialog').getByRole('button', { name: 'New bus operator' }).click();
+    const row = page
+      .getByTestId('operators-table')
+      .locator('tbody tr')
+      .filter({ hasText: 'Arewa Coaches' });
+    await expect(row).toContainText('8%');
+
+    // The operator lists a departure; a passenger buys a seat on the payment page.
+    const buses = testBuses(api, E2E_DATABASE_URL);
+    const manager = await api.signInWithTotp('+2348037770002');
+    const service = await buses.service(manager.token, [3]);
+    const passenger = await api.signIn('+2348037770003');
+    const booking = await buses.hold(passenger.token, service.departures[0]!, [
+      { seatId: service.seat('S1'), passengerName: 'Hauwa Sule' },
+    ]);
+    await buses.payByCheckout(passenger.token, booking.id);
+
+    await row.getByRole('link').click();
+    await expect(page.getByTestId('operator-balance')).toContainText('₦11,040');
+    await page.getByLabel('Amount paid (₦)').fill('11040');
+    await page.getByLabel('Note (e.g. transfer reference)').fill('Transfer TRF-001');
+    await page.getByRole('button', { name: 'Record payment' }).click();
+    await expect(page.getByTestId('operator-balance')).toContainText('₦0');
+    await expect(page.getByTestId('operator-statement')).toContainText('Paid to operator');
+    await expect(page.getByTestId('operator-departures').locator('tbody tr')).toHaveCount(1);
+    await shot(page, '14-bus-operator');
+
+    await page.goto('/buses');
+    await page
+      .getByLabel('Booking reference (8 characters) or passenger phone number')
+      .fill(booking.reference);
+    await page.getByRole('button', { name: 'Find' }).click();
+    await page.getByTestId('bookings-table').getByRole('link', { name: booking.reference }).click();
+    await expect(page.getByTestId('booking-status')).toHaveText('Paid');
+    await expect(page.getByTestId('booking-tickets')).toContainText('Hauwa Sule');
+    page.on('dialog', (d) => void d.accept());
+    await page.getByLabel('Reason').fill('Passenger asked by phone');
+    await page.getByRole('button', { name: 'Cancel booking with full refund' }).click();
+    await expect(page.getByTestId('booking-status')).toHaveText('Cancelled');
+    await expect(page.getByText('Refunded ₦12,000 to the wallet')).toBeVisible();
+  });
+
   test('lists roles with their permissions', async ({ page }) => {
     await page.goto('/roles');
     await expect(page.getByTestId('role-super_admin')).toContainText('wallets.adjust');
     await expect(page.getByTestId('role-fleet_manager')).toContainText('fleet.portal');
+    await expect(page.getByTestId('role-bus_operator')).toContainText('bus.operator');
   });
 });

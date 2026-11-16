@@ -11,6 +11,8 @@ export const MANAGER_PHONE = '+2348030000102';
 export const OTHER_MANAGER_PHONE = '+2348030000103';
 export const DRIVER_PHONE = '+2348031110101';
 export const OTHER_DRIVER_PHONE = '+2348031110102';
+export const BUS_MANAGER_PHONE = '+2348030000104';
+export const BUS_PASSENGER_PHONE = '+2348035550401';
 export const STATE_FILE = path.join(OUT, 'scenario.json');
 
 const s3 = process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:9000';

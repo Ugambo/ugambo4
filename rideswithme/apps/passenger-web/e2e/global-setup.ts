@@ -9,6 +9,7 @@ import {
   startApi,
   startNextStandalone,
   waitForHttp,
+  testBuses,
   withDatabase,
 } from '@rideswithme/e2e-support';
 import {
@@ -16,6 +17,8 @@ import {
   API_URL,
   DRIVER_FILE,
   DRIVER_PHONE,
+  BUS_MANAGER_PHONE,
+  STAFF_PHONE,
   E2E_DATABASE_URL,
   OUT,
   WEB_URL,
@@ -46,6 +49,12 @@ export default async function globalSetup() {
     { cwd: ROOT, env: { ...process.env, ...env }, encoding: 'utf8' },
   );
   if (seed.status !== 0) throw new Error(`seed-city failed: ${seed.stderr}`);
+  const grant = spawnSync(
+    'node',
+    ['apps/api/dist/cli.js', 'grant-role', '--phone', STAFF_PHONE, '--role', 'admin'],
+    { cwd: ROOT, env: { ...process.env, ...env }, encoding: 'utf8' },
+  );
+  if (grant.status !== 0) throw new Error(`grant-role failed: ${grant.stderr}`);
 
   const apiProc = startApi(env, API_LOG);
   const webProc = startNextStandalone('passenger-web', 3202, webEnv(), path.join(OUT, 'web.log'));
@@ -71,4 +80,10 @@ export default async function globalSetup() {
     );
   });
   writeFileSync(DRIVER_FILE, JSON.stringify({ token }));
+
+  // A bus operator with Kano → Abuja departures in 2 and 3 days.
+  const buses = testBuses(api, E2E_DATABASE_URL);
+  const staff = await api.signInWithTotp(STAFF_PHONE);
+  const { managerToken } = await buses.operator(staff.token, 'Kano Line', BUS_MANAGER_PHONE);
+  await buses.service(managerToken, [2, 3]);
 }

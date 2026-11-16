@@ -13,6 +13,7 @@ import {
 import {
   API_LOG,
   API_URL,
+  BUS_MANAGER_PHONE,
   DRIVER_PHONE,
   E2E_DATABASE_URL,
   MANAGER_PHONE,
@@ -107,6 +108,13 @@ export default async function globalSetup() {
   await api.call(`/v1/driver/fleet-invitations/${inv.invitations[0]!.id}/accept`, {
     method: 'POST',
     token: otherDriver.token,
+  });
+
+  // A bus operator; its manager signs in through the portal in the tests.
+  await api.call('/v1/admin/bus-operators', {
+    method: 'POST',
+    token: staff,
+    body: { name: 'Kano Line', managerPhone: BUS_MANAGER_PHONE },
   });
 
   writeFileSync(STATE_FILE, JSON.stringify({ driver, otherDriver, otherManagerToken }));
