@@ -13,6 +13,7 @@ import { Platform } from 'react-native';
 import { type ApiClient, createApiClient, type TokenStore } from '@rideswithme/api-client';
 import type { AuthTokens, Language } from '@rideswithme/shared-types';
 import { createRealtime } from '@rideswithme/api-client/realtime';
+import { forgetPushRegistration } from './push';
 
 export type SessionStatus = 'loading' | 'signedOut' | 'signedIn';
 
@@ -93,6 +94,8 @@ export function createMobileSession(options: {
       setStatus('signedIn');
     }, []);
     const signOut = useCallback(async () => {
+      // While still signed in: stop this phone getting this person's notifications.
+      await forgetPushRegistration(api);
       await api.auth.logout().catch(() => undefined);
       setStatus('signedOut');
     }, []);

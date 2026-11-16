@@ -35,6 +35,13 @@ These need your answer or awareness. Work continues on the stated assumption.
 | B-24 | How and when bus operators are paid is not in the brief.                                                                                                                                                                                                      | RideswithMe holds what operators are owed in a ledger account per operator; staff record payments made outside the app (e.g. a transfer from the Paystack dashboard). Automatic payouts by transfer (as for drivers, D-053) need each operator's bank account and an agreed schedule (weekly?). **Please confirm the schedule and whether to automate it.** |
 | B-25 | The bus cancellation policy is not in the brief.                                                                                                                                                                                                              | Default: passengers can cancel for a full refund until `BUS_CANCEL_CUTOFF_HOURS` (12) before departure, and not after; if the operator or RideswithMe cancels, everyone is refunded in full. Operators often have their own rules (e.g. a 10% charge); per-operator policies can be added. **Please confirm or give the policy you want.**                  |
 | B-26 | Who pays RideswithMe's bus service fee is open: the passenger (added to the fare) or the operator (taken from the fare).                                                                                                                                      | Default: the passenger pays the operator's fare and RideswithMe keeps `service_fee_bps` of it (10% for new operators, set per operator by staff). Adding a passenger booking fee instead is a pricing change in one place. **Please confirm.**                                                                                                              |
+| B-27 | The apps' bundle identifiers (`com.rideswithme.app`, `com.rideswithme.driver`) and store accounts do not exist yet. Identifiers cannot change after the first store release.                                                                                  | Placeholders in each `app.config.ts`. **Please create the Apple Developer and Google Play accounts and confirm the identifiers** (normally the company's domain reversed).                                                                                                                                                                                  |
+| B-28 | There is no app icon, splash screen or store artwork, and no screenshots.                                                                                                                                                                                     | The apps use Expo's defaults. **Please supply the brand artwork**; store screenshots in English and Hausa are needed too.                                                                                                                                                                                                                                   |
+| B-29 | Push notifications need an Expo (EAS) project, a Firebase project for Android and an Apple push key for iOS. None exist yet.                                                                                                                                  | Push is built and tested with a logging provider (`PUSH_PROVIDER=log`). Set `PUSH_PROVIDER=expo` and the EAS variables once the accounts exist (LAUNCH.md, "Store builds"). Until then, important events (SOS acknowledgement, bus cancellations) also go by SMS.                                                                                           |
+| B-30 | The brief says SOS must alert staff at once, but not who: there is no on-call rota, and no agreed procedure with the police or emergency services.                                                                                                            | Every new SOS texts every phone in `SOS_ALERT_PHONES` and pages through monitoring after 2 minutes unacknowledged (LAUNCH.md#sos, which says to call 112). **Please name the on-call team, staff it every hour the service runs, and confirm the escalation procedure.**                                                                                    |
+| B-31 | Driver support requests: the brief lists support tickets, but not whether drivers raise them in the driver app.                                                                                                                                               | Passengers raise tickets in the app and website. Drivers can report a trip (incidents) and press SOS in the app, but ticket screens are not built there yet, and staff cannot open a ticket on someone's behalf, so drivers have no in-app way to ask a general question yet. **Say if drivers need tickets in the app.**                                   |
+| B-32 | Error tracking for the web apps and mobile apps (crash reporting) is not in the brief's stack.                                                                                                                                                                | Only the API reports to Sentry (`SENTRY_DSN`). Adding Sentry to the Next.js and Expo apps is a small change once a Sentry (or GlitchTip) account exists.                                                                                                                                                                                                    |
+| B-33 | How long trips, payments, messages and safety reports are kept after an account is deleted is a legal question (NDPA, tax and CBN record-keeping rules).                                                                                                      | Kept indefinitely, linked to an anonymous account (D-074). **Please get legal advice on retention periods**; a scheduled purge of old records is then straightforward.                                                                                                                                                                                      |
 
 ## Decision log
 
@@ -750,3 +757,223 @@ or staff cancels a departure, every paid booking is refunded in full to the wall
 unpaid holds are released, in one transaction; passengers see the reason on their
 booking. Refunds reverse both the operator's share and RideswithMe's fee. All
 cancellations are audited (`buses.*`).
+
+### D-068 SOS
+
+The brief makes SOS the highest priority, so it is built to never fail the
+person pressing it:
+
+- `POST /v1/sos` is never refused. It works with or without a ride, and with or
+  without a location (the last known driver position is used if the phone has
+  none). Rate limits do not apply.
+- Presses within 30 minutes of an open alert add to the same alert (press
+  count, newest location) instead of creating more, so staff see one incident.
+- Staff hear about it three ways at once:
+  - an SMS to every phone in `SOS_ALERT_PHONES`, with a map link (at most one
+    every 5 minutes per alert, however often it is pressed)
+  - a realtime `sos:alert` event in the `ops` room, which staff with
+    `rides.read` or `safety.read` join; the admin dashboard shows a red banner
+    on every page and also polls every 15 seconds in case the socket is down
+  - the metric `rwm_sos_oldest_unacknowledged_seconds`, which pages on-call
+    after 2 minutes (LAUNCH.md#sos)
+- Staff acknowledge (the person gets a push: help is coming) and resolve with a
+  written account. Every step is in the ride's events and the audit log.
+
+New permissions: `safety.read` and `safety.manage`, given to support agents and
+admins.
+
+### D-069 Trip sharing
+
+A passenger can share a live trip link with family or friends. Only a SHA-256 hash of the
+token is stored, so the database cannot be used to rebuild links. Making a new
+link revokes the old one. Links stop working `TRIP_SHARE_AFTER_END_MINUTES`
+after the trip ends.
+
+The public view (`GET /v1/share/:token`, 240 requests an hour per IP) shows the
+status, route, the driver's first name, vehicle and plate, and the live
+position. It never shows phone numbers or the passenger's details. The website
+serves it at `/track/<token>` without sign-in, through its own server so the
+API's address and the viewer's IP are handled as for any other request.
+
+### D-070 Messages during a ride
+
+Passenger and driver can message each other from assignment until the trip
+ends (`driver_assigned`, `driver_arrived`, `in_progress`), and not before or
+after. The other party gets a push notification. Messages are not copied to the
+notification inbox. Staff with `safety.read` can read a ride's messages when
+handling a complaint or SOS.
+
+This replaces masked calling for now (B-3): neither side sees the other's phone
+number.
+
+### D-071 Ratings and incident reports
+
+**Ratings:**
+
+- Both ways: passenger rates driver, driver rates passenger.
+- 1–5 stars, an optional comment and tags, within 7 days of the trip, once per
+  direction (`RATING_CLOSED` after that).
+- Running sums and counts are kept on the `users` row, so averages cost nothing
+  to show.
+- An average is shown only from 3 ratings, so one bad trip does not define a
+  new driver.
+
+**Incident reports** (from either side, about a trip) have categories. Safety,
+accident, harassment and dangerous driving are high priority: they are listed
+first in admin and page by ticket after 2 hours open.
+
+### D-072 Promotions
+
+Staff create codes (`promotions.manage`): percent (with an optional cap) or
+fixed amount, with these optional limits:
+
+- minimum fare
+- vehicle types
+- first ride only
+- uses per passenger, and in total
+- a start and end time
+
+The code's life with a ride:
+
+| When                             | What happens                                                                              |
+| -------------------------------- | ----------------------------------------------------------------------------------------- |
+| Fare estimate                    | the code is checked, and the discount shown                                               |
+| Booking                          | the code is reserved under a row lock, so the total-use limit is never exceeded by a race |
+| Completion                       | the code is marked used                                                                   |
+| Cancellation, or no driver found | the code is released                                                                      |
+
+**Who pays:** the passenger pays `payableKobo` (the fare less the discount).
+The driver is paid on the full fare. The platform funds the difference from a
+`promotions` system account (debit-normal, like an expense), so the ledger
+shows exactly what promotions cost.
+
+A discount always leaves at least the larger of the booking fee and ₦100 to
+pay, so a ride is never free and cash rides still settle sensibly.
+
+### D-073 Notifications and support
+
+**Notifications:**
+
+- One service sends to the in-app inbox (`notifications` table), push (Expo,
+  or a logging provider in development) and, for things that must not be
+  missed, SMS.
+- Texts are in English and Hausa (`apps/api/src/notifications/templates.ts`),
+  in the person's language.
+- Sending never throws: a failed push must not undo the ride change that caused
+  it.
+- Push tokens are registered by the apps after sign-in. At sign-out the app
+  tells the API to forget its token, so a shared phone stops getting the
+  previous person's updates. A token registered by someone else moves to them.
+- Passengers get a push once per status for "driver assigned" and "driver
+  arrived", deduplicated across API replicas.
+
+**Support tickets:**
+
+- A ticket is a thread between the user and staff (`support.read`,
+  `support.manage`), optionally linked to a ride.
+- The user is notified when staff reply.
+- Staff see the tickets that have waited longest first.
+
+### D-074 Account deletion and data retention
+
+NDPA gives people the right to erasure. A user asks for deletion in the app or
+website. They have `DELETION_GRACE_DAYS` (7) to change their mind. A sweep every
+`DELETION_SWEEP_MINUTES` then processes it.
+
+The request waits ("blocked", with the reason shown) while anything is open:
+
+- an active trip or an upcoming bus trip
+- money owed either way (a wallet balance, a driver wallet not at zero, a payout
+  in progress)
+- managing a fleet or bus operator
+- a staff account (staff are removed by another super admin first)
+
+**What is erased:**
+
+- name, phone, email
+- sessions and roles
+- saved places, push tokens, notifications
+- saved cards (marked removed; card data was only ever a Paystack token)
+- NIN and bank details
+- driver documents, deleted from storage
+
+The account row stays, anonymous, and can never sign in again.
+
+**What is kept,** linked to the anonymous account:
+
+- trips and their events, bus bookings
+- payments and the ledger (financial records)
+- ride messages, ratings, incident reports and SOS alerts (safety records)
+
+How long these are kept is a legal question (B-33). Staff see requests in admin
+→ Deletion requests (`privacy.manage`, super admin only).
+
+### D-075 Dispatcher: one failed offer must not end the search
+
+The load test found this. Two rides were being dispatched at the same moment
+and picked the same nearest driver. The second insert hit the
+one-open-offer-per-driver index. The code then moved on to the next candidate,
+but in PostgreSQL a failed statement aborts the whole transaction. Every later
+query failed, and loading the next driver's state threw. That error was treated
+as "not eligible", so the dispatcher took those drivers offline.
+
+The fix has two parts:
+
+- The offer insert runs under a savepoint. On a unique violation it rolls back
+  to the savepoint and tries the next driver.
+- A failure to load a driver's state is now an error, retried on the next tick.
+  Only a driver whose state loads and shows them ineligible is taken offline.
+
+A regression test reproduces the race. The other unique-violation handlers in
+the API were checked: they all end their transaction by throwing, so they do
+not have this problem.
+
+### D-076 Observability and backups
+
+**Metrics:**
+
+- prom-client metrics on `/metrics`, behind a bearer token. The endpoint is a
+  404 when the token is unset or wrong, so it does not advertise itself.
+- The business gauges (SOS, ledger mismatches, stuck payments and payouts, the
+  marketplace, queues) are read from the database at scrape time. That is a few
+  cheap counts every 15 seconds, always correct across API replicas.
+- The alert rules and their runbooks are in LAUNCH.md.
+
+**Errors:** Sentry is optional (`SENTRY_DSN`). Only 5xx errors are sent, with
+request data and user details removed before sending.
+
+**Payout stop:** `PAYOUTS_PAUSED` stops driver payouts (new requests refused,
+pending ones held) during a money incident without stopping rides.
+
+**Backups:**
+
+- Our own encrypted format rather than relying on the bucket's encryption, so a
+  leaked bucket or a curious storage provider learns nothing.
+- The file is `RWMB1` | IV | AES-256-CTR ciphertext of a `pg_dump`
+  custom-format dump | HMAC-SHA256 over everything before it. Separate keys are
+  derived by HKDF from `BACKUP_ENCRYPTION_KEY`.
+- The MAC is checked before anything is restored.
+- A weekly restore check proves the newest backup can be restored and is
+  consistent: migrations present, ledger balanced.
+- A `backup` image carries the PostgreSQL 16 client tools.
+
+### D-077 Store builds and Hausa checks
+
+**Store builds:**
+
+- EAS Build profiles: `development`, `preview` and `production`.
+- Each profile reads its variables from the EAS environment of the same name,
+  so no API address or project ID is committed.
+- `packages/mobile-core/app-config.js` refuses a `preview` or `production`
+  build that would point at a non-https API, or that lacks the EAS project
+  (push needs it) or the policy version.
+- The driver app explains background location in its own words before the
+  system prompt, as Google Play requires ("prominent disclosure").
+
+**Hausa checks:**
+
+- Every catalogue (apps, shared, API notifications) has a test. It fails on a
+  missing, blank or leftover text, on different `{placeholders}`, and on Hausa
+  that is word-for-word the English.
+- `pnpm hausa:export` writes everything to a CSV for the native-speaker review
+  (HAUSA_REVIEW.md).

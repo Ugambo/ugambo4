@@ -15,6 +15,20 @@ Notifications.setNotificationHandler({
   }),
 });
 
+/** The token this phone registered for the signed-in person, so sign-out can forget it. */
+let registeredToken: string | null = null;
+
+/**
+ * Tells the API to stop sending this phone the signed-in person's
+ * notifications. Called on sign-out, so a shared phone does not keep getting
+ * the previous person's ride updates. Never throws.
+ */
+export async function forgetPushRegistration(api: ApiClient): Promise<void> {
+  const token = registeredToken;
+  registeredToken = null;
+  if (token) await api.notifications.forgetPushToken(token).catch(() => undefined);
+}
+
 /**
  * Registers this phone for push notifications once the person is signed in:
  * asks for permission (Android 13+ and iOS), creates the Android channel, and
@@ -48,6 +62,7 @@ export function usePushRegistration(
           app,
           platform: Platform.OS === 'ios' ? 'ios' : 'android',
         });
+        registeredToken = token;
       } catch {
         // Push is a convenience: the app still works (live updates, inbox) without it.
       }
