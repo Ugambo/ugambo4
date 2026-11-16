@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { checkCatalog, describeIssues } from '@rideswithme/utilities';
 import { render, TEMPLATES } from './templates';
 
 describe('notification templates', () => {
@@ -13,5 +14,16 @@ describe('notification templates', () => {
     for (const t of Object.values(TEMPLATES)) {
       expect(names(t.ha.join(' '))).toEqual(names(t.en.join(' ')));
     }
+  });
+  it('has every title and body in Hausa', () => {
+    const flat = (lang: 'en' | 'ha') =>
+      Object.fromEntries(
+        Object.entries(TEMPLATES).flatMap(([kind, t]) => [
+          [`${kind}.title`, t[lang][0]],
+          [`${kind}.body`, t[lang][1]],
+        ]),
+      );
+    const issues = checkCatalog(flat('en'), flat('ha'));
+    expect(issues, describeIssues('api/notifications', issues)).toEqual([]);
   });
 });
