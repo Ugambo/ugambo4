@@ -1,23 +1,33 @@
 import type { ExpoConfig } from 'expo/config';
+import { releaseSettings } from '@rideswithme/mobile-core/app-config';
 
 /**
- * RideswithMe Driver. Built as an Expo development build (not Expo Go), because
- * background location arrives in Phase 4. Bundle identifiers are placeholders
- * until the company's domain and store accounts are confirmed.
+ * RideswithMe Driver. A development build (not Expo Go), because it shares its
+ * location in the background. Store builds are made with EAS Build (eas.json);
+ * their API address, EAS project and Firebase file come from the EAS
+ * environment, and a store build without them is refused (releaseSettings).
+ * Bundle identifiers are placeholders until the store accounts exist
+ * (DECISIONS B-27). See documentation/LAUNCH.md ("Store builds").
  */
+const release = releaseSettings();
+
 const config: ExpoConfig = {
   name: 'RideswithMe Driver',
   slug: 'rideswithme-driver',
   scheme: 'rideswithme-driver',
-  version: '0.1.0',
+  version: '1.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
+  owner: release.owner,
   ios: {
     bundleIdentifier: 'com.rideswithme.driver',
     supportsTablet: false,
+    config: { usesNonExemptEncryption: false },
   },
   android: {
     package: 'com.rideswithme.driver',
+    googleServicesFile: release.googleServicesFile,
+    blockedPermissions: ['android.permission.RECORD_AUDIO'],
   },
   plugins: [
     'expo-router',
@@ -44,7 +54,9 @@ const config: ExpoConfig = {
         microphonePermission: false,
       },
     ],
+    ['expo-notifications', { color: '#0F2A43' }],
   ],
+  extra: release.extra,
   experiments: { typedRoutes: false },
 };
 
