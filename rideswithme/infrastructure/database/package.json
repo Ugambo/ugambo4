@@ -14,9 +14,13 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "migrate": "node dist/cli.js up",
-    "status": "node dist/cli.js status"
+    "status": "node dist/cli.js status",
+    "test": "vitest run",
+    "backup": "node dist/cli.js backup",
+    "verify-backup": "node dist/cli.js verify-backup"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1167.0",
     "pg": "^8.23.1"
   },
   "devDependencies": {
