@@ -734,3 +734,8 @@ details summary {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+.sidebar-sub {
+  display: block;
+  font-weight: 400;
+  opacity: 0.75;
+}
