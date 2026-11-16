@@ -43,17 +43,17 @@ pnpm --filter @rideswithme/load-tests load-test
 pnpm --filter @rideswithme/load-tests load-test -- --passengers 200 --drivers 80 --rounds 3 --estimate-seconds 60
 ```
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--passengers` | 30 | Simulated passengers |
-| `--drivers` | 15 | Simulated drivers (also the rides booked per round) |
-| `--rounds` | 2 | Booking rounds |
-| `--estimate-seconds` | 20 | Length of the estimates and locations stage |
-| `--racers` | 12 | Passengers racing for each bus seat |
-| `--departures` | 2 | Bus departures (8 seats each) |
-| `--p95-ms` | 1000 | p95 budget for each API call |
-| `--match-p95-ms` | 8000 | p95 budget from booking to a driver accepting |
-| `--port` | 3400 | Port for the API it starts |
+| Option               | Default | Meaning                                             |
+| -------------------- | ------- | --------------------------------------------------- |
+| `--passengers`       | 30      | Simulated passengers                                |
+| `--drivers`          | 15      | Simulated drivers (also the rides booked per round) |
+| `--rounds`           | 2       | Booking rounds                                      |
+| `--estimate-seconds` | 20      | Length of the estimates and locations stage         |
+| `--racers`           | 12      | Passengers racing for each bus seat                 |
+| `--departures`       | 2       | Bus departures (8 seats each)                       |
+| `--p95-ms`           | 1000    | p95 budget for each API call                        |
+| `--match-p95-ms`     | 8000    | p95 budget from booking to a driver accepting       |
+| `--port`             | 3400    | Port for the API it starts                          |
 
 Environment: `LOAD_DATABASE_URL` (default
 `postgres://rwm:rwm@localhost:5432/rideswithme_load`; the database is

@@ -11,13 +11,13 @@ come back into the code.
 Every catalogue has a test (`checkCatalog` in `packages/utilities/src/catalog-check.ts`)
 that runs with `pnpm test` and in CI. It fails when a Hausa text:
 
-| Problem | Example |
-| --- | --- |
-| is missing | a new English key with no Hausa |
-| is blank | `'ride.cancel': ''` |
+| Problem                        | Example                                                                          |
+| ------------------------------ | -------------------------------------------------------------------------------- |
+| is missing                     | a new English key with no Hausa                                                  |
+| is blank                       | `'ride.cancel': ''`                                                              |
 | has different `{placeholders}` | English `Seat {label}`, Hausa `Kujera {seat}`: the seat label would never appear |
-| is word-for-word the English | `'help.title': 'Help'`: probably never translated |
-| exists only in Hausa | a leftover after an English key was removed |
+| is word-for-word the English   | `'help.title': 'Help'`: probably never translated                                |
+| exists only in Hausa           | a leftover after an English key was removed                                      |
 
 Text that may stay the same is allowed: placeholders, numbers and symbols only
 (for example `{brand} •••• {last4}`), and names and codes such as RideswithMe,
@@ -28,19 +28,19 @@ The TypeScript types also refuse to build an app whose Hausa catalogue lacks a
 key. **No automatic check can tell whether the Hausa is correct, natural or
 polite.** Only the reviewer can.
 
-| Catalogue | File | Texts |
-| --- | --- | ---: |
-| SMS and error messages (all apps) | `packages/utilities/src/i18n.ts` | 59 |
-| Passenger rides (app and website) | `packages/utilities/src/passenger-messages.ts` | 306 |
-| Mobile apps: common | `packages/mobile-core/src/messages.ts` | 19 |
-| Staff sign-in (admin, partner portal) | `packages/web-core/src/client/staff-sign-in-messages.ts` | 15 |
-| Push notifications | `apps/api/src/notifications/templates.ts` | 20 |
-| Passenger app | `apps/passenger-mobile/src/lib/messages.ts` | 12 |
-| Passenger website | `apps/passenger-web/src/lib/messages.ts` | 44 |
-| Driver app | `apps/driver-mobile/src/lib/messages.ts` | 227 |
-| Partner portal (fleets, bus operators) | `apps/fleet-portal/src/lib/messages.ts` | 195 |
-| Admin dashboard | `apps/admin-dashboard/src/lib/messages.ts` | 522 |
-| **Total** | | **1,419** |
+| Catalogue                              | File                                                     |     Texts |
+| -------------------------------------- | -------------------------------------------------------- | --------: |
+| SMS and error messages (all apps)      | `packages/utilities/src/i18n.ts`                         |        59 |
+| Passenger rides (app and website)      | `packages/utilities/src/passenger-messages.ts`           |       306 |
+| Mobile apps: common                    | `packages/mobile-core/src/messages.ts`                   |        19 |
+| Staff sign-in (admin, partner portal)  | `packages/web-core/src/client/staff-sign-in-messages.ts` |        15 |
+| Push notifications                     | `apps/api/src/notifications/templates.ts`                |        20 |
+| Passenger app                          | `apps/passenger-mobile/src/lib/messages.ts`              |        12 |
+| Passenger website                      | `apps/passenger-web/src/lib/messages.ts`                 |        44 |
+| Driver app                             | `apps/driver-mobile/src/lib/messages.ts`                 |       227 |
+| Partner portal (fleets, bus operators) | `apps/fleet-portal/src/lib/messages.ts`                  |       195 |
+| Admin dashboard                        | `apps/admin-dashboard/src/lib/messages.ts`               |       522 |
+| **Total**                              |                                                          | **1,419** |
 
 ## Exporting the text for review
 
@@ -98,25 +98,25 @@ and sign off each part below:
 Consistent words matter more than perfect ones. The reviewer should confirm or
 replace each term below. The chosen word is then used everywhere.
 
-| English | Current Hausa | Notes for the reviewer |
-| --- | --- | --- |
-| ride / trip | tafiya | Used for both. |
-| driver | direba | |
-| passenger | fasinja | |
-| fare | kuɗin tafiya | |
-| cash | kuɗi hannu | Paying the driver in cash. |
-| wallet | walat | A loanword. Is there a better everyday term? |
-| top up | ƙara kuɗi | |
-| booking fee | kuɗin oda | |
-| promotion code | lambar talla | |
-| seat | kujera | |
-| ticket | tikiti | |
-| cancel | soke | |
-| rate (stars) | ba … maki | |
-| help | taimako | |
-| delete my account | share asusuna | Confirm this reads as permanent deletion. |
+| English           | Current Hausa | Notes for the reviewer                       |
+| ----------------- | ------------- | -------------------------------------------- |
+| ride / trip       | tafiya        | Used for both.                               |
+| driver            | direba        |                                              |
+| passenger         | fasinja       |                                              |
+| fare              | kuɗin tafiya  |                                              |
+| cash              | kuɗi hannu    | Paying the driver in cash.                   |
+| wallet            | walat         | A loanword. Is there a better everyday term? |
+| top up            | ƙara kuɗi     |                                              |
+| booking fee       | kuɗin oda     |                                              |
+| promotion code    | lambar talla  |                                              |
+| seat              | kujera        |                                              |
+| ticket            | tikiti        |                                              |
+| cancel            | soke          |                                              |
+| rate (stars)      | ba … maki     |                                              |
+| help              | taimako       |                                              |
+| delete my account | share asusuna | Confirm this reads as permanent deletion.    |
 
-Tone: the user is addressed in the polite plural (*ku*, *-ku*, *-nku*, as in
+Tone: the user is addressed in the polite plural (_ku_, _-ku_, _-nku_, as in
 "Da fatan ku…"), which also avoids assuming the reader's gender (DECISIONS
 D-017). The reviewer should say whether this suits a ride app or whether a more
 direct tone is better.
@@ -135,11 +135,11 @@ new keys (compare with the last reviewed CSV).
 
 ## Sign-off
 
-| Part | Reviewer | Date | Notes |
-| --- | --- | --- | --- |
-| 1. Safety | | | |
-| 2. Money | | | |
-| 3. Sign-in, SMS, errors | | | |
-| 4. Booking and live trip | | | |
-| 5. Account and privacy | | | |
-| 6. Staff screens | | | |
+| Part                     | Reviewer | Date | Notes |
+| ------------------------ | -------- | ---- | ----- |
+| 1. Safety                |          |      |       |
+| 2. Money                 |          |      |       |
+| 3. Sign-in, SMS, errors  |          |      |       |
+| 4. Booking and live trip |          |      |       |
+| 5. Account and privacy   |          |      |       |
+| 6. Staff screens         |          |      |       |

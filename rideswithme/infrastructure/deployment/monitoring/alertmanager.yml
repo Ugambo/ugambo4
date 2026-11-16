@@ -10,7 +10,7 @@ route:
 receivers:
   - name: on-call
     webhook_configs:
-      - url: https://alerts.example.ng/page   # e.g. a PagerDuty or SMS-gateway webhook
+      - url: https://alerts.example.ng/page # e.g. a PagerDuty or SMS-gateway webhook
   - name: tickets
     email_configs:
       - to: ops@example.ng
