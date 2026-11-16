@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { accessibilityProblems } from '@rideswithme/e2e-support';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { OUT, SAFETY_PASSENGER_PHONE, STAFF_FILE } from './env';
@@ -10,6 +11,8 @@ const staff = () => (JSON.parse(readFileSync(STAFF_FILE, 'utf8')) as { token: st
 
 test.describe.configure({ mode: 'serial' });
 const STATE = path.join(OUT, 'safety-passenger-state.json');
+/** The shared-trip link made in the first test, checked again at the end. */
+let trackUrl = '';
 
 test('a passenger signs in', async ({ page }) => {
   await page.goto('/sign-in');
@@ -53,6 +56,7 @@ test.describe('safety and support', () => {
     await page.getByRole('button', { name: 'Share my trip' }).click();
     const url = await page.getByTestId('share-url').inputValue();
     const token = url.split('/').pop()!;
+    trackUrl = `/track/${token}`;
     const stranger = await (await browser.newContext()).newPage();
     await stranger.goto(`/track/${token}`);
     await expect(
@@ -135,5 +139,25 @@ test.describe('safety and support', () => {
     await expect(
       page.getByTestId('deletion').getByRole('button', { name: 'Delete my account' }),
     ).toBeVisible();
+  });
+
+  test('every page passes the automated accessibility checks (WCAG 2.1 AA)', async ({
+    page,
+    browser,
+  }) => {
+    const problems: string[] = [];
+    const check = async (p: Page, url: string) => {
+      await p.goto(url);
+      await expect(p.locator('h1').first()).toBeVisible();
+      await p.waitForLoadState('networkidle');
+      for (const x of await accessibilityProblems(p)) problems.push(`${url}: ${x}`);
+    };
+    for (const url of ['/', '/rides', '/wallet', '/buses', '/buses/bookings', '/help', '/account'])
+      await check(page, url);
+    // Pages for people who are not signed in.
+    const visitor = await (await browser.newContext()).newPage();
+    await check(visitor, '/sign-in');
+    await check(visitor, trackUrl);
+    expect(problems).toEqual([]);
   });
 });

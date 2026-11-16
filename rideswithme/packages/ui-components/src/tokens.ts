@@ -36,6 +36,20 @@ export const colors = {
   },
 } as const;
 
+/**
+ * Status pills and badges: a tinted background with darker text of the same
+ * hue. The text colours are darker than the main success and warning colours,
+ * because small bold text on a tint needs 4.5:1 (WCAG AA) and this keeps
+ * it above 5.5:1 for outdoor reading. Shared by the apps (Pill) and the
+ * websites (.pill-*).
+ */
+export const tones = {
+  ok: { bg: '#E3F4E8', fg: '#116530' },
+  wait: { bg: '#FFF1D6', fg: '#8A4500' },
+  bad: { bg: '#FDE7E7', fg: '#A31F1F' },
+  muted: { bg: colors.grey[100], fg: colors.textMuted },
+} as const;
+
 /** Type scale in px. Body text is 16 minimum so it stays readable outdoors. */
 export const typography = {
   fontFamily: {

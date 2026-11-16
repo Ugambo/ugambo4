@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, radius, spacing, touchTarget, typography } from '../tokens';
+import { colors, radius, spacing, tones, touchTarget, typography } from '../tokens';
 
 /**
  * Shared React Native building blocks for the passenger and driver apps.
@@ -207,12 +207,7 @@ export function Empty({ message }: { message: string }) {
 }
 
 export type Tone = 'ok' | 'wait' | 'bad' | 'muted';
-export const toneColors: Record<Tone, { bg: string; fg: string }> = {
-  ok: { bg: '#E3F4E8', fg: colors.success },
-  wait: { bg: '#FFF1D6', fg: colors.warning },
-  bad: { bg: '#FDE7E7', fg: colors.danger },
-  muted: { bg: colors.grey[100], fg: colors.textMuted },
-};
+export const toneColors: Record<Tone, { bg: string; fg: string }> = tones;
 
 export function Pill({ label, tone }: { label: string; tone: Tone }) {
   return (

@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import path from 'node:path';
+import { accessibilityProblems } from '@rideswithme/e2e-support';
 import { MANAGER_PHONE, OUT } from './env';
 import { api, rides, scenario, totp } from './support';
 
@@ -110,6 +111,22 @@ test.describe('managing the fleet', () => {
       return [admin.status, wallet.status, noCsrf.status];
     });
     expect(statuses).toEqual([404, 404, 403]);
+  });
+
+  test('every page passes the automated accessibility checks (WCAG 2.1 AA)', async ({
+    page,
+    browser,
+  }) => {
+    const problems: string[] = [];
+    const check = async (p: Page, url: string) => {
+      await p.goto(url);
+      await expect(p.locator('h1').first()).toBeVisible();
+      await p.waitForLoadState('networkidle');
+      for (const x of await accessibilityProblems(p)) problems.push(`${url}: ${x}`);
+    };
+    for (const url of ['/overview', '/drivers', '/trips', '/vehicles']) await check(page, url);
+    await check(await (await browser.newContext()).newPage(), '/login');
+    expect(problems).toEqual([]);
   });
 
   test('removes a driver; past trips stay, in Hausa too', async ({ page }) => {

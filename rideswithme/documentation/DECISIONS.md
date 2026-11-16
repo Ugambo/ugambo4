@@ -1024,3 +1024,20 @@ compatible service such as GlitchTip. Each is off until it is given a DSN.
   them, builds are unchanged.
 - **Not yet confirmed:** native crash reporting cannot be checked without a
   device build.
+
+### D-079 Accessibility checks and status colours
+
+- **Scans:** every main page of the three websites is scanned with axe-core
+  (WCAG 2.1 A and AA) in the browser tests. A serious or critical problem
+  fails the build.
+- **Status colours:** the first scan found that the green and amber status pills
+  and notices were below 4.5:1 (4.38 and 4.18). Small bold text does not count
+  as "large" under WCAG.
+  - Pill and notice colours are now one set of `tones` tokens, used by the web
+    CSS and the apps' `Pill`.
+  - The text colours are darker shades of the same hue: `#116530` and
+    `#8A4500`, both above 6:1.
+  - The main success and warning colours, used for buttons with white text,
+    are unchanged.
+- **Not covered by the scans:** keyboard use, screen readers and large text
+  need people to try them (LAUNCH.md, "Accessibility").

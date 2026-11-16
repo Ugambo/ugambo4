@@ -1,4 +1,4 @@
-import { colors, radius, spacing, typography } from './tokens';
+import { colors, radius, spacing, tones, typography } from './tokens';
 
 /** The design tokens as CSS custom properties, for the web apps' <style> tag. */
 export function cssVariables(): string {
@@ -18,6 +18,12 @@ export function cssVariables(): string {
     '--c-muted': colors.textMuted,
     '--c-disabled': colors.textDisabled,
     '--c-grey-100': colors.grey[100],
+    ...Object.fromEntries(
+      Object.entries(tones).flatMap(([tone, c]) => [
+        [`--c-${tone}-bg`, c.bg],
+        [`--c-${tone}-fg`, c.fg],
+      ]),
+    ),
     // Data marks (charts): the reference data palette's first slot, not the brand navy (too dark to read as data).
     '--c-chart': '#2a78d6',
     '--c-chart-hover': '#1c5cab',

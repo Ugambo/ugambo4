@@ -14,10 +14,12 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@rideswithme/database": "workspace:*",
     "pg": "^8.23.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/pg": "^8.23.1"
   }
 }

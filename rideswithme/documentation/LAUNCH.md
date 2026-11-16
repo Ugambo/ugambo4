@@ -37,6 +37,7 @@ can provide (see DECISIONS, section B).
 | 15  | Store accounts, EAS project, Firebase and APNs credentials; store listings                                   | below           | you       |
 | 16  | Load test at expected launch volume against staging (below)                                                  | staging         | dev       |
 | 17  | NDPA: data protection officer named, deletion requests checked weekly (admin, Privacy)                       |                 | you       |
+| 18  | Keyboard, screen-reader and large-text check of the main flows (Accessibility, below)                        |                 | you + dev |
 
 ## Monitoring
 
@@ -323,6 +324,34 @@ same driver at the same moment, the losing transaction was aborted. The
 dispatcher then treated the remaining candidates as ineligible and took them
 offline. A regression test is in `apps/api/test/rides-matching.e2e.test.ts`.
 
+**A larger run** on the same container, with 4 CPUs shared by the API,
+database, Redis and the load generator:
+
+- 200 passengers and 80 drivers
+- three rounds of 80 simultaneous bookings
+- a 60-second estimates stage
+- 30 passengers racing for each seat on 3 departures
+
+All 240 rides were matched and completed. Every one of the 24 seat races had
+exactly one winner. There were no errors, and no wallet differed from its
+ledger.
+
+| Operation                             | Calls | p50 ms | p95 ms | p99 ms |
+| ------------------------------------- | ----: | -----: | -----: | -----: |
+| Fare estimate                         | 4,797 |     11 |    567 |    897 |
+| Driver location update                | 2,891 |      7 |    347 |    690 |
+| Driver polls for an offer             | 1,317 |     70 |    448 |    561 |
+| Book a ride                           |   240 |    589 |    751 |    786 |
+| Accept an offer                       |   240 |    402 |    809 |    831 |
+| Matching: booking to driver accepting |   240 |  1,215 |  3,269 |  3,477 |
+| Arrive, start and complete (4 calls)  |   240 |  1,179 |  1,344 |  1,416 |
+| Bus seat hold: winner                 |    24 |    107 |    122 |    125 |
+| Bus seat hold: seat taken             |   696 |    117 |    172 |    188 |
+
+Everything stayed under one second at p95, except matching. Matching includes
+drivers polling every 0.4 s, and the dispatcher working through 80 rides at
+once on one process.
+
 **Before launch:** run it against staging sized like production, at the
 expected peak. For example:
 `--passengers 300 --drivers 100 --rounds 3 --estimate-seconds 120`, with two
@@ -391,6 +420,28 @@ each app's `app.config.ts`.
 The bundle IDs `com.rideswithme.app` and `com.rideswithme.driver` are
 placeholders until the store accounts exist (DECISIONS B-27). They cannot be
 changed after the first store release.
+
+## Accessibility
+
+Each website's browser tests check every main page with axe-core against WCAG
+2.1 A and AA, and fail on any serious or critical problem
+(`accessibilityProblems` in `@rideswithme/e2e-support`). The pages checked:
+
+- **Admin dashboard:** 19 pages.
+- **Passenger website:** 9 pages, including sign-in and the public trip page.
+- **Partner portal:** 11 fleet and bus pages, including sign-in.
+
+The first scan found one problem everywhere: the green and amber status pills
+and notices had 4.2–4.4:1 contrast, under the 4.5:1 that small text needs.
+They now use darker text from shared `tones` tokens (above 6:1), which the
+apps' pills use too. A token test keeps them above 5.5:1.
+
+Automated checks find only part of the problems. Before launch, also try:
+
+- the main flows with only a keyboard
+- the main flows with a screen reader (TalkBack on Android for the apps,
+  NVDA or VoiceOver for the websites)
+- the apps with the phone's largest text size
 
 ## Hausa
 

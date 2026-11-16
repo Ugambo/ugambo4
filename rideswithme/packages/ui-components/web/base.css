@@ -387,20 +387,20 @@ tbody tr:hover {
   white-space: nowrap;
 }
 .pill-ok {
-  background: #e3f4e8;
-  color: var(--c-success);
+  background: var(--c-ok-bg);
+  color: var(--c-ok-fg);
 }
 .pill-wait {
-  background: #fff1d6;
-  color: var(--c-warning);
+  background: var(--c-wait-bg);
+  color: var(--c-wait-fg);
 }
 .pill-bad {
-  background: #fde7e7;
-  color: var(--c-danger);
+  background: var(--c-bad-bg);
+  color: var(--c-bad-fg);
 }
 .pill-muted {
-  background: var(--c-grey-100);
-  color: var(--c-muted);
+  background: var(--c-muted-bg);
+  color: var(--c-muted-fg);
 }
 
 /* Driver review */
@@ -464,16 +464,16 @@ tbody tr:hover {
   font-weight: 600;
 }
 .notice-ok {
-  background: #e3f4e8;
-  color: var(--c-success);
+  background: var(--c-ok-bg);
+  color: var(--c-ok-fg);
 }
 .notice-wait {
-  background: #fff1d6;
-  color: var(--c-warning);
+  background: var(--c-wait-bg);
+  color: var(--c-wait-fg);
 }
 .notice-bad {
-  background: #fde7e7;
-  color: var(--c-danger);
+  background: var(--c-bad-bg);
+  color: var(--c-bad-fg);
 }
 .decision {
   display: flex;

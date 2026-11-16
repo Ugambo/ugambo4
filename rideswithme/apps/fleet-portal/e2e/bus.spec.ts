@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import path from 'node:path';
-import { lagosDate, testBuses } from '@rideswithme/e2e-support';
+import { accessibilityProblems, lagosDate, testBuses } from '@rideswithme/e2e-support';
 import { BUS_MANAGER_PHONE, BUS_PASSENGER_PHONE, E2E_DATABASE_URL, OUT } from './env';
 import { api, totp } from './support';
 
@@ -155,5 +155,27 @@ test.describe('running buses', () => {
       return [fleet.status, staff.status];
     });
     expect(statuses).toEqual([403, 404]);
+  });
+
+  test('every bus page passes the automated accessibility checks (WCAG 2.1 AA)', async ({
+    page,
+  }) => {
+    const problems: string[] = [];
+    const check = async (p: Page, url: string) => {
+      await p.goto(url);
+      await expect(p.locator('h1').first()).toBeVisible();
+      await p.waitForLoadState('networkidle');
+      for (const x of await accessibilityProblems(p)) problems.push(`${url}: ${x}`);
+    };
+    for (const url of [
+      '/buses',
+      '/buses/routes',
+      '/buses/layouts',
+      '/buses/departures',
+      '/buses/check-in',
+      '/buses/statement',
+    ])
+      await check(page, url);
+    expect(problems).toEqual([]);
   });
 });

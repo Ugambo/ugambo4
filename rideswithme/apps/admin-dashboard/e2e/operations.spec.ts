@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import path from 'node:path';
-import { testBuses } from '@rideswithme/e2e-support';
+import { accessibilityProblems, testBuses } from '@rideswithme/e2e-support';
 import { E2E_DATABASE_URL, OUT, SUPER_ADMIN_PHONE } from './env';
 import { prepareOperations } from './ops-data';
 import { api, latestOtp, logLineCount, totp } from './support';
@@ -251,5 +251,39 @@ test.describe('operations', () => {
     await expect(page.getByTestId('role-fleet_manager')).toContainText('fleet.portal');
     await expect(page.getByTestId('role-bus_operator')).toContainText('bus.operator');
     await expect(page.getByTestId('role-support_agent')).toContainText('safety.manage');
+  });
+
+  test('every page passes the automated accessibility checks (WCAG 2.1 AA)', async ({ page }) => {
+    const pages = [
+      '/overview',
+      '/live',
+      '/rides',
+      `/rides/${data.active}`,
+      '/users',
+      `/users/${data.driverId}`,
+      '/drivers',
+      '/fleets',
+      '/buses',
+      '/pricing',
+      '/areas',
+      '/payments',
+      '/sos',
+      '/incidents',
+      '/support',
+      '/promotions',
+      '/privacy',
+      '/roles',
+      '/audit',
+    ];
+    const problems: string[] = [];
+    for (const url of pages) {
+      await page.goto(url);
+      await expect(page.locator('h1').first()).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      // Map tiles are third-party images; the map itself has its own text alternative.
+      for (const p of await accessibilityProblems(page, { exclude: ['.leaflet-pane'] }))
+        problems.push(`${url}: ${p}`);
+    }
+    expect(problems).toEqual([]);
   });
 });
