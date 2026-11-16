@@ -16,6 +16,13 @@ cancellation, and an earnings screen (today, this week, each trip with the fee
 taken). Phase 4 adds background location, an offline position buffer and live
 updates instead of polling.
 
+Phase 8 adds:
+
+- the SOS button and messages with the passenger during a trip
+- rating the passenger and reporting a problem after a trip
+- the driver's own rating on the earnings screen
+- push notifications, and an explanation before asking for background location
+
 Development builds are required (not Expo Go), because background location
 arrives in Phase 4:
 
@@ -36,3 +43,16 @@ pnpm bundle:check    # Metro bundles the whole app for Android
 Not yet run on a phone or emulator: none is available in the build environment.
 Try it on a low-end Android phone on mobile data before calling Phase 2 done.
 All text is in `src/lib/messages.ts` (English and Hausa).
+
+## Store builds
+
+Made with EAS Build from this folder:
+
+```bash
+eas build --profile preview --platform android      # an APK for testers (staging API)
+eas build --profile production --platform all       # store builds
+```
+
+The profiles are in `eas.json`. The API address, EAS project and Firebase file
+come from the EAS environment of the same name. A store build without them
+stops at once. Steps and accounts: `documentation/LAUNCH.md` ("Store builds").

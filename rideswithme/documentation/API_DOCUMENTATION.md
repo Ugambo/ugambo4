@@ -690,6 +690,112 @@ call is limited to the operator the caller manages (`403` if none, or suspended)
 | GET         | `/v1/admin/bus-bookings/:id`                                                  | buses.read                |                                                                                                                                                                                                           |
 | POST        | `/v1/admin/bus-bookings/:id/cancel`                                           | buses.manage              | `{ reason }`: full refund to the wallet at any time. Audited                                                                                                                                              |
 
+## Safety, engagement and launch (Phase 8)
+
+New error codes:
+
+| Code               | HTTP | When                                                                            |
+| ------------------ | ---- | ------------------------------------------------------------------------------- |
+| `PROMO_INVALID`    | 422  | The promotion code is unknown, expired, used up, or does not apply to this trip |
+| `RATING_CLOSED`    | 409  | The trip was already rated in that direction, or the 7-day window has passed    |
+| `DELETION_BLOCKED` | 409  | An account deletion request cannot be accepted (for example a staff account)    |
+
+### Promotion codes in fares
+
+`POST /v1/fares/estimate` and `POST /v1/rides` accept an optional `promoCode`.
+An invalid code fails the estimate with `PROMO_INVALID`. Each option and each
+ride's `fare` then carries:
+
+- `discountKobo`
+- `promotionCode`
+- `payableKobo`: what the passenger pays, the total less the discount. For cash
+  rides it is what the driver collects.
+
+The driver is paid on the full fare (DECISIONS D-072).
+
+### SOS, trip sharing, messages and incidents
+
+| Method        | Path                     | Notes                                                                                                                                                                                                           |
+| ------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST          | `/v1/sos`                | `{ rideId?, location?: { lat, lng, recordedAt? }, note? }` → `SosAlertView`. Never refused or rate-limited. Presses within 30 minutes add to the same alert                                                     |
+| GET           | `/v1/sos/current`        | The caller's open alert (with whether staff have acknowledged), or `null`                                                                                                                                       |
+| POST / DELETE | `/v1/rides/:id/share`    | Passenger only. Create (or replace) the share link: `{ url, expiresWhen: 'trip_ends' }`. The link works until `TRIP_SHARE_AFTER_END_MINUTES` after the trip. Delete revokes it                                  |
+| GET           | `/v1/share/:token`       | _Public_, 240 an hour per IP. `PublicTripView`: `{ status, active, driver: { firstName, vehicle } \| null, pickupAddress, dropoffAddress, position, updatedAt }`. No phone numbers. 404 when revoked or expired |
+| GET / POST    | `/v1/rides/:id/messages` | Passenger and driver of the ride. Post `{ body }` (1–500 characters) only while the driver is assigned, arrived or on the trip. The other party gets a push                                                     |
+| POST          | `/v1/incidents`          | `{ rideId?, category, description }`. Categories: `safety`, `accident`, `harassment`, `dangerous_driving` (high priority), `lost_item`, `vehicle`, `other`. 10 an hour                                          |
+| GET           | `/v1/incidents`          | The caller's own reports and their status                                                                                                                                                                       |
+
+Staff:
+
+| Method | Path                                             | Permission    | Notes                                                                                                 |
+| ------ | ------------------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/admin/sos`                                  | safety.read   | `?status=open\|acknowledged\|resolved`. Newest first, with the person, ride, other party and location |
+| GET    | `/v1/admin/sos/:id`                              | safety.read   |                                                                                                       |
+| POST   | `/v1/admin/sos/:id/acknowledge`                  | safety.manage | The person gets a push ("help is coming"). Audited                                                    |
+| POST   | `/v1/admin/sos/:id/resolve`                      | safety.manage | `{ note }` (what happened). Audited                                                                   |
+| GET    | `/v1/admin/incidents`, `/v1/admin/incidents/:id` | safety.read   | High priority first                                                                                   |
+| PATCH  | `/v1/admin/incidents/:id`                        | safety.manage | `{ status: 'investigating' \| 'resolved', note? }`. A note is required to resolve                     |
+| GET    | `/v1/admin/rides/:id/messages`                   | safety.read   | The ride's messages                                                                                   |
+
+Live updates: staff in the `ops` room (with `rides.read` or `safety.read`)
+receive `sos:alert` with the `SosAlertView` whenever an alert is raised or
+pressed again. Ride participants receive `ride:message`.
+
+### Ratings and support
+
+| Method | Path                                             | Notes                                                                                                                                            |
+| ------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/v1/rides/:id/rating`                           | Passenger rates driver, or driver rates passenger: `{ stars: 1–5, tags?: RatingTag[], comment? }`. Within 7 days of the trip, once per direction |
+| GET    | `/v1/driver/ratings`                             | The driver's average (once there are 3 ratings), count and recent comments                                                                       |
+| POST   | `/v1/support/tickets`                            | `{ category, subject, body, rideId?, busBookingId? }` → `SupportTicketView`                                                                      |
+| GET    | `/v1/support/tickets`, `/v1/support/tickets/:id` | The caller's tickets, and one with its messages                                                                                                  |
+| POST   | `/v1/support/tickets/:id/messages`               | `{ body }`. Reopens a ticket waiting on the user                                                                                                 |
+
+Ride views carry `rating: { given, canRate }`, and `driver.rating` (the
+average, or `null` under 3 ratings).
+
+Staff:
+
+| Method | Path                                     | Permission     | Notes                                                   |
+| ------ | ---------------------------------------- | -------------- | ------------------------------------------------------- |
+| GET    | `/v1/admin/users/:id/ratings`            | users.read     | Ratings the user received, with average and count       |
+| GET    | `/v1/admin/support/tickets`              | support.read   | `?status=&userId=&limit=`. Waiting longest first        |
+| GET    | `/v1/admin/support/tickets/:id`          | support.read   |                                                         |
+| POST   | `/v1/admin/support/tickets/:id/messages` | support.manage | `{ body }`. The user is notified                        |
+| POST   | `/v1/admin/support/tickets/:id/status`   | support.manage | `{ status: 'open' \| 'waiting_on_user' \| 'resolved' }` |
+
+### Promotions (staff)
+
+| Method | Path                       | Permission        | Notes                                                                                                                                                                                                                                                      |
+| ------ | -------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/admin/promotions`     | rides.read        | With redemption counts                                                                                                                                                                                                                                     |
+| POST   | `/v1/admin/promotions`     | promotions.manage | `{ code, description, discountType: 'percent' \| 'fixed', percentBps?, amountKobo?, maxDiscountKobo?, minFareKobo?, categoryKeys?, firstRideOnly?, perUserLimit?, maxRedemptions?, startsAt, endsAt }`. Codes are 4–20 capital letters and digits. Audited |
+| PATCH  | `/v1/admin/promotions/:id` | promotions.manage | `{ description?, endsAt?, maxRedemptions?, isActive? }`. Audited                                                                                                                                                                                           |
+
+### Notifications and devices
+
+| Method | Path                        | Notes                                                                                                               |
+| ------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/me/notifications`      | `{ items: NotificationView[], unread }`, newest first                                                               |
+| POST   | `/v1/me/notifications/read` | `{ ids: string[] }` or `{ all: true }`                                                                              |
+| PUT    | `/v1/me/push-token`         | `{ token, app: 'passenger' \| 'driver', platform: 'ios' \| 'android' }`. A token moves to whoever registers it last |
+| DELETE | `/v1/me/push-token`         | `{ token }`. Sent by the apps at sign-out                                                                           |
+
+### Account deletion (NDPA)
+
+| Method | Path                          | Permission     | Notes                                                                                                                                             |
+| ------ | ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/me/deletion-request`     |                | The open request, or `null`                                                                                                                       |
+| POST   | `/v1/me/deletion-request`     |                | `{ reason? }`. Personal data is erased after `DELETION_GRACE_DAYS`, once nothing is open (DECISIONS D-074). `DELETION_BLOCKED` for staff accounts |
+| DELETE | `/v1/me/deletion-request`     |                | Cancel during the grace period                                                                                                                    |
+| GET    | `/v1/admin/deletion-requests` | privacy.manage | All requests, with the reason any are blocked                                                                                                     |
+
+### Metrics
+
+`GET /metrics`: Prometheus text format, only with
+`Authorization: Bearer $METRICS_TOKEN`. It is a 404 otherwise, and when
+`METRICS_TOKEN` is unset. The gauges are listed in LAUNCH.md.
+
 ## Command line (operators)
 
 Run from `rideswithme/` after `pnpm build`, with the API's environment set:

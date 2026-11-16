@@ -75,8 +75,8 @@ tested backups; rate limits on OTP, login and booking.
 | 4 Real-time tracking     | Socket.IO, background location, offline buffering, staleness; passenger web booking          | Approved                                  |
 | 5 Payments               | Paystack, wallets, commission, payouts, refunds                                              | Approved                                  |
 | 6 Admin and fleet        | Dashboard, pricing, service areas, fleet portal, audit log UI                                | Approved                                  |
-| 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          | Built, awaiting approval                  |
-| 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds |                                           |
+| 7 Buses                  | Routes, schedules, seat maps, seat booking, tickets                                          | Approved                                  |
+| 8 Safety, polish, launch | SOS, trip sharing, ratings, promotions, Hausa, monitoring, backups, load tests, store builds | Built, awaiting approval                  |
 
 Phase 6 note: the admin dashboard's promotions screen and SOS panel are built with
 those features in Phase 8, as the phase plan lists them there (confirmed).
@@ -87,6 +87,27 @@ passengers search by cities and day, choose seats on a seat map, hold them while
 paying (wallet, saved card or the payment page), and board with a QR code per seat;
 operators check tickets in; cancellations refund to the wallet; RideswithMe keeps a
 service fee from each fare and records what it owes each operator.
+
+**Safety, engagement and launch (Phase 8):**
+
+- **SOS:** on every live trip in all apps. It alerts on-call staff by SMS, the
+  admin dashboard live, and monitoring if no one responds within 2 minutes.
+- **Trip sharing:** a live link anyone can open without an account.
+- **Ratings:** both ways after each trip.
+- **In-ride messages:** between passenger and driver.
+- **Problem reports:** with high-priority safety categories.
+- **Support tickets:** for passengers.
+- **Promotion codes:** funded by the platform, not the driver.
+- **Notifications:** an in-app inbox and push notifications.
+- **Account deletion:** with a grace period, as the NDPA requires.
+- **Launch tooling:**
+  - monitoring, alerts and runbooks
+  - encrypted backups with weekly restore checks
+  - load tests
+  - checks on the Hausa text, and an export for its review
+  - store build configuration
+
+  The go-live checklist is in `LAUNCH.md`.
 
 ## Open decisions (defaults in use)
 

@@ -315,6 +315,73 @@ status = 'active'` means a seat is held or sold once per departure, and can be s
 - **Roles and permissions:** `bus_operator` role (two-factor) with `bus.operator`;
   `buses.read` (support agents, admins) and `buses.manage` (admins, super admins).
 
+## Safety, engagement and privacy (Phase 8)
+
+Migration `0012_safety_engagement`.
+
+**Safety:**
+
+- **emergency_alerts:** SOS presses. Each has:
+  - who, and as `passenger` or `driver`; the ride, if any
+  - status (`open`, `acknowledged`, `resolved`)
+  - the location (geography point), its source (`device` or `driver_position`)
+    and time
+  - the person's note and the number of presses
+  - who acknowledged and resolved it, when, and the resolution note
+
+  Partial index on unresolved alerts (DECISIONS D-068).
+
+- **trip_shares:** share links for a ride. Only `token_hash` (SHA-256) is
+  stored, with `revoked_at` (D-069).
+- **ride_messages:** passenger–driver messages during a ride: sender, role, body
+  (1–500 characters).
+- **incident_reports:** reports about a ride or in general:
+  - category, and `priority` (high for safety, accident, harassment and
+    dangerous driving)
+  - status (`open`, `investigating`, `resolved`), with the staff member and note
+
+**Ratings:**
+
+- **ratings:** stars 1–5, tags and comment. Unique per `(ride_id, rated_role)`,
+  so each direction is rated once (D-071).
+- `users` gains `rating_as_driver_sum/count` and
+  `rating_as_passenger_sum/count`. They are kept with the rating in one
+  transaction, so averages cost nothing to read.
+
+**Promotions:**
+
+- **promotions:** code (unique, capitals and digits), percent (`percent_bps`,
+  optional `max_discount_kobo`) or fixed (`amount_kobo`). The limits are:
+  minimum fare, vehicle types, first ride only, uses per person, total uses,
+  and the start and end time.
+- **promotion_redemptions:** one per ride (unique `ride_id`) with the discount,
+  `reserved`, then `used` or `released`. Reserved and used ones count against
+  the limits (D-072).
+- `rides.discount_kobo`: what the passenger does not pay.
+- A `promotions` system wallet (debit-normal) funds discounts in the ledger.
+
+**Support and notifications:**
+
+- **support_tickets:** user, category, subject, status (`open`,
+  `waiting_on_user`, `resolved`), and an optional ride or bus booking.
+  **support_ticket_messages:** the thread, with `from_staff`.
+- **notifications:** the in-app inbox: kind, title, body, data, `read_at`.
+- **push_tokens:** Expo push tokens, unique per token, with app and platform. A
+  token moves to whoever registered it last.
+
+**Privacy:**
+
+- **account_deletion_requests:** status (`pending`, `blocked`, `cancelled`,
+  `completed`), `scheduled_for` (after the grace period), `blocked_reason`.
+  One open request per user (partial unique index) (D-074).
+
+**Permissions:**
+
+- `safety.read` and `safety.manage`, `support.read` and `support.manage`: support
+  agents and admins
+- `promotions.manage`: admins
+- `privacy.manage`: super admins only
+
 ## Not in the database
 
 - One-time codes, rate-limit counters, job locks, cached routes: Redis, with expiry.
@@ -325,7 +392,9 @@ status = 'active'` means a seat is held or sold once per departure, and can be s
 
 ## Planned domains
 
-Tables listed in the brief for later phases (passenger_profiles, emergency_alerts,
-incident_reports, ratings, reviews, promotions, notifications, support_tickets)
-are added by the phase that first needs them. `driver_locations` is not needed:
-the live position is in Redis and the history in `trip_locations` (DECISIONS D-042).
+All the brief's tables now exist except these:
+
+- `passenger_profiles`: a passenger needs nothing beyond `users`.
+- `reviews`: ratings carry the comment.
+- `driver_locations`: the live position is in Redis and the history in
+  `trip_locations` (DECISIONS D-042).

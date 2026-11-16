@@ -285,8 +285,59 @@ staff     ── admin dashboard ── /v1/admin/bus-* ── fees, settlements
 - The seat map (`SeatMap`) and QR image (`QrImage`) are shared web components in
   `@rideswithme/web-core`; the app has its own native versions.
 
-## Planned shape of later phases
+## Safety, engagement and launch (Phase 8)
 
-- **Safety and launch (Phase 8):** SOS alerts over the realtime connection with
-  priority handling, monitoring (including the ledger and partition checks), backups,
-  load tests and store builds.
+```
+SOS press ── POST /v1/sos ──► emergency_alerts (one per 30 minutes)
+                          ├─► SMS to SOS_ALERT_PHONES (at most every 5 minutes)
+                          ├─► sos:alert to the ops room ──► admin banner and SOS panel
+                          └─► /metrics: oldest unacknowledged ──► Prometheus ──► page after 2 minutes
+ride change ── RealtimeNotifier ──► socket + NotificationsService (inbox, Expo push, SMS)
+booking with a code ── PromotionsService.reserve (row lock) ──► completion: used, ledger lines
+                                                         └─► cancel or no driver: released
+```
+
+API modules:
+
+- **`apps/api/src/safety`**, linked by `ride-access.ts` (who may see a ride):
+  - `SosService`
+  - `TripShareService`, with the public `/v1/share/:token`
+  - `RideMessagesService`
+  - `IncidentsService`
+- **`apps/api/src/engagement`**: `RatingsService` (running sums on `users`) and
+  `SupportService`.
+- **`apps/api/src/promotions`**:
+  - discounts are pure functions in `discount.ts`, unit-tested
+  - checked in pricing, reserved in booking, used or released in
+    `RidePaymentsService` and the dispatcher
+- **`apps/api/src/notifications`**:
+  - a global module; `notify()` never throws
+  - templates in English and Hausa
+  - `PushProvider`: Expo, or a logging provider
+- **`apps/api/src/privacy`**: `DeletionService`, a periodic sweep under a Redis
+  lock, so only one replica erases at a time.
+- **`apps/api/src/observability`**:
+  - `MetricsService` (prom-client registry, business gauges read at scrape time)
+  - `MetricsInterceptor` (request histogram by route pattern)
+  - the token-guarded `/metrics`
+  - `error-tracking.ts` (optional Sentry, with request data removed)
+
+Apps:
+
+- **Shared UI:**
+  - mobile: `SosButton`, `RideChat` and `RateForm` in
+    `@rideswithme/mobile-core`, with push registration
+  - web: SOS, sharing, chat, rating and problem-report components in the
+    passenger website
+  - admin: the SOS banner in the dashboard shell
+- **Driver app:** explains background location before the system prompt.
+
+Operations tooling:
+
+- **Backups:** `infrastructure/database/src/backup.ts`, run by the `backup` image.
+- **Monitoring:** `infrastructure/deployment/monitoring/`.
+- **Load tests:** `infrastructure/load-tests/`.
+- **Hausa:** `scripts/hausa-review.mts` and `checkCatalog` in
+  `@rideswithme/utilities`.
+
+The whole runbook is `documentation/LAUNCH.md`.

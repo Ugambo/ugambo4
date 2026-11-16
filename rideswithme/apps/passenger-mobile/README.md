@@ -32,3 +32,16 @@ pnpm bundle:check     # Metro bundles the whole app for Android
 Not yet run on a phone or emulator: none is available in the build environment.
 All text is in `src/lib/messages.ts` (English and Hausa) and
 `@rideswithme/mobile-core` (shared sign-in text).
+
+## Store builds
+
+Made with EAS Build from this folder:
+
+```bash
+eas build --profile preview --platform android      # an APK for testers (staging API)
+eas build --profile production --platform all       # store builds
+```
+
+The profiles are in `eas.json`. The API address, EAS project and Firebase file
+come from the EAS environment of the same name. A store build without them
+stops at once. Steps and accounts: `documentation/LAUNCH.md` ("Store builds").

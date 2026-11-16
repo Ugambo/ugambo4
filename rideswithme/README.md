@@ -3,7 +3,7 @@
 Ride-hailing and bus booking for Nigeria: cars, taxis, Keke Napep, motorcycles and
 bus seats, for passengers, drivers, admins and fleet operators.
 
-**Status:** Phase 7 (buses) is built and awaiting approval:
+**Status:** all eight phases are built. Phase 8 (safety, polish, launch) is awaiting approval:
 
 - **Phase 1:** monorepo, database and migrations, phone-OTP sign-in, roles with
   admin two-factor authentication, audit log, Docker and CI.
@@ -31,6 +31,19 @@ bus seats, for passengers, drivers, admins and fleet operators.
   their passengers and check tickets in; passengers find a bus, choose seats on a seat
   map, pay by wallet, card or bank transfer, and board with a QR code, on the website
   and in the app; staff manage operators, their service fee and payments to them.
+
+- **Phase 8:**
+  - **Safety:** SOS on every trip, which alerts on-call staff by SMS, the
+    admin dashboard live, and monitoring; live trip sharing by link;
+    passenger–driver messages; problem reports.
+  - **Engagement:** ratings both ways, support tickets, promotion codes, an
+    in-app inbox and push notifications.
+  - **Privacy:** account deletion (NDPA).
+  - **Launch:** Prometheus metrics with alert rules and runbooks; optional
+    Sentry; encrypted backups with restore checks; load tests; checks on every
+    Hausa text, and an export for its review; EAS store build profiles. What
+    is left before going live (accounts, keys, the Hausa review, the on-call
+    rota) is in [documentation/LAUNCH.md](documentation/LAUNCH.md).
 
 The phase plan is in [documentation/PRD.md](documentation/PRD.md).
 
@@ -144,6 +157,8 @@ Run from `rideswithme/`.
 | `pnpm --filter @rideswithme/fleet-portal e2e`           | Browser tests of the partner portal: fleets and bus operators          |
 | `pnpm --filter @rideswithme/driver-mobile bundle:check` | Bundles the driver app for Android with Metro (same for passenger)     |
 | `pnpm db:migrate` / `pnpm db:status`                    | Apply or list migrations (`DATABASE_URL`)                              |
+| `pnpm --filter @rideswithme/load-tests load-test`       | Load test against a fresh local API (infrastructure/load-tests)        |
+| `pnpm hausa:export`                                     | All English and Hausa text as a CSV for the Hausa reviewer             |
 | `pnpm dev:api`                                          | API with reload, reading `apps/api/.env`                               |
 
 Integration tests use `TEST_DATABASE_URL` (default
@@ -163,8 +178,11 @@ apps/            api, admin-dashboard, fleet-portal, driver-mobile, passenger-mo
                  passenger-web
 packages/        shared-types, validation, api-client, ui-components, utilities, mobile-core,
                  web-core, e2e-support
-infrastructure/  database (migrations + runner), docker, deployment
-documentation/   PRD, ARCHITECTURE, DATABASE, API_DOCUMENTATION, DECISIONS
+infrastructure/  database (migrations, runner, backups), docker, deployment (monitoring),
+                 load-tests
+scripts/         hausa-review.mts
+documentation/   PRD, ARCHITECTURE, DATABASE, API_DOCUMENTATION, DECISIONS, LAUNCH,
+                 HAUSA_REVIEW
 ```
 
 ## Documentation
@@ -174,3 +192,5 @@ documentation/   PRD, ARCHITECTURE, DATABASE, API_DOCUMENTATION, DECISIONS
 - [Database](documentation/DATABASE.md)
 - [API](documentation/API_DOCUMENTATION.md)
 - [Decisions and open questions](documentation/DECISIONS.md)
+- [Launch: checklist, monitoring, runbooks, backups, store builds](documentation/LAUNCH.md)
+- [Hausa review](documentation/HAUSA_REVIEW.md)
