@@ -1,8 +1,17 @@
 # Deployment
 
-Phase 1 ships the container images and the local compose stack. Production
-deployment (VPS provisioning, reverse proxy with TLS, secrets, backups with tested
-restores, monitoring and alerting) is Phase 8.
+The container images (`infrastructure/docker/`), the local compose stack, and
+the monitoring stack (`monitoring/`). How to go live is in
+`documentation/LAUNCH.md`:
+
+- the go-live checklist
+- monitoring and alert runbooks
+- scheduled encrypted backups and restore checks (the `backup` image)
+- load-test results
+- store builds
+
+Provisioning the server itself (VPS, reverse proxy with TLS, secret store)
+depends on the hosting chosen and is not scripted here.
 
 What is already true and should stay true:
 

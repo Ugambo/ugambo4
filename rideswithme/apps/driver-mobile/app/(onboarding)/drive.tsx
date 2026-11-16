@@ -88,13 +88,27 @@ export default function Drive() {
   useEffect(() => {
     if (!online) return;
     let cancelled = false;
-    void startTracking({ title: t('drive.trackingTitle'), body: t('drive.trackingBody') }).then(
-      (mode) => {
-        if (cancelled) return;
-        setLocationDenied(mode === 'denied');
-        setForegroundOnly(mode === 'foreground');
-      },
-    );
+    // The explanation app stores require before asking for background location.
+    const discloseBackground = () =>
+      new Promise<boolean>((resolve) =>
+        Alert.alert(
+          t('drive.backgroundTitle'),
+          t('drive.backgroundBody'),
+          [
+            { text: t('drive.backgroundNotNow'), style: 'cancel', onPress: () => resolve(false) },
+            { text: t('drive.backgroundAllow'), onPress: () => resolve(true) },
+          ],
+          { cancelable: false },
+        ),
+      );
+    void startTracking(
+      { title: t('drive.trackingTitle'), body: t('drive.trackingBody') },
+      discloseBackground,
+    ).then((mode) => {
+      if (cancelled) return;
+      setLocationDenied(mode === 'denied');
+      setForegroundOnly(mode === 'foreground');
+    });
     const flush = () => {
       void flushLocations()
         .catch(() => 0)

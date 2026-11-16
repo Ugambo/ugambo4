@@ -65,18 +65,33 @@ let foreground: Location.LocationSubscription | null = null;
 
 export type TrackingMode = 'background' | 'foreground' | 'denied';
 
+/** Set when the driver says "not now" to background location, so we ask again only after a restart. */
+let backgroundDeclined = false;
+
 /**
  * Starts sharing location. Asks for "always" access so tracking survives the
  * app going to the background; falls back to while-in-use tracking if refused.
+ * Before the system prompt for background access, `discloseBackground` shows
+ * the in-app explanation app stores require ("prominent disclosure"); the
+ * system prompt appears only if the driver agrees.
  */
-export async function startTracking(notification: {
-  title: string;
-  body: string;
-}): Promise<TrackingMode> {
+export async function startTracking(
+  notification: { title: string; body: string },
+  discloseBackground: () => Promise<boolean>,
+): Promise<TrackingMode> {
   const fg = await Location.requestForegroundPermissionsAsync();
   if (!fg.granted) return 'denied';
-  const bg = await Location.requestBackgroundPermissionsAsync().catch(() => ({ granted: false }));
-  if (bg.granted) {
+  const current = await Location.getBackgroundPermissionsAsync().catch(() => null);
+  let granted = current?.granted ?? false;
+  if (!granted && current?.canAskAgain !== false && !backgroundDeclined) {
+    if (await discloseBackground()) {
+      const bg = await Location.requestBackgroundPermissionsAsync().catch(() => ({
+        granted: false,
+      }));
+      granted = bg.granted;
+    } else backgroundDeclined = true;
+  }
+  if (granted) {
     if (!(await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK))) {
       await Location.startLocationUpdatesAsync(LOCATION_TASK, {
         accuracy: Location.Accuracy.High,

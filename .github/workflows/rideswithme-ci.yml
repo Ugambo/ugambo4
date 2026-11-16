@@ -147,6 +147,7 @@ jobs:
         run: |
           docker buildx build -f infrastructure/docker/api.Dockerfile --target migrate .
           docker buildx build -f infrastructure/docker/api.Dockerfile --target api .
+          docker buildx build -f infrastructure/docker/api.Dockerfile --target backup .
           docker buildx build -f infrastructure/docker/admin-dashboard.Dockerfile .
           docker buildx build -f infrastructure/docker/passenger-web.Dockerfile .
           docker buildx build -f infrastructure/docker/fleet-portal.Dockerfile .

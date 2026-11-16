@@ -2,9 +2,12 @@
 # Builds two images from the monorepo:
 #   --target api      the NestJS API
 #   --target migrate  the database migration runner (run once per deploy, before the API)
+#   --target backup   encrypted backups, restore checks and restores (scheduled; see documentation/LAUNCH.md)
 # Build from the monorepo root: docker build -f infrastructure/docker/api.Dockerfile --target api .
 
 ARG NODE_IMAGE=node:22-bookworm-slim
+# Same major version as the database server: pg_dump must not be older than it.
+ARG POSTGRES_IMAGE=postgres:16-bookworm
 
 FROM ${NODE_IMAGE} AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
@@ -25,6 +28,18 @@ WORKDIR /app
 COPY --from=build --chown=node:node /out/migrate ./
 USER node
 CMD ["node", "dist/cli.js", "up"]
+
+FROM ${NODE_IMAGE} AS node
+
+# pg_dump / pg_restore from the PostgreSQL image, plus Node and the database tool.
+FROM ${POSTGRES_IMAGE} AS backup
+ENV NODE_ENV=production
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+WORKDIR /app
+COPY --from=build --chown=postgres:postgres /out/migrate ./
+USER postgres
+ENTRYPOINT ["node", "dist/cli.js"]
+CMD ["backup"]
 
 FROM ${NODE_IMAGE} AS api
 ENV NODE_ENV=production

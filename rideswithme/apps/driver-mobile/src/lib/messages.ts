@@ -151,6 +151,11 @@ const en = {
   'earnings.history': 'Trips',
   'earnings.empty': 'No trips yet.',
   'drive.trackingTitle': 'RideswithMe: you are online',
+  'drive.backgroundTitle': 'Location in the background',
+  'drive.backgroundBody':
+    'RideswithMe collects your location while you are online, even when the app is closed or not in use, so you keep getting ride requests and passengers can see you coming. It stops when you go offline. The route of each trip is kept for safety and fare checks.',
+  'drive.backgroundNotNow': 'Not now',
+  'drive.backgroundAllow': 'Continue',
   'drive.trackingBody': 'Sharing your location for ride requests. Go offline in the app to stop.',
   'drive.reconnecting': 'Reconnecting… requests will arrive as soon as you are back online.',
   'drive.foregroundOnly':
@@ -400,6 +405,11 @@ const ha: Record<MessageKey, string> = {
   'earnings.history': 'Tafiye-tafiye',
   'earnings.empty': 'Babu tafiya tukuna.',
   'drive.trackingTitle': 'RideswithMe: kuna kan aiki',
+  'drive.backgroundTitle': 'Wuri a bayan fage',
+  'drive.backgroundBody':
+    'RideswithMe na tattara wurinku yayin da kuke kan aiki, ko da manhajar a rufe take ko ba a amfani da ita, domin ku ci gaba da samun buƙatun tafiya kuma fasinjoji su ga kuna zuwa. Yana tsayawa idan kun fita aiki. Ana ajiye hanyoyin tafiye-tafiyenku domin tsaro da duba kuɗin tafiya.',
+  'drive.backgroundNotNow': 'Ba yanzu ba',
+  'drive.backgroundAllow': 'Ci gaba',
   'drive.trackingBody':
     'Ana raba wurin da kuke don bukatun tafiya. Daina aiki a manhajar don tsayawa.',
   'drive.reconnecting': 'Ana sake haɗawa… bukatu za su iso da zarar intanet ya dawo.',
