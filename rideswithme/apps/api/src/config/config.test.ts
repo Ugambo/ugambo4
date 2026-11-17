@@ -8,7 +8,8 @@ import { loadConfig } from './config';
 function exampleEnv(): Record<string, string> {
   const text = readFileSync(path.join(__dirname, '../../.env.example'), 'utf8');
   const env: Record<string, string> = {};
-  for (const line of text.split('\n')) {
+  // Windows checkouts (git core.autocrlf) end lines with \r\n.
+  for (const line of text.split(/\r?\n/)) {
     const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
     if (m) env[m[1]!] = m[2]!;
   }

@@ -24,7 +24,7 @@ import {
 } from '@rideswithme/utilities';
 import { PlaceField } from '@/components/place-field';
 import { VehicleOption } from '@/components/ride-parts';
-import { RouteSketch } from '@/components/route-sketch';
+import { StreetMap } from '@/components/street-map';
 import { api } from '@/lib/api';
 import { InlineError, Loading, useI18n } from '@/lib/i18n';
 import { useOnReconnect, useRealtimeEvent } from '@/lib/realtime';
@@ -396,7 +396,7 @@ export function Book() {
         )}
       </section>
       <section className="map-panel">
-        <RouteSketch pickup={pickup} dropoff={dropoff} polyline={estimate?.route.polyline} />
+        <StreetMap pickup={pickup} dropoff={dropoff} polyline={estimate?.route.polyline} />
       </section>
     </div>
   );

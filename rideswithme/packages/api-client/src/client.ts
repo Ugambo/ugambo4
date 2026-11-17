@@ -1,4 +1,10 @@
 import type {
+  AdminVehicleCategoryView,
+  SettingView,
+  SupportContactView,
+} from '@rideswithme/shared-types';
+import type { UpdateSettingsInput, UpdateVehicleCategoryInput } from '@rideswithme/validation';
+import type {
   AdminDeletionRequestView,
   AdminIncidentView,
   AdminSosAlertView,
@@ -308,6 +314,8 @@ export function createApiClient(options: ApiClientOptions) {
       totpVerify: (code: string) =>
         request<MeResponse>('/v1/auth/mfa/totp/verify', { method: 'POST', body: { code } }),
     },
+    /** How to reach support (set on the dashboard's Settings page). No sign-in needed. */
+    supportContact: () => request<SupportContactView>('/v1/support-contact'),
     me: {
       get: () => request<MeResponse>('/v1/me'),
       update: (input: UpdateMeInput) =>
@@ -341,6 +349,18 @@ export function createApiClient(options: ApiClientOptions) {
           `/v1/admin/users/${encodeURIComponent(userId)}/roles/${encodeURIComponent(role)}`,
           { method: 'DELETE' },
         ),
+      settings: {
+        list: () => request<SettingView[]>('/v1/admin/settings'),
+        update: (input: UpdateSettingsInput) =>
+          request<SettingView[]>('/v1/admin/settings', { method: 'PATCH', body: input }),
+        vehicleCategories: () =>
+          request<AdminVehicleCategoryView[]>('/v1/admin/vehicle-categories'),
+        updateVehicleCategory: (key: string, input: UpdateVehicleCategoryInput) =>
+          request<AdminVehicleCategoryView[]>(
+            `/v1/admin/vehicle-categories/${encodeURIComponent(key)}`,
+            { method: 'PATCH', body: input },
+          ),
+      },
       suspendUser: (userId: string, reason: string) =>
         request<AdminUserSummary>(`/v1/admin/users/${encodeURIComponent(userId)}/suspend`, {
           method: 'POST',

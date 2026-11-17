@@ -591,7 +591,16 @@ export interface IdempotencyKeysTable {
   created_at: CreatedAt;
 }
 
+/** A setting's value in its .env text form (e.g. "5000" or "+234...,+234..."), stored as a JSON string. */
+export interface SystemSettingsTable {
+  key: string;
+  value: ColumnType<string, string, string>;
+  updated_by: string | null;
+  updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
+}
+
 export interface Database {
+  system_settings: SystemSettingsTable;
   users: UsersTable;
   roles: RolesTable;
   permissions: PermissionsTable;

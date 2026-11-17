@@ -65,7 +65,7 @@ order and wait for each to finish:
 | **1. Create settings files (.env)**    | Writes a `.env` file for each app, with fresh random secrets. These files stay on your computer and are never committed. | seconds                 |
 | **2. Start databases (Docker)**        | Starts PostgreSQL (with PostGIS), Redis and the S3 stand-in in Docker                                                    | 1–3 min the first time  |
 | **3. Install and build**               | `pnpm install`, then builds every package and app                                                                        | 5–10 min the first time |
-| **4. Prepare the database**            | Creates the tables, then adds a test city (Kano) with **placeholder** fares                                              | seconds                 |
+| **4. Prepare the database**            | Creates the tables, then adds a test city (Katsina) with **placeholder** fares                                           | seconds                 |
 | **5. Make a phone number super admin** | Asks for your phone number and gives it the super admin role. Use any Nigerian number: no real SMS is sent.              | seconds                 |
 
 Prefer the terminal? The same steps are:
@@ -138,9 +138,9 @@ number and its code from the API terminal.
   run the browser tests (section 8). They simulate a driver and save
   screenshots of every step.
 
-Places in development come from a built-in demo list (search "Kurmi",
-"airport"…). Routes are straight-line estimates, until Google Maps keys are
-added.
+Places in development come from a built-in demo list. For Katsina, search
+"Katsina", "Emir", "Gobarau", "stadium" or "airport". Routes are straight-line
+estimates, until Google Maps keys are added.
 
 ## 5. Debugging
 
@@ -194,7 +194,7 @@ Wi-Fi IP address>:3000`.
 2. Approve it in admin → **Driver verification**.
 3. Go online in the driver app.
 4. Book from the passenger website or the passenger app, near the driver. The
-   test city is Kano.
+   test city is Katsina.
 
 ## 7. Day-to-day commands
 

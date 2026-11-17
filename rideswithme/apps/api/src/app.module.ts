@@ -3,6 +3,7 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './admin/admin.module';
+import { SettingsModule } from './settings/settings.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BusesModule } from './buses/buses.module';
@@ -72,6 +73,7 @@ export class AppModule {
         StorageModule,
         UsersModule,
         AuthModule,
+        SettingsModule,
         AdminModule,
         DriversModule,
         MapsModule,

@@ -9,6 +9,9 @@ describe('proxy allowlist', () => {
     'v1/auth/mfa/totp/verify',
     'v1/admin/bus-operators',
     'v1/admin/bus-bookings/abc/cancel',
+    'v1/admin/settings',
+    'v1/admin/vehicle-categories',
+    'v1/admin/vehicle-categories/motorcycle',
   ])('allows %s', (p) => expect(isAllowedApiPath(p)).toBe(true));
   it.each([
     'v1/auth/refresh',
@@ -17,5 +20,7 @@ describe('proxy allowlist', () => {
     'v1/admin/../auth/refresh',
     'v1/driver/onboarding',
     'v1/me/x',
+    'v1/admin/settings/x',
+    'v1/admin/vehicle-categories/../users',
   ])('refuses %s', (p) => expect(isAllowedApiPath(p)).toBe(false));
 });

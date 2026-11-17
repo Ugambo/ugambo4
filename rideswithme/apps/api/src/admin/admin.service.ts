@@ -223,6 +223,10 @@ export class AdminService {
           })),
         )
         .execute();
+      // A driver's application starts now, as when they sign up in the driver
+      // app: they add their vehicle and documents there, then staff approve.
+      if (roleKeys.includes('driver'))
+        await trx.insertInto('driver_profiles').values({ user_id: user.id }).execute();
       await this.audit.record(
         {
           actor: auditActor(actor),

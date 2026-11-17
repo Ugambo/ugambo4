@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useResource } from '@rideswithme/web-core/client';
 import { DisputeSection } from '@/components/dispute-section';
 import { DriverCard, FareLines, PaymentLine, StatusPill } from '@/components/ride-parts';
-import { RouteSketch } from '@/components/route-sketch';
+import { StreetMap } from '@/components/street-map';
 import { RateRide, ReportProblem } from '@/components/safety';
 import { api } from '@/lib/api';
 import { ErrorState, Loading, useI18n } from '@/lib/i18n';
@@ -61,7 +61,7 @@ export default function RidePage() {
         <ReportProblem rideId={r.id} />
       </section>
       <section className="map-panel">
-        <RouteSketch pickup={r.pickup} dropoff={r.dropoff} polyline={r.route.polyline} />
+        <StreetMap pickup={r.pickup} dropoff={r.dropoff} polyline={r.route.polyline} />
       </section>
     </div>
   );

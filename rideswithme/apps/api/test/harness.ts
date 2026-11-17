@@ -12,6 +12,7 @@ import type { AppConfig } from '../src/config/config';
 import { DB } from '../src/database/database.module';
 import type { Database } from '../src/database/types';
 import { REDIS } from '../src/redis/redis.module';
+import { SettingsService } from '../src/settings/settings.service';
 import { SMS_PROVIDER, type SmsMessage, type SmsProvider } from '../src/sms/sms.provider';
 import { TEST_POLICY_VERSION, testConfig } from './env';
 
@@ -83,6 +84,9 @@ export async function resetState(h: Harness) {
   // The cascade also empties the ledger, including the platform's own accounts.
   await sql`TRUNCATE wallets, payment_webhook_events CASCADE`.execute(h.db);
   await sql`SELECT ensure_system_wallets()`.execute(h.db);
+  // Settings changed by a test go back to the test config.
+  await sql`TRUNCATE system_settings`.execute(h.db);
+  await h.app.get(SettingsService).refresh();
   await h.redis.flushdb();
   h.sms.messages = [];
 }

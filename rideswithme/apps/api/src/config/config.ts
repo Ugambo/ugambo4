@@ -93,8 +93,26 @@ export const configSchema = z
     UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
     DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
 
-    MAPS_PROVIDER: z.enum(['fake', 'google']).default('fake'),
+    MAPS_PROVIDER: z.enum(['fake', 'google', 'geoapify']).default('fake'),
     GOOGLE_MAPS_API_KEY: z.string().optional(),
+    GEOAPIFY_API_KEY: z.string().min(16).optional(),
+    /** Search prefers places near here when the user's position is unknown (the primary service area). */
+    MAPS_HOME: z
+      .string()
+      .default('12.99,7.60')
+      .transform((v, ctx) => {
+        const [lat, lng] = v.split(',').map((x) => Number(x.trim()));
+        if (
+          !Number.isFinite(lat) ||
+          !Number.isFinite(lng) ||
+          Math.abs(lat!) > 90 ||
+          Math.abs(lng!) > 180
+        ) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Use "latitude,longitude"' });
+          return z.NEVER;
+        }
+        return { lat: lat!, lng: lng! };
+      }),
 
     // Matching and ride timings.
     DISPATCH_INTERVAL_MS: z.coerce.number().int().min(0).max(60_000).default(1000),
@@ -145,6 +163,8 @@ export const configSchema = z
     /** A driver owing more than this (commission on cash trips) cannot go online. */
     DRIVER_DEBT_LIMIT_KOBO: z.coerce.number().int().min(0).default(500_000),
     PAYOUT_MIN_KOBO: z.coerce.number().int().min(100).default(100_000),
+    /** Most an admin may add to or take from a wallet in one go (super admins have no limit). */
+    ADMIN_WALLET_FUND_LIMIT_KOBO: z.coerce.number().int().min(0).default(5_000_000),
     PAYOUT_ACCOUNT_CHANGE_HOLD_HOURS: z.coerce.number().int().min(0).max(720).default(24),
     /**
      * Emergency stop for driver payouts (for example while a ledger mismatch is
@@ -183,6 +203,12 @@ export const configSchema = z
           .filter(Boolean),
       )
       .pipe(z.array(z.string().regex(/^\+[1-9]\d{7,14}$/, 'E.164 phone numbers'))),
+    /** Shown to passengers and drivers as the way to reach support. Hidden when unset. */
+    SUPPORT_PHONE: z
+      .string()
+      .regex(/^\+?[0-9 ]{7,20}$/, 'A phone number')
+      .optional(),
+    SUPPORT_EMAIL: z.string().email().max(254).optional(),
     /** Trip share links are this address plus a token (the passenger website's /track page). */
     TRIP_SHARE_BASE_URL: z.string().url().default('http://localhost:3002/track'),
     /** A share link keeps working this long after the trip ends (minutes). */
@@ -236,6 +262,13 @@ export const configSchema = z
         message: 'Required when MAPS_PROVIDER=google',
       });
     }
+    if (c.MAPS_PROVIDER === 'geoapify' && !c.GEOAPIFY_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['GEOAPIFY_API_KEY'],
+        message: 'Required when MAPS_PROVIDER=geoapify',
+      });
+    }
     if (c.NODE_ENV === 'production' && c.MAPS_PROVIDER === 'fake') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -272,6 +305,11 @@ export const configSchema = z
       });
     }
   });
+
+/** One setting's own rule (for settings changed while the API runs). */
+export function configFieldSchema(key: string): z.ZodTypeAny | undefined {
+  return (configSchema._def.schema.shape as Record<string, z.ZodTypeAny>)[key];
+}
 
 export type AppConfig = z.output<typeof configSchema>;
 export const APP_CONFIG = Symbol('APP_CONFIG');

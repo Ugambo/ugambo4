@@ -41,14 +41,14 @@ const en = {
   'book.change': 'Change',
   'book.pricing': 'Getting prices…',
   'book.tripSummary': '{distance} km · about {minutes} min',
-  'book.mapNote': 'Route sketch. Live street maps arrive with the map key.',
   'book.scheduledRides': 'Scheduled rides',
   'book.requesting': 'Requesting…',
 
   'map.pickup': 'Pickup',
   'map.destination': 'Destination',
   'map.driver': 'Driver',
-  'map.label': 'Sketch of the route from pickup to destination',
+  'map.label': 'Map of the trip: pickup, destination, route and driver',
+  'map.tilesFailed': 'The street map could not load. The route is still shown.',
 
   'rides.when': 'When',
   'rides.from': 'From',
@@ -96,14 +96,14 @@ const ha: Record<MessageKey, string> = {
   'book.change': 'Canza',
   'book.pricing': 'Ana samo farashi…',
   'book.tripSummary': 'km {distance} · kusan minti {minutes}',
-  'book.mapNote': 'Zanen hanya. Taswirar tituna kai tsaye za ta zo tare da maɓallin taswira.',
   'book.scheduledRides': 'Tafiye-tafiyen da aka tsara',
   'book.requesting': 'Ana nema…',
 
   'map.pickup': 'Wurin ɗauka',
   'map.destination': 'Inda za ku',
   'map.driver': 'Direba',
-  'map.label': 'Zanen hanya daga wurin ɗauka zuwa inda za ku',
+  'map.label': 'Taswirar tafiya: wurin ɗauka, inda za ku, hanya da direba',
+  'map.tilesFailed': 'Taswirar tituna ta kasa lodawa. Ana nuna hanyar har yanzu.',
 
   'rides.when': 'Yaushe',
   'rides.from': 'Daga',

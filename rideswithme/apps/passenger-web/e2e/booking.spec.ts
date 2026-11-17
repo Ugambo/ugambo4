@@ -59,7 +59,7 @@ test.describe('signed in', () => {
     await expect(page.getByTestId('ride-headline')).toHaveText('Ibrahim is on the way');
     await expect(page.getByTestId('driver-card')).toContainText('KAN123AA');
     await d.sendLocation(KURMI.lat + 0.002, KURMI.lng);
-    await expect(page.getByTestId('sketch-driver')).toBeVisible();
+    await expect(page.getByTestId('map-driver')).toBeVisible();
     await shot(page, '03-driver-on-the-way');
 
     await d.sendLocation(KURMI.lat + 0.0002, KURMI.lng);

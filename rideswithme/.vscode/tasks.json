@@ -41,7 +41,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Add the Kano test city",
+      "label": "Add the Katsina test city",
       "type": "shell",
       "command": "pnpm seed:local",
       "problemMatcher": []
@@ -49,7 +49,7 @@
     {
       "label": "4. Prepare the database",
       "dependsOrder": "sequence",
-      "dependsOn": ["Create database tables", "Add the Kano test city"],
+      "dependsOn": ["Create database tables", "Add the Katsina test city"],
       "problemMatcher": []
     },
     {

@@ -124,7 +124,8 @@ export default function LivePage() {
   if (error && drivers.size === 0) return <ErrorState error={error} onRetry={() => void load()} />;
 
   const first = [...drivers.values()][0] ?? [...rides.values()][0]?.pickup;
-  const center: [number, number] = first ? [first.lat, first.lng] : [12.0, 8.52];
+  // With nobody online, show Katsina city, the primary service area.
+  const center: [number, number] = first ? [first.lat, first.lng] : [12.99, 7.6];
   const list = [...drivers.values()].sort(
     (a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt),
   );

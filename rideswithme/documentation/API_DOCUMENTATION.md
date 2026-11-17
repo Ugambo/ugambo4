@@ -804,7 +804,7 @@ Run from `rideswithme/` after `pnpm build`, with the API's environment set:
 pnpm --filter @rideswithme/api cli grant-role  --phone 0803… --role super_admin
 pnpm --filter @rideswithme/api cli revoke-role --phone 0803… --role admin
 pnpm --filter @rideswithme/api cli reset-mfa   --phone 0803…
-pnpm --filter @rideswithme/api cli seed-city   --key kano --name Kano --bbox 8.40,11.90,8.62,12.10
+pnpm --filter @rideswithme/api cli seed-city   --key katsina --name Katsina --bbox 7.52,12.93,7.68,13.06
 ```
 
 `seed-city` creates a rectangular service area with placeholder fares for

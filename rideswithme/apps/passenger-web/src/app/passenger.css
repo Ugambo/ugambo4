@@ -72,7 +72,7 @@
   padding: var(--s-4);
 }
 
-/* Booking: panel beside the route sketch on wide screens; sketch first on phones. */
+/* Booking: panel beside the map on wide screens; map first on phones (hidden until a place is chosen). */
 .book-layout {
   display: grid;
   grid-template-columns: minmax(320px, 440px) 1fr;
@@ -109,33 +109,68 @@
   margin-top: var(--s-4);
 }
 
-.sketch {
+/* Street map (Leaflet on OpenStreetMap tiles) */
+.street-map {
   margin: 0;
   background: #eef2f6;
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   overflow: hidden;
 }
-.sketch svg {
-  display: block;
+.street-map-canvas {
   width: 100%;
-  height: auto;
+  aspect-ratio: 5 / 3;
+  min-height: 260px;
+  /* Leaflet's panes use z-index up to 1000: keep them under the site's menus and dialogs. */
+  position: relative;
+  z-index: 0;
 }
-.sketch figcaption {
+.street-map figcaption {
   padding: var(--s-2) var(--s-3);
   background: var(--c-bg);
 }
-.sketch-empty {
-  aspect-ratio: 5 / 3;
+/* Markers: a dot with its label, drawn with CSS. */
+.pin-wrap {
+  background: none;
+  border: 0;
 }
-.sketch-label {
+.pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.pin-dot {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+.pin-pickup .pin-dot {
+  background: var(--c-success);
+}
+.pin-dropoff .pin-dot {
+  background: var(--c-primary);
+  border-radius: 3px;
+}
+.pin-driver .pin-dot {
+  width: 22px;
+  height: 22px;
+  background: var(--c-accent);
+}
+.pin-stale {
+  opacity: 0.5;
+}
+.pin-label {
   font:
-    600 15px system-ui,
+    600 14px system-ui,
     sans-serif;
-  fill: var(--c-text);
-  paint-order: stroke;
-  stroke: #fff;
-  stroke-width: 4px;
+  color: var(--c-text);
+  background: rgb(255 255 255 / 0.9);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 /* Place fields */

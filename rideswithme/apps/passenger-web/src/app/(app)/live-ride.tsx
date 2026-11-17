@@ -10,7 +10,7 @@ import {
   ridePhase,
 } from '@rideswithme/utilities';
 import { DriverCard, FareLines, PaymentLine } from '@/components/ride-parts';
-import { RouteSketch } from '@/components/route-sketch';
+import { StreetMap } from '@/components/street-map';
 import { RateRide, RideChat, ShareTrip, SosButton } from '@/components/safety';
 import { api } from '@/lib/api';
 import { InlineError, useI18n } from '@/lib/i18n';
@@ -168,7 +168,7 @@ export function LiveRide({
         )}
       </section>
       <section className="map-panel">
-        <RouteSketch
+        <StreetMap
           pickup={ride.pickup}
           dropoff={ride.dropoff}
           polyline={ride.route.polyline}

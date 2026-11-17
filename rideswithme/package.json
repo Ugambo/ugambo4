@@ -18,7 +18,7 @@
     "hausa:export": "node --no-warnings scripts/hausa-review.mts",
     "setup:local": "node scripts/setup-local.mjs",
     "db:migrate:local": "node --env-file=apps/api/.env infrastructure/database/dist/cli.js up",
-    "seed:local": "pnpm --filter @rideswithme/api cli seed-city --key kano --name Kano --bbox 8.40,11.90,8.62,12.10"
+    "seed:local": "pnpm --filter @rideswithme/api cli seed-city --key katsina --name Katsina --bbox 7.52,12.93,7.68,13.06"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

@@ -13,6 +13,14 @@ export default function HelpPage() {
   const { t, formatDate } = useI18n();
   const tickets = useResource(() => api().support.list(), []);
   const reports = useResource(() => api().safety.reports(), []);
+  // Set by super admins on the dashboard's Settings page; hidden when not set.
+  const contact = useResource(
+    () =>
+      api()
+        .supportContact()
+        .catch(() => null),
+    [],
+  );
   const [category, setCategory] = useState<TicketCategory>('ride');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -38,6 +46,21 @@ export default function HelpPage() {
     <>
       <section className="card">
         <h1>{t('help.title')}</h1>
+        {(contact.data?.phone || contact.data?.email) && (
+          <p data-testid="support-contact">
+            {contact.data.phone && (
+              <a href={`tel:${contact.data.phone.replace(/\s/g, '')}`}>
+                {t('help.callUs', { phone: contact.data.phone })}
+              </a>
+            )}
+            {contact.data.phone && contact.data.email && ' · '}
+            {contact.data.email && (
+              <a href={`mailto:${contact.data.email}`}>
+                {t('help.emailUs', { email: contact.data.email })}
+              </a>
+            )}
+          </p>
+        )}
         <form onSubmit={(e) => void send(e)} data-testid="ticket-form">
           <h2>{t('help.new')}</h2>
           <div className="field">

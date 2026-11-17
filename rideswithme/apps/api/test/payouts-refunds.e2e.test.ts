@@ -427,10 +427,13 @@ describe('disputes', () => {
 });
 
 describe('adjustments and the ledger check', () => {
-  it('only super admins adjust wallets; passengers cannot be taken below zero', async () => {
+  it('admins adjust only up to their limit; passengers cannot be taken below zero', async () => {
     const p = await passenger(h);
     const admin = await signInWithMfa(h, nextPhone(), 'admin');
-    await adjust(p.userId, 10_000, 'passenger', admin.auth).expect(403);
+    const over = h.config.ADMIN_WALLET_FUND_LIMIT_KOBO + 1;
+    expect(
+      (await adjust(p.userId, over, 'passenger', admin.auth).expect(422)).body.error.code,
+    ).toBe('WALLET_LIMIT_EXCEEDED');
     expect((await adjust(p.userId, 10_000, 'passenger').expect(201)).body).toEqual({
       balanceKobo: 10_000,
     });

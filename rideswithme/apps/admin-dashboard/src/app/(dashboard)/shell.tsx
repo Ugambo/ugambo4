@@ -29,6 +29,7 @@ const NAV: { href: string; label: MessageKey; permission: PermissionKey }[] = [
   { href: '/privacy', label: 'nav.privacy', permission: 'privacy.manage' },
   { href: '/roles', label: 'nav.roles', permission: 'roles.read' },
   { href: '/audit', label: 'nav.audit', permission: 'audit_logs.read' },
+  { href: '/settings', label: 'nav.settings', permission: 'settings.manage' },
 ];
 
 const MeContext = createContext<MeResponse | null>(null);

@@ -47,6 +47,8 @@ export const PERMISSION_KEYS = [
   'support.manage',
   'promotions.manage',
   'privacy.manage',
+  'settings.manage',
+  'wallets.adjust_unlimited',
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 

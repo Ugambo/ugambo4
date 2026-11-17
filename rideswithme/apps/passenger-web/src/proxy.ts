@@ -18,10 +18,17 @@ export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const api = process.env.API_PUBLIC_URL ? new URL(process.env.API_PUBLIC_URL) : null;
   const storage = process.env.STORAGE_ORIGIN;
+  // The street map's tile server ({s} and other placeholders do not change the origin).
+  const tiles = new URL(
+    (process.env.MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png').replace(
+      /\{[a-z]\}/g,
+      'a',
+    ),
+  ).origin;
   const csp = contentSecurityPolicy({
     nonce,
     dev: process.env.NODE_ENV === 'development',
-    imgSrc: storage ? [storage] : [],
+    imgSrc: [...(storage ? [storage] : []), tiles],
     connectSrc: [
       ...(api ? [api.origin, `${api.protocol === 'https:' ? 'wss' : 'ws'}://${api.host}`] : []),
       ...errorTrackingOrigins(),

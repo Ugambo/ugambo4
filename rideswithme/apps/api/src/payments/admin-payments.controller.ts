@@ -32,6 +32,7 @@ import { AppException } from '../common/app-exception';
 import { IdempotencyService } from '../common/idempotency.service';
 import { ReqContext, type RequestContext } from '../common/request-context';
 import { zod } from '../common/zod-validation.pipe';
+import { APP_CONFIG, type AppConfig } from '../config/config';
 import { DB } from '../database/database.module';
 import type { Database, SystemAccountKey } from '../database/types';
 import { DisputesService } from './disputes.service';
@@ -70,6 +71,7 @@ export class AdminPaymentsController {
     private readonly ledger: LedgerService,
     private readonly audit: AuditService,
     private readonly idempotency: IdempotencyService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   @Get('payments')
@@ -205,13 +207,24 @@ export class AdminPaymentsController {
       async () => {
         const user = await this.db
           .selectFrom('users')
-          .select('id')
+          .select(['id', 'status'])
           .where('id', '=', userId)
           .executeTakeFirst();
         if (!user) throw new AppException(ErrorCode.NOT_FOUND, 'User not found');
+        if (user.status === 'deleted')
+          throw new AppException(ErrorCode.CONFLICT, 'This account has been deleted');
         const id = randomUUID();
         const wallet = { user: userId, kind: body.kind };
         const amount = Math.abs(body.amountKobo);
+        // Admins fund or adjust up to a limit (a setting); super admins have no limit.
+        const limit = this.config.ADMIN_WALLET_FUND_LIMIT_KOBO;
+        if (!p.permissions.has('wallets.adjust_unlimited') && amount > limit) {
+          throw new AppException(
+            ErrorCode.WALLET_LIMIT_EXCEEDED,
+            'More than you may add or take in one go; ask a super admin',
+            { details: { limitKobo: limit } },
+          );
+        }
         await this.db.transaction().execute(async (trx) => {
           await this.ledger.post(trx, {
             kind: 'adjustment',

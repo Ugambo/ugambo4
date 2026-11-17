@@ -122,8 +122,10 @@ export default function AreasPage() {
     }
   };
 
-  const first = areas.data?.[0]?.boundary.coordinates[0]?.[0]?.[0];
-  const center: Corner = first ? [first[1]!, first[0]!] : [12.0, 8.52];
+  // Start on an active area (Katsina city if there are none yet).
+  const shown = areas.data?.find((a) => a.isActive) ?? areas.data?.[0];
+  const first = shown?.boundary.coordinates[0]?.[0]?.[0];
+  const center: Corner = first ? [first[1]!, first[0]!] : [12.99, 7.6];
 
   return (
     <>

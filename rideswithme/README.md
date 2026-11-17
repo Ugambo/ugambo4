@@ -75,8 +75,8 @@ cp apps/api/.env.example apps/api/.env
 
 pnpm build
 DATABASE_URL=postgres://rideswithme:rideswithme@localhost:5432/rideswithme pnpm db:migrate
-# A development city with PLACEHOLDER fares (Kano rectangle):
-pnpm --filter @rideswithme/api cli seed-city --key kano --name Kano --bbox 8.40,11.90,8.62,12.10
+# A development city with PLACEHOLDER fares (Katsina city rectangle):
+pnpm --filter @rideswithme/api cli seed-city --key katsina --name Katsina --bbox 7.52,12.93,7.68,13.06
 pnpm dev:api                                # http://localhost:3000
 ```
 

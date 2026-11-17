@@ -61,7 +61,12 @@ export class CatalogService {
     @Inject(APP_CONFIG) config: AppConfig,
     private readonly audit: AuditService,
   ) {
-    this.departures = new Departures(db, { salesCloseMinutes: config.BUS_SALES_CLOSE_MINUTES });
+    // A getter, so a change on the Settings page applies without a restart.
+    this.departures = new Departures(db, {
+      get salesCloseMinutes() {
+        return config.BUS_SALES_CLOSE_MINUTES;
+      },
+    });
   }
 
   // --- Routes ---

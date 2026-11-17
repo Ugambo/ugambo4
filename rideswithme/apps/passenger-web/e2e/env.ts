@@ -70,5 +70,7 @@ export function webEnv(): Record<string, string> {
     POLICY_VERSION,
     STORAGE_ORIGIN: new URL(s3).origin,
     SESSION_COOKIE_SECURE: 'false',
+    // No external tile server in tests: the map still shows the trip (plain background).
+    MAP_TILE_URL: `${API_URL}/no-tiles/{z}/{x}/{y}.png`,
   };
 }

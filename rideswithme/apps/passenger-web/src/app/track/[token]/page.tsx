@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { PublicTripView } from '@rideswithme/shared-types';
 import type { PassengerMessageKey } from '@rideswithme/utilities';
-import { RouteSketch } from '@/components/route-sketch';
+import { StreetMap } from '@/components/street-map';
 import { LanguageSelect } from '@/components/language-select';
 import { Loading, useI18n } from '@/lib/i18n';
 
@@ -76,7 +76,7 @@ export default function TrackPage() {
             </p>
           )}
           {trip.position && (
-            <RouteSketch
+            <StreetMap
               pickup={{ address: trip.pickupAddress, location: trip.position }}
               dropoff={{ address: trip.dropoffAddress, location: trip.position }}
               polyline={null}

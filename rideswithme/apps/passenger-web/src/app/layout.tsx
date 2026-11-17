@@ -9,6 +9,7 @@ import {
   LANGUAGE_COOKIE,
 } from '@rideswithme/web-core';
 import { I18nProvider, OfflineBanner } from '@/lib/i18n';
+import { DEFAULT_TILES, MapTilesProvider } from '@/lib/map-tiles';
 import '@rideswithme/ui-components/web.css';
 import './passenger.css';
 
@@ -31,8 +32,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body>
         <I18nProvider lang={lang}>
-          <OfflineBanner />
-          {children}
+          <MapTilesProvider
+            tiles={{
+              url: process.env.MAP_TILE_URL || DEFAULT_TILES.url,
+              attribution: process.env.MAP_TILE_ATTRIBUTION || DEFAULT_TILES.attribution,
+            }}
+          >
+            <OfflineBanner />
+            {children}
+          </MapTilesProvider>
         </I18nProvider>
       </body>
     </html>

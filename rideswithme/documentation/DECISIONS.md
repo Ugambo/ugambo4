@@ -24,7 +24,7 @@ These need your answer or awareness. Work continues on the stated assumption.
 | B-13 | Fare values are not in the brief.                                                                                                                                                                                                                             | Placeholder fares are seeded for every vehicle type (D-034). **Please supply real base, per-km, per-minute, minimum, booking, waiting and cancellation fees and commission per vehicle type** before launch.                                                                                                                                                |
 | B-14 | The launch city's boundary is needed as a polygon.                                                                                                                                                                                                            | `seed-city` creates a rectangle for development. For launch, send the boundary (GeoJSON, or draw it in Phase 6's admin map) and it is loaded through `PUT /v1/admin/service-areas`.                                                                                                                                                                         |
 | B-15 | Passenger web booking (brief section 5) was planned for Phase 3.                                                                                                                                                                                              | Moved to Phase 4: its trip screens need the live updates Phase 4 adds, and building them on polling first would mean writing them twice. Mobile booking is complete in Phase 3.                                                                                                                                                                             |
-| B-16 | The brief asks for Google Maps; the passenger website needs a browser Maps JavaScript key, which is separate from the server key.                                                                                                                             | Until one is supplied, the website draws a to-scale route sketch (pickup, destination, route, driver) instead of a street map. Adding the map later changes one component. Please provide a browser key restricted to the website's domain.                                                                                                                 |
+| B-16 | The brief asks for Google Maps; the passenger website needs a browser Maps JavaScript key, which is separate from the server key.                                                                                                                             | No longer needed: the website shows an OpenStreetMap street map (D-081).                                                                                                                 |
 | B-17 | Holding passengers' money in a wallet is regulated in Nigeria (CBN rules on stored value and e-money).                                                                                                                                                        | The wallet is built (as the brief asks) with a balance limit like a tier-1 account (₦300,000, `WALLET_MAX_BALANCE_KOBO`), no cash-out for passengers, and a full ledger. **Before launch, confirm with a lawyer whether RideswithMe needs a licence or a licensed partner (e.g. holding the funds through Paystack or a bank) and what KYC tiers apply.**   |
 | B-18 | The brief does not say who pays Paystack's fees (1.5% + ₦100 per card payment, ₦10–₦50 per transfer).                                                                                                                                                         | The platform absorbs them: wallets are credited the full amount paid and drivers receive the full payout; fees are recorded in their own account (`provider_fees`) so their cost is visible. Passing fees on would be a change to the top-up and payout amounts. Please confirm.                                                                            |
 | B-19 | Who receives a cancellation fee is not in the brief.                                                                                                                                                                                                          | The driver who was on the way, less the platform's commission at the ride's rate (the same split as a fare). Please confirm, or say if the platform should keep it all.                                                                                                                                                                                     |
@@ -1041,3 +1041,63 @@ compatible service such as GlitchTip. Each is off until it is given a DSN.
     are unchanged.
 - **Not covered by the scans:** keyboard use, screen readers and large text
   need people to try them (LAUNCH.md, "Accessibility").
+
+### D-080 Settings changed from the dashboard, and staff powers
+
+- **Settings:** super admins change some `.env` values on the dashboard's
+  Settings page (`settings.manage`). A saved value is kept in `system_settings`
+  and replaces the `.env` value on the API's shared config object, so it applies
+  at once without a restart. Each API instance re-reads them every 30 seconds.
+  Resetting a setting deletes its row and returns to the `.env` value.
+- **Which settings:** only values that services read when they use them
+  (`SETTING_DEFINITIONS` in shared-types). Values read once at start-up, such as
+  job intervals, secrets and provider choices, stay in `.env` only.
+- **Checks:** each value must pass the same rule as in `.env`, plus checks
+  across settings (smallest top-up ≤ largest top-up ≤ largest balance; time for
+  a driver to accept < time searching). Every change is audited with its reason
+  and the old and new values.
+- **Vehicle types:** super admins switch types on or off and edit their name,
+  seats and description. Switching a type on does not create fares: the page
+  warns until the Pricing page has fares for it.
+- **Staff powers:** admins may now open passenger and driver accounts
+  (`users.create`) but not give staff roles. A driver account starts its
+  application, and the driver finishes it in the driver app. Admins may fund or
+  adjust wallets (`wallets.adjust`) up to `ADMIN_WALLET_FUND_LIMIT_KOBO` at a
+  time (₦50,000 by default); super admins have no limit
+  (`wallets.adjust_unlimited`). Editing and deleting accounts stay with super
+  admins.
+
+### D-081 Katsina first, and a street map on the passenger website
+
+- **Primary service area:** Katsina. Development setups seed a Katsina city
+  rectangle (`pnpm seed:local`), the dashboard maps open on Katsina, and the
+  offline demo places include Katsina landmarks. Kano remains only as test data.
+- **Passenger street map:** the route sketch (B-16) is replaced by a Leaflet map
+  on OpenStreetMap tiles, as in the admin dashboard (D-057). It shows the
+  pickup, destination, route and driver, with markers drawn in CSS. The tile
+  server is `MAP_TILE_URL` (and `MAP_TILE_ATTRIBUTION`); its host is added to
+  the Content Security Policy automatically. Tile requests send only the site's
+  origin as Referer, which OpenStreetMap requires; every other request still
+  sends none.
+- **Before launch:** OpenStreetMap's free tile server allows light use only.
+  Set `MAP_TILE_URL` to a tile provider with an agreement, on both the
+  passenger website and the admin dashboard.
+- **Place search** still needs the Google server key (B-12). A Google map in
+  the browser (B-16) is no longer needed for the website.
+
+### D-082 Geoapify as a free maps option
+
+- **Why:** Google Maps Platform needs a billing account. Geoapify offers search
+  as you type, place details, reverse geocoding and driving routes with one key
+  and no card on its free plan (about 3,000 requests a day; check the current
+  terms before relying on it at launch).
+- **How:** `MAPS_PROVIDER=geoapify` with `GEOAPIFY_API_KEY`. It is a third
+  adapter behind the same `MapsProvider` interface as Google and the offline
+  fake, so switching is one setting. Results are limited to Nigeria and prefer
+  places near the user, or near `MAPS_HOME` (Katsina city) when their position
+  is unknown. Routes come back as an encoded polyline for the street map.
+- **Trade-off:** Geoapify uses OpenStreetMap data. Katsina's streets are mapped
+  reasonably well, but shops, offices and smaller landmarks are less complete
+  than on Google, and some searches return places in other states first.
+- **Checked live** on 17 November 2026 with Katsina queries: search, details,
+  reverse geocoding and a 13.3 km route (UMYU to the airport).

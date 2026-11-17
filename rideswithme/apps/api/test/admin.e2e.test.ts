@@ -352,15 +352,9 @@ describe('user management by super admins', () => {
     expect(signedIn.isNewUser).toBe(false);
   });
 
-  it('keeps create, edit and delete to super admins; admins may not', async () => {
+  it('keeps edit and delete to super admins (admins may create, see settings tests)', async () => {
     const admin = await signInWithMfa(h, nextPhone(), 'admin');
     const target = await signIn(h, nextPhone());
-    const forbidden = await h.http
-      .post('/v1/admin/users')
-      .set('Authorization', admin.auth)
-      .send({ phone: nextPhone(), fullName: 'Nope' })
-      .expect(403);
-    expect(forbidden.body.error.details).toEqual({ missing: ['users.create'] });
     await h.http
       .patch(`/v1/admin/users/${target.user.id}`)
       .set('Authorization', admin.auth)

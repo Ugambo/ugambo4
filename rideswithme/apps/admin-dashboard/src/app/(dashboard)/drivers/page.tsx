@@ -8,7 +8,9 @@ import {
   DRIVER_STATUSES,
   type DriverStatus,
 } from '@rideswithme/shared-types';
+import { NewUserModal } from '@/components/new-user-modal';
 import { DriverStatusPill } from '@/components/status-pill';
+import { useCan } from '../shell';
 import { Empty, ErrorState, InlineError, Loading } from '@/components/states';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -19,6 +21,8 @@ type Queue = 'review' | 'all';
 export default function DriversPage() {
   const { t, formatDate } = useI18n();
   const router = useRouter();
+  const can = useCan();
+  const [creating, setCreating] = useState(false);
   const [queue, setQueue] = useState<Queue>('review');
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -66,7 +70,19 @@ export default function DriversPage() {
     <>
       <div className="page-header">
         <h1>{t('drivers.title')}</h1>
+        {can('users.create') && (
+          <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
+            {t('users.newDriver')}
+          </button>
+        )}
       </div>
+      <NewUserModal
+        open={creating}
+        kind="driver"
+        staffRoles={false}
+        onClose={() => setCreating(false)}
+        onCreated={(u) => router.push(`/users/${u.id}`)}
+      />
       <div className="tabs" role="tablist">
         {(['review', 'all'] as const).map((q) => (
           <button
