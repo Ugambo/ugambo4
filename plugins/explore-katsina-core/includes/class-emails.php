@@ -34,7 +34,7 @@ final class Emails {
 	 * @param array  $context  Passed to the messaging hook, e.g. ['event' => 'business_approved', 'phone' => '+234…'].
 	 */
 	public static function send( $to, $subject, $heading, array $lines, array $cta = array(), array $context = array() ) {
-		$html = self::render( $heading, $lines, $cta );
+		$html = self::render( $heading, $lines, $cta, (string) ( $context['html'] ?? '' ) );
 		$sent = wp_mail( $to, $subject, $html, array( 'Content-Type: text/html; charset=UTF-8' ) );
 
 		/**
@@ -53,11 +53,15 @@ final class Emails {
 		return $p['whatsapp'] ? $p['whatsapp'] : $p['phone'];
 	}
 
-	public static function render( $heading, array $lines, array $cta = array() ) {
+	/**
+	 * @param string $extra_html Trusted HTML made by this plugin (e.g. ticket QR codes), placed after the lines.
+	 */
+	public static function render( $heading, array $lines, array $cta = array(), $extra_html = '' ) {
 		$body = '';
 		foreach ( array_filter( $lines, 'strlen' ) as $line ) {
 			$body .= '<p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:#1C1A22">' . nl2br( esc_html( $line ) ) . '</p>';
 		}
+		$body .= $extra_html;
 		if ( ! empty( $cta['url'] ) ) {
 			$body .= '<p style="margin:22px 0"><a href="' . esc_url( $cta['url'] ) . '" style="background:#8E1B2C;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px;display:inline-block">' . esc_html( $cta['label'] ) . '</a></p>';
 		}

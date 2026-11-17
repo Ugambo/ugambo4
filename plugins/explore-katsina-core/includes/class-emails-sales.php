@@ -33,7 +33,7 @@ final class Emails_Sales {
 				apply_filters( 'ek_sale_email_heading', __( 'Thank you, payment received', 'explore-katsina' ), $s ),
 				self::lines( $s ),
 				array( 'label' => __( 'View my order', 'explore-katsina' ), 'url' => Sales::link( $s ) ),
-				array( 'event' => 'sale_' . $s->kind, 'phone' => $s->customer_phone )
+				array( 'event' => 'sale_' . $s->kind, 'phone' => $s->customer_phone, 'html' => (string) apply_filters( 'ek_sale_email_html', '', $s ) )
 			);
 		}
 		Emails::send(

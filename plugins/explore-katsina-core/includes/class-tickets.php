@@ -23,6 +23,7 @@ final class Tickets {
 	public static function init() {
 		add_action( 'template_redirect', array( __CLASS__, 'handle_buy' ), 8 );
 		add_action( 'ek_sale_paid', array( __CLASS__, 'issue' ) );
+		add_filter( 'ek_sale_email_html', array( __CLASS__, 'email_qr_codes' ), 10, 2 );
 		add_action( 'ek_sale_released', array( __CLASS__, 'release' ) );
 		add_filter( 'ek_sale_retake', array( __CLASS__, 'retake' ), 10, 2 );
 		add_filter( 'ek_sale_email_lines', array( __CLASS__, 'email_lines' ), 10, 2 );
@@ -238,9 +239,23 @@ final class Tickets {
 			foreach ( (array) ( $s->details['lines'] ?? array() ) as $l ) {
 				$lines[] = $l['qty'] . ' × ' . $l['name'];
 			}
-			$lines[] = __( 'Your tickets with QR codes are on the order page (button below). Show them on your phone or print them.', 'explore-katsina' );
+			$lines[] = __( 'Your tickets and their QR codes are below (also on your order page). Show them on your phone or print them.', 'explore-katsina' );
 		}
 		return $lines;
+	}
+
+	/** The receipt email carries every ticket's QR code (Phase 15), ready to show at the gate. */
+	public static function email_qr_codes( $html, $s ) {
+		if ( 'ticket' !== $s->kind ) {
+			return $html;
+		}
+		foreach ( self::for_sale( $s->id ) as $i => $t ) {
+			$html .= '<div style="margin:18px 0;padding:14px;border:1px solid #E5DCC8;border-radius:10px">'
+				. '<p style="margin:0 0 6px;font-size:15px;color:#1C1A22"><strong>' . esc_html( sprintf( /* translators: 1: number, 2: ticket type */ __( 'Ticket %1$d: %2$s', 'explore-katsina' ), $i + 1, $t->type_name ) ) . '</strong></p>'
+				. Qr::html_table( $t->code, 5 )
+				. '<p style="margin:6px 0 0;font-family:monospace;font-size:15px;letter-spacing:.06em">' . esc_html( $t->code ) . '</p></div>';
+		}
+		return $html;
 	}
 
 	public static function for_sale( $sale_id ) {

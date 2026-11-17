@@ -27,13 +27,27 @@ final class Payments_Woo {
 		add_action( 'woocommerce_order_status_cancelled', array( __CLASS__, 'failed' ) );
 		add_filter( 'woocommerce_payment_complete_order_status', array( __CLASS__, 'complete_status' ), 10, 3 );
 		add_filter( 'woocommerce_get_checkout_order_received_url', array( __CLASS__, 'thank_you_url' ), 10, 2 );
+		// Local/development sites only: a test payment method for the shop (Phase 15). Never on a live site.
+		if ( in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) ) {
+			add_filter( 'woocommerce_payment_gateways', static function ( $g ) { $g[] = Test_Gateway::class; return $g; } );
+			add_action(
+				'woocommerce_blocks_payment_method_type_registration',
+				static function ( $registry ) {
+					if ( class_exists( Test_Gateway_Blocks::class ) ) {
+						$registry->register( new Test_Gateway_Blocks() );
+					}
+				}
+			);
+		}
 	}
 
 	public static function has_gateway() {
 		if ( ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) {
 			return false;
 		}
-		return (bool) WC()->payment_gateways()->get_available_payment_gateways();
+		$real = WC()->payment_gateways()->get_available_payment_gateways();
+		unset( $real['ek_test'] ); // The shop's local test payment is not a real payment method.
+		return (bool) $real;
 	}
 
 	/** @return string|\WP_Error */
