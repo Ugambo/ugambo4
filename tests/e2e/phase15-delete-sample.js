@@ -32,13 +32,13 @@ const counts = () => JSON.parse( wp( `eval 'global $wpdb; echo wp_json_encode( a
 	await p.goto( BASE + '/wp-admin/admin.php?page=ek-settings' );
 	p.on( 'dialog', ( d ) => d.accept() );
 	await Promise.all( [ p.waitForNavigation(), p.click( 'button:has-text("Delete all SAMPLE data")' ) ] );
-	check( /type DELETE/i.test( await p.locator( '.notice' ).first().textContent() ) && counts().sample === before.sample, 'Without typing DELETE nothing is deleted' );
+	check( await p.locator( '.notice', { hasText: 'type DELETE' } ).count() === 1 && counts().sample === before.sample, 'Without typing DELETE nothing is deleted' );
 	await p.locator( '#ek-del-confirm' ).scrollIntoViewIfNeeded();
 	await p.screenshot( { path: path.join( SHOTS, 'p15-delete-sample-1280.png' ) } );
 	await p.fill( '#ek-del-confirm', 'DELETE' );
 	await Promise.all( [ p.waitForNavigation(), p.click( 'button:has-text("Delete all SAMPLE data")' ) ] );
 	const after = counts();
-	check( /SAMPLE data deleted/.test( await p.locator( '.notice-success' ).first().textContent() ) && 0 === after.sample, 'Typed DELETE: every SAMPLE item is gone' );
+	check( await p.locator( '.notice', { hasText: 'SAMPLE data deleted' } ).count() === 1 && 0 === after.sample, 'Typed DELETE: every SAMPLE item is gone' );
 	check( after.attractions === before.attractions && after.durbar === before.durbar && after.pages === before.pages, `Guide content and pages kept (${ after.attractions } attractions, the Sallah Durbar, ${ after.pages } pages)` );
 	check( await p.locator( 'button:has-text("Delete all SAMPLE data")' ).count() === 0, 'The button disappears once there is nothing left to delete' );
 	const home = await ( await fetch( BASE + '/' ) ).text();

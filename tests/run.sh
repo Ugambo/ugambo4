@@ -44,6 +44,8 @@ run node tests/e2e/phase15-journeys.js
 run node tests/e2e/phase15-sweep.js
 # Mobile speed (about 5 minutes): ./tests/run.sh --lighthouse  (or on its own: node tests/lighthouse.js)
 if [ "${1:-}" = "--lighthouse" ]; then run node tests/lighthouse.js; fi
+# Last: the "Delete all SAMPLE data" button (the SAMPLE data is created again afterwards).
+run node tests/e2e/phase15-delete-sample.js
 if [ ${#FAILED[@]} -gt 0 ]; then
   printf "\n✘ Failed: %s\n" "${FAILED[@]}"
   exit 1

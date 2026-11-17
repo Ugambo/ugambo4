@@ -5,7 +5,7 @@ to replace before launch. The technical record of how it was built is at the end
 
 ## Current status
 - **All 15 phases are done** (Phase 15, test everything and hand over, finished 17 November 2026).
-- **Tested:** about 1,300 automatic checks, including all 14 journeys in the brief, every page and dashboard at
+- **Tested:** 1,340 automatic checks (all passing on a fresh install, 17 Nov 2026), including all 14 journeys in the brief, every page and dashboard at
   phone, tablet and computer sizes, every email, every link and the language switcher (see
   `docs/phase15-checks.md`), a break-in test showing businesses only reach their own data, and Google
   Lighthouse 90+ on phones for all 20 main pages (`docs/lighthouse/summary.md`).
@@ -921,7 +921,7 @@ page itself. The full notes, with confidence levels and every place where source
 ### How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 1,300 automatic checks, server and browser (Phases 2–15)
+./tests/run.sh      # about 1,350 automatic checks, server and browser (Phases 2–15)
 ./tests/run.sh --lighthouse   # the same plus the mobile speed test (about 5 more minutes)
 npm run build       # after editing any CSS/JS file: makes the small .min copies visitors download
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
