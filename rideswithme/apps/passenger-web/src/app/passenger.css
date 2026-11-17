@@ -591,3 +591,17 @@
   background: var(--c-primary);
   color: var(--c-on-primary);
 }
+
+/* A button that looks like a text link (for optional extras such as a promotion code). */
+.btn-link {
+  background: none;
+  border: 0;
+  padding: var(--s-1) 0;
+  color: var(--c-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.btn-link:hover {
+  text-decoration-thickness: 2px;
+}

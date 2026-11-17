@@ -134,9 +134,14 @@ number and its code from the API terminal.
 - **Safety:** press **SOS** during a ride, and watch the red banner appear in
   the admin dashboard straight away.
 - **Hausa:** every screen has a language switch.
-- **A full ride** needs a driver. Either run the driver app (section 6), or
-  run the browser tests (section 8). They simulate a driver and save
-  screenshots of every step.
+- **A full ride** needs a driver. The quickest way is the task **Test driver
+  (accepts and completes rides)** (or `pnpm test-driver` in a terminal). It
+  starts a pretend, already-approved driver in Katsina, which accepts every
+  ride of its vehicle type and drives it: to the pickup, arrived, started, to
+  the destination, completed. Book on the passenger website and watch the
+  driver move on the map; Ctrl+C stops it. For another vehicle type at the same
+  time, run it again with `--category keke_napep --phone 08099990002`. You can
+  also run the driver app (section 6), or the browser tests (section 8).
 
 Places in development come from a built-in demo list. For Katsina, search
 "Katsina", "Emir", "Gobarau", "stadium" or "airport". Routes are straight-line

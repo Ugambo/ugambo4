@@ -1,17 +1,7 @@
 'use client';
 
 import { createContext, type ReactNode, useContext } from 'react';
-
-export interface MapTiles {
-  url: string;
-  attribution: string;
-}
-
-/** OpenStreetMap's free tile server: fine for development and light use (DECISIONS D-081). */
-export const DEFAULT_TILES: MapTiles = {
-  url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  attribution: '© OpenStreetMap contributors',
-};
+import { DEFAULT_TILES, type MapTiles } from './map-defaults';
 
 const TilesContext = createContext<MapTiles>(DEFAULT_TILES);
 
@@ -20,4 +10,11 @@ export function MapTilesProvider({ tiles, children }: { tiles: MapTiles; childre
   return <TilesContext.Provider value={tiles}>{children}</TilesContext.Provider>;
 }
 
-export const useMapTiles = () => useContext(TilesContext);
+/** The tile server, never blank: falls back to OpenStreetMap. */
+export function useMapTiles(): MapTiles {
+  const t = useContext(TilesContext);
+  return {
+    url: t?.url || DEFAULT_TILES.url,
+    attribution: t?.attribution || DEFAULT_TILES.attribution,
+  };
+}

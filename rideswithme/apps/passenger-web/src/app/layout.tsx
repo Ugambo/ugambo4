@@ -9,7 +9,8 @@ import {
   LANGUAGE_COOKIE,
 } from '@rideswithme/web-core';
 import { I18nProvider, OfflineBanner } from '@/lib/i18n';
-import { DEFAULT_TILES, MapTilesProvider } from '@/lib/map-tiles';
+import { DEFAULT_TILES } from '@/lib/map-defaults';
+import { MapTilesProvider } from '@/lib/map-tiles';
 import '@rideswithme/ui-components/web.css';
 import './passenger.css';
 

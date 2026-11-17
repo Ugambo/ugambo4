@@ -116,6 +116,7 @@ export function Book() {
   const [quoteRound, setQuoteRound] = useState(0);
   const [promo, setPromo] = useState('');
   const [promoInput, setPromoInput] = useState('');
+  const [showPromo, setShowPromo] = useState(false);
   useEffect(() => {
     setEstimate(null);
     if (!pickup || !dropoff) return;
@@ -247,115 +248,137 @@ export function Book() {
                 />
               ))}
             </div>
-            <div className="choose-row">
-              <div className="field">
-                <label htmlFor="when">{t('choose.when')}</label>
-                <select id="when" value={when} onChange={(e) => setWhen(e.target.value)}>
-                  <option value="now">{t('choose.now')}</option>
-                  {slots.map((s) => (
-                    <option key={s.toISOString()} value={s.toISOString()}>
-                      {formatDate(s.toISOString(), true)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="pay">{t('choose.payWith')}</label>
-                <select id="pay" value={pay} onChange={(e) => setPay(e.target.value)}>
-                  <option value="cash">{t('pay.cash')}</option>
-                  <option value="wallet">
-                    {t('pay.wallet', { amount: formatKobo(wallet?.balanceKobo ?? 0) })}
-                  </option>
-                  {cards.map((c) => (
-                    <option key={c.id} value={`card:${c.id}`}>
-                      {t('pay.card', { brand: c.brand.toUpperCase(), last4: c.last4 })}
-                    </option>
-                  ))}
-                </select>
-                {cards.length === 0 && (
-                  <Link href="/wallet" className="small">
-                    {t('pay.addCard')}
-                  </Link>
+            {estimate.options.length === 0 && (
+              <p className="notice notice-wait" data-testid="no-options">
+                {t('choose.none')}
+              </p>
+            )}
+            {estimate.options.length > 0 && (
+              <>
+                <div className="choose-row">
+                  <div className="field">
+                    <label htmlFor="when">{t('choose.when')}</label>
+                    <select id="when" value={when} onChange={(e) => setWhen(e.target.value)}>
+                      <option value="now">{t('choose.now')}</option>
+                      {slots.map((s) => (
+                        <option key={s.toISOString()} value={s.toISOString()}>
+                          {formatDate(s.toISOString(), true)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label htmlFor="pay">{t('choose.payWith')}</label>
+                    <select id="pay" value={pay} onChange={(e) => setPay(e.target.value)}>
+                      <option value="cash">{t('pay.cash')}</option>
+                      <option value="wallet">
+                        {t('pay.wallet', { amount: formatKobo(wallet?.balanceKobo ?? 0) })}
+                      </option>
+                      {cards.map((c) => (
+                        <option key={c.id} value={`card:${c.id}`}>
+                          {t('pay.card', { brand: c.brand.toUpperCase(), last4: c.last4 })}
+                        </option>
+                      ))}
+                    </select>
+                    {cards.length === 0 && (
+                      <Link href="/wallet" className="small">
+                        {t('pay.addCard')}
+                      </Link>
+                    )}
+                  </div>
+                </div>
+                {/* Optional: tucked behind a link until the passenger wants it. */}
+                {!showPromo && !promo ? (
+                  <button
+                    type="button"
+                    className="btn-link small"
+                    data-testid="promo-open"
+                    onClick={() => setShowPromo(true)}
+                  >
+                    {t('promo.have')}
+                  </button>
+                ) : (
+                  <form
+                    className="toolbar promo"
+                    data-testid="promo"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setPromo(promoInput.trim());
+                    }}
+                  >
+                    <input
+                      aria-label={t('promo.label')}
+                      placeholder={t('promo.optional')}
+                      value={promoInput}
+                      onChange={(e) => setPromoInput(e.target.value)}
+                      maxLength={40}
+                      autoFocus={!promo}
+                    />
+                    {promo ? (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-small"
+                        onClick={() => {
+                          setPromo('');
+                          setPromoInput('');
+                        }}
+                      >
+                        {t('promo.remove')}
+                      </button>
+                    ) : (
+                      <button className="btn btn-secondary btn-small" disabled={!promoInput.trim()}>
+                        {t('promo.apply')}
+                      </button>
+                    )}
+                  </form>
                 )}
-              </div>
-            </div>
-            <form
-              className="toolbar promo"
-              data-testid="promo"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setPromo(promoInput.trim());
-              }}
-            >
-              <input
-                aria-label={t('promo.label')}
-                placeholder={t('promo.label')}
-                value={promoInput}
-                onChange={(e) => setPromoInput(e.target.value)}
-                maxLength={40}
-              />
-              {promo ? (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-small"
-                  onClick={() => {
-                    setPromo('');
-                    setPromoInput('');
-                  }}
-                >
-                  {t('promo.remove')}
-                </button>
-              ) : (
-                <button className="btn btn-secondary btn-small" disabled={!promoInput.trim()}>
-                  {t('promo.apply')}
-                </button>
-              )}
-            </form>
-            {estimate.promotion &&
-              (estimate.promotion.valid ? (
-                <p className="notice notice-ok" data-testid="promo-result">
-                  {estimate.promotion.description}
-                  {option &&
-                    option.discountKobo > 0 &&
-                    ` · ${t('promo.saving', { amount: formatKobo(option.discountKobo) })}`}
-                </p>
-              ) : (
-                <p className="notice notice-bad" data-testid="promo-result">
-                  {t(
-                    `promo.reason.${estimate.promotion.reason ?? 'not_found'}` as PassengerMessageKey,
-                  )}
-                </p>
-              ))}
-            <p className="small muted">{t('choose.priceNote')}</p>
-            {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.payableKobo && (
-              <p className="notice notice-wait">{t('pay.walletShort')}</p>
-            )}
-            {wallet && wallet.owedKobo > 0 && (
-              <div className="notice notice-bad" data-testid="owed">
-                <strong>{t('wallet.owed', { amount: formatKobo(wallet.owedKobo) })}</strong>{' '}
-                <Link href="/wallet">{t('wallet.topUp')}</Link>
-              </div>
-            )}
-            <InlineError error={error} />
-            {option && (
-              <button
-                type="button"
-                className="btn btn-accent btn-block btn-large"
-                disabled={requesting || (wallet?.owedKobo ?? 0) > 0}
-                onClick={() => void request()}
-              >
-                {requesting
-                  ? t('book.requesting')
-                  : when === 'now'
-                    ? t('choose.request', {
-                        category: option.category.name,
-                        price: formatKobo(option.payableKobo),
-                      })
-                    : t('choose.schedule', {
-                        category: option.category.name,
-                        time: formatTime(when),
-                      })}
-              </button>
+                {estimate.promotion &&
+                  (estimate.promotion.valid ? (
+                    <p className="notice notice-ok" data-testid="promo-result">
+                      {estimate.promotion.description}
+                      {option &&
+                        option.discountKobo > 0 &&
+                        ` · ${t('promo.saving', { amount: formatKobo(option.discountKobo) })}`}
+                    </p>
+                  ) : (
+                    <p className="notice notice-bad" data-testid="promo-result">
+                      {t(
+                        `promo.reason.${estimate.promotion.reason ?? 'not_found'}` as PassengerMessageKey,
+                      )}
+                    </p>
+                  ))}
+                <p className="small muted">{t('choose.priceNote')}</p>
+                {pay === 'wallet' && option && (wallet?.balanceKobo ?? 0) < option.payableKobo && (
+                  <p className="notice notice-wait">{t('pay.walletShort')}</p>
+                )}
+                {wallet && wallet.owedKobo > 0 && (
+                  <div className="notice notice-bad" data-testid="owed">
+                    <strong>{t('wallet.owed', { amount: formatKobo(wallet.owedKobo) })}</strong>{' '}
+                    <Link href="/wallet">{t('wallet.topUp')}</Link>
+                  </div>
+                )}
+                <InlineError error={error} />
+                {option && (
+                  <button
+                    type="button"
+                    className="btn btn-accent btn-block btn-large"
+                    disabled={requesting || (wallet?.owedKobo ?? 0) > 0}
+                    onClick={() => void request()}
+                  >
+                    {requesting
+                      ? t('book.requesting')
+                      : when === 'now'
+                        ? t('choose.request', {
+                            category: option.category.name,
+                            price: formatKobo(option.payableKobo),
+                          })
+                        : t('choose.schedule', {
+                            category: option.category.name,
+                            time: formatTime(when),
+                          })}
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}

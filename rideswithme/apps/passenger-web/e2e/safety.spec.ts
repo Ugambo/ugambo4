@@ -43,6 +43,7 @@ test.describe('safety and support', () => {
       .filter({ hasText: 'Mallam Aminu Kano International Airport' })
       .click();
     await expect(page.getByTestId('option-car')).toContainText('₦');
+    await page.getByTestId('promo-open').click();
     await page.getByLabel('Promotion code').fill('web20');
     await page.getByRole('button', { name: 'Apply' }).click();
     await expect(page.getByTestId('promo-result')).toContainText('20% off your ride');

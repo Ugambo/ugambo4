@@ -5,9 +5,11 @@ import { normalizeNigerianPhone } from '@rideswithme/validation';
 import type { Kysely } from 'kysely';
 import { AdminService } from './admin/admin.service';
 import { AppModule } from './app.module';
+import { loadConfig } from './config/config';
 import { MfaService } from './auth/mfa.service';
 import { PricingService } from './pricing/pricing.service';
 import { DB } from './database/database.module';
+import { runTestDriver } from './dev/test-driver';
 import type { Database } from './database/types';
 
 const USAGE = `Usage:
@@ -15,7 +17,26 @@ const USAGE = `Usage:
   node dist/cli.js revoke-role --phone <number> --role <role>
   node dist/cli.js reset-mfa   --phone <number>                 Clears TOTP and signs the user out everywhere
   node dist/cli.js seed-city   --key <key> --name <name> --bbox <minLng,minLat,maxLng,maxLat>
-                                Creates a rectangular service area with placeholder fares (development)`;
+                                Creates a rectangular service area with placeholder fares (development)
+  node dist/cli.js test-driver [--phone <number>] [--name <name>] [--category car|keke_napep|taxi|motorcycle]
+                               [--at <lat,lng>] [--pace <seconds>]
+                                A pretend driver that accepts and completes rides (development only)`;
+
+/**
+ * The API's settings with its background jobs off: the running API does that
+ * work, and a one-off command should not join in (or be mid-job when it exits).
+ */
+function cliConfig() {
+  return loadConfig({
+    ...process.env,
+    DISPATCH_INTERVAL_MS: '0',
+    MAINTENANCE_INTERVAL_MINUTES: '0',
+    DOCUMENT_EXPIRY_SWEEP_MINUTES: '0',
+    PAYMENT_RECONCILE_INTERVAL_MINUTES: '0',
+    BUS_HOLD_SWEEP_MINUTES: '0',
+    DELETION_SWEEP_MINUTES: '0',
+  });
+}
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -25,10 +46,11 @@ function arg(name: string): string | undefined {
 async function main() {
   const command = process.argv[2];
   if (command === 'seed-city') return seedCity();
+  if (command === 'test-driver') return testDriver();
   const phone = normalizeNigerianPhone(arg('phone') ?? '');
   if (!command || !phone) throw new Error(USAGE);
 
-  const app = await NestFactory.createApplicationContext(AppModule.forRoot(), {
+  const app = await NestFactory.createApplicationContext(AppModule.forRoot(cliConfig()), {
     logger: ['error', 'warn'],
   });
   try {
@@ -77,7 +99,7 @@ async function seedCity() {
   const bbox = (arg('bbox') ?? '').split(',').map(Number);
   if (!key || !name || bbox.length !== 4 || bbox.some((n) => Number.isNaN(n)))
     throw new Error(USAGE);
-  const app = await NestFactory.createApplicationContext(AppModule.forRoot(), {
+  const app = await NestFactory.createApplicationContext(AppModule.forRoot(cliConfig()), {
     logger: ['error', 'warn'],
   });
   try {
@@ -94,3 +116,25 @@ main().catch((err: unknown) => {
   console.error(err instanceof Error ? err.message : err);
   process.exit(1);
 });
+
+async function testDriver() {
+  const category = arg('category') ?? 'car';
+  const phone = normalizeNigerianPhone(arg('phone') ?? '08099990001');
+  if (!phone) throw new Error(`Not a Nigerian phone number.\n${USAGE}`);
+  // Near Katsina Central Market unless --at is given.
+  const [lat, lng] = (arg('at') ?? '12.9750,7.6050').split(',').map(Number);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng))
+    throw new Error(`--at is "latitude,longitude"`);
+  const pace = Number(arg('pace') ?? '10');
+  const app = await NestFactory.createApplicationContext(AppModule.forRoot(cliConfig()), {
+    logger: ['error', 'warn'],
+  });
+  // runTestDriver closes the app context once the driver is set up, then keeps driving.
+  await runTestDriver(app, {
+    phone,
+    name: arg('name') ?? `Test Driver (${category.replace('_', ' ')})`,
+    category,
+    start: { lat: lat!, lng: lng! },
+    pace: Number.isFinite(pace) && pace > 0 ? pace : 10,
+  });
+}

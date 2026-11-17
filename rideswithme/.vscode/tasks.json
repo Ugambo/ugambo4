@@ -147,6 +147,14 @@
       "problemMatcher": []
     },
     {
+      "label": "Test driver (accepts and completes rides)",
+      "detail": "A pretend driver in Katsina for trying bookings without the driver app. Ctrl+C stops it.",
+      "type": "shell",
+      "command": "pnpm test-driver --category ${input:testDriverCategory}",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
       "label": "Tests: everything except browsers",
       "type": "shell",
       "command": "pnpm test",
@@ -179,6 +187,13 @@
       "type": "promptString",
       "description": "Your phone number (e.g. 08031234567). You will sign in to the admin dashboard with it.",
       "default": "08031234567"
+    },
+    {
+      "id": "testDriverCategory",
+      "type": "pickString",
+      "description": "Which vehicle the test driver has (passengers must choose the same type)",
+      "options": ["car", "keke_napep", "motorcycle", "taxi"],
+      "default": "car"
     }
   ]
 }
