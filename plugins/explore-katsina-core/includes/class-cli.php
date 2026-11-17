@@ -188,6 +188,7 @@ final class CLI {
 			}
 		}
 		update_option( 'admin_email', 'info@explorekatsina.com.ng' );
+		Settings::update( array( 'notify_email' => 'info@explorekatsina.com.ng' ) ); // Admin notices (PLACEHOLDER until the owner sets theirs).
 		if ( class_exists( '\MailPoet\Settings\SettingsController' ) ) {
 			$s = \MailPoet\Settings\SettingsController::getInstance();
 			$s->set( 'mta_group', 'website' );

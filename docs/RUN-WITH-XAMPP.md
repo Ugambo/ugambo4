@@ -108,7 +108,9 @@ the readable CSS and JavaScript files, so your edits show straight away. Errors 
 1. **Encryption key:** wp-admin shows a yellow box with a line starting `define( 'EK_ENCRYPTION_KEY', …`.
    Copy that whole line into **`wp-config.php`** (just under the lines you added in Step 5), save, reload wp-admin:
    the box disappears.
-2. **Page cache off while you work:** **Plugins** → find **WP Super Cache** → **Deactivate** (so you always see
+2. **Your email for admin notices:** **Explore Katsina → Settings → Send admin notices to**: put your email
+   (on a copy made before 17 Nov 2026 it may show a local test address).
+3. **Page cache off while you work:** **Plugins** → find **WP Super Cache** → **Deactivate** (so you always see
    your latest changes). Switch it on again on the live site.
 
 Other yellow boxes (Wordfence "installation incomplete", FluentSMTP "no connection", Rank Math) are normal on a

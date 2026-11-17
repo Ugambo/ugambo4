@@ -11,7 +11,7 @@ to replace before launch. The technical record of how it was built is at the end
   Lighthouse 90+ on phones for all 20 main pages (`docs/lighthouse/summary.md`).
 - **The site holds demonstration data** named "SAMPLE": delete it before launch (one button, see 2.14).
 - **Export for your host:** `explore-katsina-site-2026-11-17.wpress` (212 MB, sent to you in the chat; SHA-256
-  `4c93db7c…c7d1389`). It was test-imported into a separate, empty WordPress and worked. The owner login for it
+  `3ce1241d…eacfde1`; this second version adds the local "Test emails" inbox and replaces the first). It was test-imported into a separate, empty WordPress and into an XAMPP-style subfolder setup, and worked. The owner login for it
   was given to you separately, not written here.
 
 ---
