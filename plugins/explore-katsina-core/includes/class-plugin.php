@@ -63,6 +63,7 @@ final class Plugin {
 		Analytics::init();
 		Private_Files::init();
 		Emails::init();
+		Dev_Inbox::init(); // Local copies without email (e.g. XAMPP): emails kept in wp-admin.
 
 		if ( is_admin() ) {
 			Admin::init();

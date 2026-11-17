@@ -919,7 +919,7 @@ page itself. The full notes, with confidence levels and every place where source
   with an authenticator app on your phone). Free; it needs your phone, so it is not switched on for you.
 
 ### How to run it
-Step-by-step guide for your own computer with VS Code (Windows or Mac): **`docs/RUN-LOCALLY.md`**.
+Your own computer: with **XAMPP + VS Code** (simplest, no Docker): **`docs/RUN-WITH-XAMPP.md`**; with Docker + VS Code (runs the automatic tests too): **`docs/RUN-LOCALLY.md`**.
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
 ./tests/run.sh      # about 1,350 automatic checks, server and browser (Phases 2–15)
