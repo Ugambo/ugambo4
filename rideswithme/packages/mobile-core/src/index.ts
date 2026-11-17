@@ -11,3 +11,4 @@ export * from './safety';
 export * from './push';
 export * from './support';
 export * from './error-tracking';
+export * from './brand';

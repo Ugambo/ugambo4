@@ -27,6 +27,8 @@ export function testConfig(overrides: Record<string, string> = {}): AppConfig {
     FIELD_ENCRYPTION_ACTIVE_KEY_ID: 'test',
     CURRENT_POLICY_VERSION: TEST_POLICY_VERSION,
     SMS_PROVIDER: 'console',
+    // Most tests book rides straight away; the identity-check tests switch it on.
+    PASSENGER_KYC_REQUIRED: 'false',
     LOOKUP_HASH_SECRET: SECRETS.lookup,
     S3_ENDPOINT: TEST_S3_ENDPOINT,
     S3_BUCKET: process.env.TEST_S3_BUCKET ?? 'rideswithme-test',

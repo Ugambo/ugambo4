@@ -1,5 +1,6 @@
 import { Redirect } from 'expo-router';
 import { SignInHero, SignInScreen } from '@rideswithme/mobile-core';
+import { API_URL } from '@/lib/config';
 import { LanguageSwitch } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { api, useSession } from '@/lib/session';
@@ -16,6 +17,7 @@ export default function SignIn() {
       errorText={errorText}
       hero={
         <SignInHero
+          apiUrl={API_URL}
           title={t('signIn.title')}
           subtitle={t('signIn.subtitle')}
           languageSwitch={<LanguageSwitch light />}

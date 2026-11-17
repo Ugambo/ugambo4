@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import type { Language } from '@rideswithme/shared-types';
 import { useResource } from '@rideswithme/web-core/client';
@@ -10,6 +11,7 @@ import { Empty, InlineError, Loading, useI18n } from '@/lib/i18n';
 function ProfileSection() {
   const { t } = useI18n();
   const me = useResource(() => api().me.get(), []);
+  const kyc = useResource(() => api().me.verification(), []);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [language, setLanguage] = useState<Language>('en');
@@ -43,6 +45,18 @@ function ProfileSection() {
   return (
     <section className="card" data-testid="profile">
       <h1>{t('profile.title')}</h1>
+      {kyc.data && (
+        <p className="row-between" data-testid="kyc-status">
+          <span>
+            {t('kyc.accountStatus')}: <strong>{t(`kyc.status.${kyc.data.status}`)}</strong>
+          </span>
+          {kyc.data.status !== 'approved' && kyc.data.status !== 'pending' && (
+            <Link href="/verify" className="btn btn-secondary btn-small">
+              {t('kyc.bookAction')}
+            </Link>
+          )}
+        </p>
+      )}
       {!me.data ? (
         <Loading />
       ) : (

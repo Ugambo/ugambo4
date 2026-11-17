@@ -10,3 +10,5 @@ export * from './staff-sign-in';
 export * from './staff-sign-in-messages';
 export * from './seat-map';
 export * from './qr-image';
+export * from './sidebar';
+export * from './brand';

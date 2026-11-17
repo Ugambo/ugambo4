@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LANGUAGES, ROLE_KEYS } from '@rideswithme/shared-types';
+import { GENDERS, LANGUAGES, ROLE_KEYS } from '@rideswithme/shared-types';
 import { normalizeNigerianPhone } from './phone';
 
 export const phoneSchema = z
@@ -56,11 +56,41 @@ export type RefreshTokenInput = z.input<typeof refreshTokenSchema>;
 export const totpVerifySchema = z.object({ code: totpCodeSchema }).strict();
 export type TotpVerifyInput = z.input<typeof totpVerifySchema>;
 
+/** Passengers must be at least this old to have an account (DECISIONS D-083). */
+export const MIN_PASSENGER_AGE = 18;
+
+/** YYYY-MM-DD, a real date, between MIN_PASSENGER_AGE and 120 years ago. */
+export const dateOfBirthSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+  .refine(
+    (v) =>
+      !Number.isNaN(Date.parse(`${v}T00:00:00Z`)) &&
+      new Date(`${v}T00:00:00Z`).toISOString().startsWith(v),
+    'Not a real date',
+  )
+  .refine((v) => {
+    const born = new Date(`${v}T00:00:00Z`);
+    const now = new Date();
+    const adult = new Date(
+      Date.UTC(now.getUTCFullYear() - MIN_PASSENGER_AGE, now.getUTCMonth(), now.getUTCDate()),
+    );
+    const oldest = new Date(Date.UTC(now.getUTCFullYear() - 120, 0, 1));
+    return born <= adult && born >= oldest;
+  }, `You must be at least ${MIN_PASSENGER_AGE}`);
+
 export const updateMeSchema = z
   .object({
     fullName: z.string().trim().min(2).max(120).optional(),
     email: z.string().trim().toLowerCase().email().max(254).nullable().optional(),
     preferredLanguage: z.enum(LANGUAGES).optional(),
+    gender: z.enum(GENDERS).optional(),
+    dateOfBirth: dateOfBirthSchema.optional(),
+    /** Someone texted when they press SOS (not their own number). */
+    emergencyContact: z
+      .object({ name: z.string().trim().min(2).max(80), phone: phoneSchema })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });

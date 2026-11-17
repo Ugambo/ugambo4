@@ -217,6 +217,8 @@ export const configSchema = z
     PUSH_PROVIDER: z.enum(['log', 'expo']).default('log'),
     EXPO_ACCESS_TOKEN: z.string().min(10).optional(),
     /** Account deletion: days to change one's mind, and how often requests are processed (minutes; 0 = off). */
+    /** Passengers must give their details and pass an identity check before booking. */
+    PASSENGER_KYC_REQUIRED: bool.default('true'),
     DELETION_GRACE_DAYS: z.coerce.number().int().min(0).max(90).default(7),
     DELETION_SWEEP_MINUTES: z.coerce.number().int().min(0).max(1440).default(60),
     // --- Monitoring ---

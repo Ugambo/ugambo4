@@ -11,6 +11,7 @@ import {
   Title,
 } from '@rideswithme/ui-components/native';
 import { normalizeNigerianPhone } from '@rideswithme/validation';
+import { BrandLogo } from './brand';
 import type { CommonKey } from './messages';
 
 /** Phone + SMS code sign-in, shared by both apps. The hero (title, intro) comes from the app. */
@@ -142,17 +143,18 @@ export function SignInHero({
   title,
   subtitle,
   languageSwitch,
+  apiUrl,
 }: {
   title: string;
   subtitle: string;
   languageSwitch: ReactNode;
+  /** Shows the logo set on the dashboard's Settings page (the R mark without it). */
+  apiUrl?: string;
 }) {
   return (
     <>
       {languageSwitch}
-      <View style={styles.mark}>
-        <Text style={styles.markText}>R</Text>
-      </View>
+      <BrandLogo apiUrl={apiUrl} size={48} />
       <Text style={styles.heroTitle}>{title}</Text>
       <Text style={styles.heroBody}>{subtitle}</Text>
     </>
@@ -161,15 +163,6 @@ export function SignInHero({
 
 const styles = StyleSheet.create({
   hero: { backgroundColor: colors.primary, borderRadius: 16, padding: spacing[6], gap: spacing[3] },
-  mark: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markText: { fontSize: typography.size.xl, fontWeight: '900', color: colors.onAccent },
   heroTitle: { fontSize: typography.size['2xl'], fontWeight: '800', color: colors.onPrimary },
   heroBody: { fontSize: typography.size.md, color: colors.onPrimary },
   link: {

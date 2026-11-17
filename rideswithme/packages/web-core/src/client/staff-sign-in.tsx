@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import type { Language, MeResponse, TotpSetupResponse } from '@rideswithme/shared-types';
 import { normalizeNigerianPhone } from '@rideswithme/validation';
 import { browserApi, browserAuth } from './api';
+import { BrandMark } from './brand';
 import type { StaffSignInKey } from './staff-sign-in-messages';
 
 type Step = 'phone' | 'code' | 'mfa-setup' | 'mfa-verify' | 'no-access' | 'resuming';
@@ -114,7 +115,7 @@ export function StaffSignIn({
           </select>
         </div>
         <div className="brand">
-          <span className="brand-mark">R</span>
+          <BrandMark />
           {appName}
         </div>
 

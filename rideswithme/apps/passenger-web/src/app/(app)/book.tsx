@@ -7,6 +7,7 @@ import {
   ACTIVE_RIDE_STATUSES,
   type DriverPosition,
   type FareEstimateResponse,
+  type PassengerVerificationView,
   type Place,
   type RideView,
   type SavedCardView,
@@ -22,6 +23,7 @@ import {
   scheduleSlots,
   toPlaceInput,
 } from '@rideswithme/utilities';
+import { useResource } from '@rideswithme/web-core/client';
 import { PlaceField } from '@/components/place-field';
 import { VehicleOption } from '@/components/ride-parts';
 import { StreetMap } from '@/components/street-map';
@@ -49,6 +51,8 @@ export function Book() {
   const [error, setError] = useState<unknown>(null);
   const [wallet, setWallet] = useState<WalletView | null>(null);
   const [cards, setCards] = useState<SavedCardView[]>([]);
+  // Whether this passenger may book yet (details and identity check, D-083).
+  const kyc = useResource(() => api().me.verification(), []);
   /** 'cash', 'wallet' or 'card:<id>'. */
   const [pay, setPay] = useState('cash');
   // Same key for every retry of one booking attempt, so a retry never books twice.
@@ -201,6 +205,7 @@ export function Book() {
     <div className="book-layout">
       <section className="book-panel card" aria-labelledby="book-title">
         <h1 id="book-title">{t('book.title')}</h1>
+        {kyc.data && !kyc.data.canBook && <KycGate view={kyc.data} />}
         <PlaceField
           testId="pickup"
           label={t('book.pickup')}
@@ -358,7 +363,7 @@ export function Book() {
                   </div>
                 )}
                 <InlineError error={error} />
-                {option && (
+                {option && kyc.data?.canBook !== false && (
                   <button
                     type="button"
                     className="btn btn-accent btn-block btn-large"
@@ -421,6 +426,28 @@ export function Book() {
       <section className="map-panel">
         <StreetMap pickup={pickup} dropoff={dropoff} polyline={estimate?.route.polyline} />
       </section>
+    </div>
+  );
+}
+
+/** Shown instead of booking until the passenger is verified (D-083). */
+function KycGate({ view }: { view: PassengerVerificationView }) {
+  const { t } = useI18n();
+  const message =
+    view.status === 'pending' && view.missingDetails.length === 0
+      ? t('kyc.bookPending')
+      : view.status === 'rejected'
+        ? t('kyc.bookRejected', { reason: view.rejectionReason ?? '' })
+        : t('kyc.bookNeeded');
+  return (
+    <div className="notice notice-wait kyc-gate" data-testid="kyc-gate">
+      <strong>{t('kyc.bookTitle')}</strong>
+      <p>{message}</p>
+      {!(view.status === 'pending' && view.missingDetails.length === 0) && (
+        <Link href="/verify" className="btn btn-primary btn-small">
+          {t('kyc.bookAction')}
+        </Link>
+      )}
     </div>
   );
 }

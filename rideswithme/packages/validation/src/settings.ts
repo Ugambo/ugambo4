@@ -3,6 +3,7 @@ import { SETTING_KEYS, type SettingKey } from '@rideswithme/shared-types';
 
 const value = z.union([
   z.number().int().min(0),
+  z.boolean(),
   z.string().trim().max(500),
   z.array(z.string().trim().max(20)).max(20),
   z.null(),
@@ -32,3 +33,14 @@ export const updateVehicleCategorySchema = z
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
 export type UpdateVehicleCategoryInput = z.input<typeof updateVehicleCategorySchema>;
+
+/** A logo as base64 (PNG, JPEG or WebP; the API checks the bytes and the size). */
+export const uploadLogoSchema = z
+  .object({
+    imageBase64: z
+      .string()
+      .max(101_000)
+      .regex(/^[A-Za-z0-9+/]+={0,2}$/, 'Not base64'),
+  })
+  .strict();
+export type UploadLogoInput = z.input<typeof uploadLogoSchema>;

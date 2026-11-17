@@ -186,3 +186,73 @@ describe('admins open accounts and fund wallets', () => {
     await fund(admin.auth, 6_000_000, 'funding-key-4').expect(201);
   });
 });
+
+describe('logo', () => {
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    Buffer.alloc(200, 7),
+  ]);
+
+  it('is set by a super admin, served to everyone with its version, and removed again', async () => {
+    const root = await signInWithMfa(h, nextPhone(), 'super_admin');
+    expect((await h.http.get('/v1/branding').expect(200)).body).toEqual({
+      logoVersion: null,
+      logoPath: null,
+      updatedAt: null,
+    });
+    await h.http.get('/v1/branding/logo').expect(404);
+
+    const set = await h.http
+      .put('/v1/admin/branding/logo')
+      .set('Authorization', root.auth)
+      .send({ imageBase64: png.toString('base64') })
+      .expect(200);
+    expect(set.body.logoPath).toBe(`/v1/branding/logo?v=${set.body.logoVersion}`);
+
+    const img = await h.http.get(set.body.logoPath).expect(200);
+    expect(img.headers['content-type']).toBe('image/png');
+    expect(img.headers['x-content-type-options']).toBe('nosniff');
+    expect(Buffer.from(img.body as Buffer).equals(png)).toBe(true);
+
+    await h.http.delete('/v1/admin/branding/logo').set('Authorization', root.auth).expect(200);
+    expect((await h.http.get('/v1/branding').expect(200)).body.logoVersion).toBeNull();
+    const actions = (
+      await h.db
+        .selectFrom('audit_logs')
+        .select('action')
+        .where('action', 'like', 'admin.branding.%')
+        .orderBy('created_at')
+        .execute()
+    ).map((a) => a.action);
+    expect(actions).toEqual(['admin.branding.logo_changed', 'admin.branding.logo_removed']);
+  });
+
+  it('refuses admins, SVG and anything that is not an image', async () => {
+    const admin = await signInWithMfa(h, nextPhone(), 'admin');
+    await h.http
+      .put('/v1/admin/branding/logo')
+      .set('Authorization', admin.auth)
+      .send({ imageBase64: png.toString('base64') })
+      .expect(403);
+    const root = await signInWithMfa(h, nextPhone(), 'super_admin');
+    const svg = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    );
+    await h.http
+      .put('/v1/admin/branding/logo')
+      .set('Authorization', root.auth)
+      .send({ imageBase64: svg.toString('base64') })
+      .expect(422);
+    await h.http
+      .put('/v1/admin/branding/logo')
+      .set('Authorization', root.auth)
+      .send({ imageBase64: Buffer.alloc(80_000, 1).toString('base64') })
+      .expect(413); // larger than any request the API takes
+    const tooBig = Buffer.concat([png, Buffer.alloc(75_300, 1)]); // fits the request, not the logo limit
+    await h.http
+      .put('/v1/admin/branding/logo')
+      .set('Authorization', root.auth)
+      .send({ imageBase64: tooBig.toString('base64') })
+      .expect(422);
+  });
+});

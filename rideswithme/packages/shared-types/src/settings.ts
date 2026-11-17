@@ -7,7 +7,7 @@ export type SettingGroup = (typeof SETTING_GROUPS)[number];
 
 /** How a value is entered and shown. Money is in kobo; 'bps' is hundredths of a percent. */
 export type SettingUnit =
-  'kobo' | 'seconds' | 'minutes' | 'hours' | 'days' | 'bps' | 'phones' | 'phone' | 'email';
+  'kobo' | 'seconds' | 'minutes' | 'hours' | 'days' | 'bps' | 'phones' | 'phone' | 'email' | 'bool';
 
 export const SETTING_DEFINITIONS = {
   WALLET_TOPUP_MIN_KOBO: { group: 'wallets', unit: 'kobo' },
@@ -29,13 +29,14 @@ export const SETTING_DEFINITIONS = {
   BUS_CANCEL_CUTOFF_HOURS: { group: 'buses', unit: 'hours' },
   BUS_DEFAULT_SERVICE_FEE_BPS: { group: 'buses', unit: 'bps' },
   DELETION_GRACE_DAYS: { group: 'buses', unit: 'days' },
+  PASSENGER_KYC_REQUIRED: { group: 'buses', unit: 'bool' },
 } as const satisfies Record<string, { group: SettingGroup; unit: SettingUnit }>;
 
 export type SettingKey = keyof typeof SETTING_DEFINITIONS;
 export const SETTING_KEYS = Object.keys(SETTING_DEFINITIONS) as SettingKey[];
 
 /** A number, a list of phone numbers, text, or null for "not set". */
-export type SettingValue = number | string | string[] | null;
+export type SettingValue = number | boolean | string | string[] | null;
 
 export interface SettingView {
   key: SettingKey;
@@ -65,4 +66,13 @@ export interface AdminVehicleCategoryView {
 export interface SupportContactView {
   phone: string | null;
   email: string | null;
+}
+
+/** The system's logo, set by a super admin. Null: the built-in "R" mark. */
+export interface BrandingView {
+  /** Changes whenever the logo does. */
+  logoVersion: string | null;
+  /** The image's path on the API, e.g. "/v1/branding/logo?v=…". */
+  logoPath: string | null;
+  updatedAt: string | null;
 }

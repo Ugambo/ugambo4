@@ -20,6 +20,7 @@
     "@rideswithme/web-core": "workspace:*",
     "jose": "^6.2.17",
     "leaflet": "^1.9.4",
+    "lucide-react": "1.65.0",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",

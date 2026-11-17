@@ -59,6 +59,26 @@ export const TEMPLATES = {
       'Za a share asusunku na RideswithMe a ranar {date}. Shiga kafin nan don soke wannan.',
     ],
   },
+  kyc_approved: {
+    en: [
+      'You are verified',
+      'Your identity check is approved. You can book rides on RideswithMe now.',
+    ],
+    ha: [
+      'An tabbatar da ku',
+      'An amince da tantance ku. Yanzu kuna iya yin odar abin hawa a RideswithMe.',
+    ],
+  },
+  kyc_rejected: {
+    en: [
+      'Identity check not approved',
+      'We could not approve your identity check: {reason}. Please send it again in the app or on the website.',
+    ],
+    ha: [
+      'Ba a amince da tantance ku ba',
+      'Ba mu iya amincewa da tantance ku ba: {reason}. Da fatan za a sake aikawa a manhaja ko shafin yanar gizo.',
+    ],
+  },
   deletion_blocked: {
     en: [
       'Account not deleted yet',

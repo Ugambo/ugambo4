@@ -36,7 +36,7 @@ const en = {
   'error.INVALID_STATE': 'This cannot be done right now.',
   'error.UPLOAD_INVALID':
     'The file could not be used. Upload it again as a photo (JPG or PNG) or PDF.',
-  'error.NIN_ALREADY_REGISTERED': 'This NIN is already registered to another driver.',
+  'error.NIN_ALREADY_REGISTERED': 'This NIN is already registered to another account.',
   'error.PLATE_ALREADY_REGISTERED': 'This plate number is already registered.',
   'error.VEHICLE_CATEGORY_UNAVAILABLE': 'This vehicle type is not available yet.',
   'error.STORAGE_UNAVAILABLE': 'File upload is not available right now. Please try again shortly.',
@@ -73,6 +73,8 @@ const en = {
   'error.RATING_CLOSED': 'This trip can no longer be rated.',
   'error.DELETION_BLOCKED':
     'Your account cannot be deleted yet. Finish or settle what is open first.',
+  'error.KYC_REQUIRED':
+    'Please complete your details and identity check first. You can book once it is approved.',
   'error.ROUTE_NOT_FOUND': 'We could not find a route between these places.',
   'sms.driver_approved':
     'Your RideswithMe driver account is approved. Open the RideswithMe Driver app to go online.',
@@ -111,7 +113,7 @@ const ha: Record<MessageKey, string> = {
   'error.INVALID_STATE': 'Ba za a iya yin wannan yanzu ba.',
   'error.UPLOAD_INVALID':
     'Ba a iya amfani da fayil ɗin ba. Sake loda shi a matsayin hoto (JPG ko PNG) ko PDF.',
-  'error.NIN_ALREADY_REGISTERED': 'An riga an yi rajistar wannan NIN ga wani direba.',
+  'error.NIN_ALREADY_REGISTERED': 'An riga an yi rajistar wannan NIN ga wani asusu.',
   'error.PLATE_ALREADY_REGISTERED': 'An riga an yi rajistar wannan lambar mota.',
   'error.VEHICLE_CATEGORY_UNAVAILABLE': "Wannan nau'in abin hawa bai samu ba tukuna.",
   'error.STORAGE_UNAVAILABLE':
@@ -149,6 +151,8 @@ const ha: Record<MessageKey, string> = {
   'error.RATING_CLOSED': 'Ba za a iya ba wannan tafiya maki yanzu ba.',
   'error.DELETION_BLOCKED':
     'Ba za a iya share asusunku yanzu ba. Kammala ko daidaita abin da ke buɗe tukuna.',
+  'error.KYC_REQUIRED':
+    'Da fatan ka kammala bayananka da tantance shaidarka tukuna. Kana iya yin oda da zarar an amince.',
   'error.ROUTE_NOT_FOUND': 'Ba mu sami hanya tsakanin waɗannan wurare ba.',
   'sms.driver_approved':
     'An amince da asusun direbanku na RideswithMe. Buɗe manhajar RideswithMe Driver don fara aiki.',

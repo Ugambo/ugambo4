@@ -12,6 +12,8 @@ describe('proxy allowlist', () => {
     'v1/admin/settings',
     'v1/admin/vehicle-categories',
     'v1/admin/vehicle-categories/motorcycle',
+    'v1/admin/branding/logo',
+    'v1/admin/passenger-verifications/abc/approve',
   ])('allows %s', (p) => expect(isAllowedApiPath(p)).toBe(true));
   it.each([
     'v1/auth/refresh',

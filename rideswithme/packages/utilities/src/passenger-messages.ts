@@ -294,6 +294,16 @@ const en = {
   'account.deleteScheduled': 'Your account will be deleted on {date}.',
   'account.deleteBlocked': 'We are waiting to delete your account: {reason}',
   'account.deleteCancel': 'Keep my account',
+  'kyc.bookTitle': 'Before your first ride',
+  'kyc.bookNeeded':
+    'Give your details and verify your identity so drivers know who they are picking up.',
+  'kyc.bookPending':
+    'We are checking your identity. You can book as soon as it is approved; we will send you an SMS.',
+  'kyc.bookRejected': 'Your identity check was not approved: {reason}.',
+  'kyc.bookAction': 'Verify now',
+  'kyc.bookWebsite':
+    'This opens the RideswithMe website. Sign in there with this same phone number, then come back here.',
+  'kyc.checkAgain': 'I have finished, check again',
   'profile.title': 'Your details',
   'profile.phone': 'Phone number',
   'profile.phoneNote': 'Your phone number is how you sign in. Contact support to change it.',
@@ -603,6 +613,16 @@ const ha: Record<PassengerMessageKey, string> = {
   'account.deleteScheduled': 'Za a share asusunku a ranar {date}.',
   'account.deleteBlocked': 'Muna jira kafin share asusunku: {reason}',
   'account.deleteCancel': 'Ajiye asusuna',
+  'kyc.bookTitle': 'Kafin tafiyarka ta farko',
+  'kyc.bookNeeded':
+    'Ba da bayananka kuma ka tabbatar da shaidarka don direbobi su san wanda suke ɗauka.',
+  'kyc.bookPending':
+    'Muna duba shaidarka. Kana iya yin oda da zarar an amince; za mu aiko maka da SMS.',
+  'kyc.bookRejected': 'Ba a amince da tantance ka ba: {reason}.',
+  'kyc.bookAction': 'Tabbatar yanzu',
+  'kyc.bookWebsite':
+    'Wannan yana buɗe shafin yanar gizon RideswithMe. Shiga can da wannan lambar waya, sannan ka dawo nan.',
+  'kyc.checkAgain': 'Na gama, sake dubawa',
   'profile.title': 'Bayananku',
   'profile.phone': 'Lambar waya',
   'profile.phoneNote': 'Lambar wayarku ita ce hanyar shiga. Ku tuntuɓi masu taimako don canza ta.',

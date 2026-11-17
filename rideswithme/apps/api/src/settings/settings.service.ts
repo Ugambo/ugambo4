@@ -292,7 +292,7 @@ export class SettingsService implements OnModuleInit, OnApplicationShutdown {
 function toView(v: unknown): SettingValue {
   if (v === undefined || v === null) return null;
   if (Array.isArray(v)) return v.map(String);
-  if (typeof v === 'number' || typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') return v;
   return String(v);
 }
 
@@ -303,7 +303,7 @@ function toRaw(v: SettingValue): string | null {
     const list = v.map((x) => x.trim()).filter(Boolean);
     return list.length ? list.join(',') : '';
   }
-  if (typeof v === 'number') return String(v);
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   const s = v.trim();
   return s === '' ? null : s;
 }

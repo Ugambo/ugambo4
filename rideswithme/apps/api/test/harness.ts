@@ -85,7 +85,7 @@ export async function resetState(h: Harness) {
   await sql`TRUNCATE wallets, payment_webhook_events CASCADE`.execute(h.db);
   await sql`SELECT ensure_system_wallets()`.execute(h.db);
   // Settings changed by a test go back to the test config.
-  await sql`TRUNCATE system_settings`.execute(h.db);
+  await sql`TRUNCATE system_settings, branding_assets`.execute(h.db);
   await h.app.get(SettingsService).refresh();
   await h.redis.flushdb();
   h.sms.messages = [];

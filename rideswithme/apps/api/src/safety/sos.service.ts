@@ -183,6 +183,23 @@ export class SosService {
         `RideswithMe SOS${first ? '' : ' (pressed again)'}: ${who}.${trip} ${where}. Open the admin dashboard now.`,
       );
     }
+    // Their own emergency contact hears at once too (the first press only).
+    if (sms && first) {
+      const contact = await this.db
+        .selectFrom('users')
+        .select(['emergency_contact_phone', 'full_name'])
+        .where('id', '=', userId)
+        .executeTakeFirst();
+      if (contact?.emergency_contact_phone) {
+        const where = view.location
+          ? ` Location: https://maps.google.com/?q=${view.location.lat.toFixed(5)},${view.location.lng.toFixed(5)}.`
+          : '';
+        await this.notifications.textPhones(
+          [contact.emergency_contact_phone],
+          `RideswithMe: ${contact.full_name ?? 'Someone'} pressed SOS during a trip and named you as their emergency contact.${where} Our safety team has been alerted. Please call them.`,
+        );
+      }
+    }
     return this.userView(view);
   }
 

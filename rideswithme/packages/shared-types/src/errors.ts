@@ -58,6 +58,8 @@ export const ErrorCode = {
   PROMO_INVALID: 'PROMO_INVALID',
   RATING_CLOSED: 'RATING_CLOSED',
   DELETION_BLOCKED: 'DELETION_BLOCKED',
+  /** The passenger must finish their details and identity check (and be approved) first. */
+  KYC_REQUIRED: 'KYC_REQUIRED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

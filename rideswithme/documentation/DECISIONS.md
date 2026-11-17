@@ -1101,3 +1101,34 @@ compatible service such as GlitchTip. Each is off until it is given a DSN.
   than on Google, and some searches return places in other states first.
 - **Checked live** on 17 November 2026 with Katsina queries: search, details,
   reverse geocoding and a 13.3 km route (UMYU to the airport).
+
+### D-083 Passenger details and identity checks (KYC)
+
+- **Details:** after their first sign-in a passenger gives their full name,
+  gender, date of birth (at least 18, `MIN_PASSENGER_AGE`) and an emergency
+  contact (another person's phone); email is optional. The emergency contact
+  gets an SMS when the passenger first presses SOS, as well as staff.
+- **Identity check:** the passenger's NIN (encrypted, with a keyed hash so one
+  NIN verifies one account; the last 4 digits for staff), a photo of an ID
+  (NIN slip, national ID card, driver's licence, voter's card or passport) and
+  a selfie. Staff with `passengers.verify` (admins and super admins) review it
+  on the dashboard's Passenger verification page: approve, or reject with a
+  reason the passenger sees. Opening a photo is audited. Decisions are sent by
+  notification and SMS. A rejected passenger can send again.
+- **Before the first ride:** while `PASSENGER_KYC_REQUIRED` is on (default; a
+  setting super admins can change), ride requests and bus bookings are refused
+  with `KYC_REQUIRED` until approved. Prices can still be seen.
+- **Photos on the website** go through the website's own server
+  (`/api/kyc-upload`), which asks the API for a signed upload address as the
+  passenger and stores the file, so file storage needs no browser (CORS)
+  access. The browser shrinks photos to 1600 px JPEG first.
+- **Phone app:** the check is done on the website, so the app needs no camera
+  module or new build. Until the passenger is verified, Choose a ride shows a
+  card whose Verify now button opens `EXPO_PUBLIC_WEB_URL`/verify in the
+  browser; the website brings them back to /verify after they sign in
+  (`/sign-in?next=`, same-site addresses only). The app checks again when it
+  comes back to the front.
+- **Erasure:** deleting an account removes the check, its photos, the NIN,
+  gender, date of birth and emergency contact (NDPA).
+- **Not automated:** no NIMC/BVN lookup or face matching; staff compare the
+  selfie with the ID by eye. A verification provider can be added later.

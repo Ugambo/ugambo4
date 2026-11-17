@@ -12,6 +12,11 @@ const STATE = path.join(OUT, 'passenger-state.json');
 
 test('passenger signs in with an SMS code', async ({ page }) => {
   await page.goto('/');
+  // Signed-out visitors land on the welcome page, then sign in from it.
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(page.getByRole('heading', { name: 'Your ride, in minutes' })).toBeVisible();
+  await shot(page, '00-welcome');
+  await page.getByTestId('welcome-book').click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await shot(page, '01-sign-in');
   await page.getByLabel('Phone number').fill('0803 555 0001');
@@ -146,7 +151,8 @@ test.describe('signed in', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL(/\/sign-in$/);
+    // Signed out, a page sends them to sign in and remembers where they were going.
     await page.goto('/rides');
-    await expect(page).toHaveURL(/\/sign-in$/);
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Frides$/);
   });
 });

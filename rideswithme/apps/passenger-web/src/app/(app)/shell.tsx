@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 import type { MeResponse } from '@rideswithme/shared-types';
-import { useResource } from '@rideswithme/web-core/client';
+import { useResource, BrandMark } from '@rideswithme/web-core/client';
 import { LanguageSelect } from '@/components/language-select';
 import { api, auth, isSignedOut } from '@/lib/api';
 import { ErrorState, Loading, useI18n } from '@/lib/i18n';
@@ -47,7 +47,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <MeContext.Provider value={me.data}>
       <header className="topbar">
         <Link href="/" className="brand">
-          <span className="brand-mark">R</span>
+          <BrandMark />
           {t('app.name')}
         </Link>
         <nav aria-label="Main" className="topnav">

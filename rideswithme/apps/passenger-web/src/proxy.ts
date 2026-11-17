@@ -4,17 +4,25 @@ import { contentSecurityPolicy, errorTrackingOrigins } from '@rideswithme/web-co
 const SESSION_COOKIE = 'rwm_session';
 
 /**
- * Sends signed-out visitors to /sign-in (a quick check; the API decides what
- * they may do) and sets a per-request nonce Content-Security-Policy. The API's
+ * Sends signed-out visitors to the welcome page (from the home address) or to
+ * /sign-in (from any other page) — a quick check; the API decides what they
+ * may do — and sets a per-request nonce Content-Security-Policy. The API's
  * public address is allowed for the live (WebSocket) connection.
  */
 export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const signedIn = request.cookies.has(SESSION_COOKIE);
   // Shared-trip pages (/track/...) are for anyone with the link.
-  const open =
-    request.nextUrl.pathname === '/sign-in' || request.nextUrl.pathname.startsWith('/track/');
-  if (!request.cookies.has(SESSION_COOKIE) && !open) {
-    return NextResponse.redirect(new URL('/sign-in', request.url));
+  const open = pathname === '/sign-in' || pathname === '/welcome' || pathname.startsWith('/track/');
+  if (!signedIn && !open) {
+    if (pathname === '/') return NextResponse.redirect(new URL('/welcome', request.url));
+    // Back to the page they wanted after signing in (e.g. /verify from the phone app).
+    const to = new URL('/sign-in', request.url);
+    to.searchParams.set('next', pathname + request.nextUrl.search);
+    return NextResponse.redirect(to);
   }
+  // Signed-in passengers go straight to booking.
+  if (signedIn && pathname === '/welcome') return NextResponse.redirect(new URL('/', request.url));
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const api = process.env.API_PUBLIC_URL ? new URL(process.env.API_PUBLIC_URL) : null;
   const storage = process.env.STORAGE_ORIGIN;

@@ -7,3 +7,4 @@ export * from './fleets';
 export * from './buses';
 export * from './safety';
 export * from './settings';
+export * from './kyc';

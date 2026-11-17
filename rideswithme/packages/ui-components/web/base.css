@@ -211,6 +211,15 @@ textarea {
   color: var(--c-on-accent);
   font-weight: 900;
 }
+/* The logo set on the Settings page, in place of the "R" mark. */
+.brand-logo {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: var(--r-md);
+  background: #fff;
+}
 .muted {
   color: var(--c-muted);
 }
@@ -239,34 +248,181 @@ textarea {
   justify-content: flex-end;
 }
 
-/* Shell: left sidebar, content */
+/* Shell: left sidebar (collapsible to icons; a menu button on phones), content */
 .shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 248px 1fr;
   min-height: 100vh;
 }
 .sidebar {
   background: var(--c-primary);
   color: var(--c-on-primary);
-  padding: var(--s-6) var(--s-4);
+  padding: var(--s-4) var(--s-3);
   display: flex;
   flex-direction: column;
   gap: var(--s-4);
+  /* Stays in view while the page scrolls; long menus scroll on their own. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
 }
 .sidebar .brand {
   color: var(--c-on-primary);
+  margin-bottom: 0;
+  min-width: 0;
 }
-.sidebar nav a {
-  display: block;
-  padding: var(--s-2) var(--s-3);
+.sidebar-toggle {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
   border-radius: var(--r-md);
+  background: transparent;
+  color: var(--c-on-primary);
+  cursor: pointer;
+}
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.sidebar-menu {
+  display: none;
+}
+.sidebar-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  flex: 1;
+}
+.sidebar nav {
+  display: grid;
+  gap: 2px;
+}
+.sidebar nav a,
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 40px;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
   color: var(--c-on-primary);
   text-decoration: none;
+  text-align: start;
+  font: inherit;
   font-weight: 600;
+  cursor: pointer;
 }
-.sidebar nav a[aria-current='page'] {
+.sidebar nav a:hover,
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.sidebar nav a[aria-current='page'],
+.sidebar-link[aria-current='page'] {
   background: rgba(255, 255, 255, 0.14);
   box-shadow: inset 4px 0 0 var(--c-accent);
+}
+.nav-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+.nav-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sidebar-lang {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+  gap: var(--s-1) var(--s-3);
+  padding: 0 var(--s-3);
+}
+.sidebar-lang select {
+  grid-column: 1 / -1;
+}
+.sidebar-lang-switch {
+  display: none;
+}
+.lang-code {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* Collapsed to icons (wide screens only): names are kept for screen readers and tooltips. */
+@media (min-width: 801px) {
+  .shell-collapsed {
+    grid-template-columns: 72px 1fr;
+  }
+  .shell-collapsed .sidebar {
+    padding-inline: var(--s-2);
+  }
+  .shell-collapsed .sidebar-top {
+    flex-direction: column;
+  }
+  .shell-collapsed .sidebar nav a,
+  .shell-collapsed .sidebar-link {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .shell-collapsed .nav-text,
+  .shell-collapsed .sidebar .nav-group,
+  .shell-collapsed .sidebar .brand .sidebar-sub {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .shell-collapsed .sidebar-lang {
+    display: none;
+  }
+  .shell-collapsed .sidebar-lang-switch {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+/* Phones: a bar with the menu button; the menu opens below it. */
+@media (max-width: 800px) {
+  .sidebar {
+    height: auto;
+    max-height: 100vh;
+    z-index: 20;
+    padding: var(--s-2) var(--s-4);
+    gap: 0;
+  }
+  .sidebar-collapse {
+    display: none;
+  }
+  .sidebar-menu {
+    display: inline-grid;
+  }
+  .sidebar-body {
+    display: none;
+  }
+  .shell-menu-open .sidebar-body {
+    display: flex;
+    padding-block: var(--s-3);
+  }
+}
+/* Maps (Leaflet) stack their layers up to z-index 1000: keep them under the sticky bar. */
+.leaflet-container {
+  isolation: isolate;
 }
 .sidebar .nav-group {
   display: block;
@@ -916,4 +1072,46 @@ select,
 textarea {
   min-width: 0;
   max-width: 100%;
+}
+
+/* Settings: the logo and its buttons */
+.logo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-6);
+  align-items: center;
+}
+.logo-preview {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-2);
+}
+.logo-preview img,
+.logo-preview .brand-logo,
+.logo-preview .brand-mark {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border);
+  font-size: 32px;
+}
+
+/* Passenger verification: the two photos side by side */
+.kyc-photos {
+  display: grid;
+  gap: var(--s-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+}
+.kyc-photo {
+  margin: 0;
+}
+.kyc-photo img {
+  display: block;
+  width: 100%;
+  max-height: 28rem;
+  object-fit: contain;
+  background: var(--c-surface);
+  border-radius: var(--r-md);
+  margin-top: var(--s-2);
 }

@@ -3,6 +3,8 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  AppState,
+  Linking,
   Pressable,
   ScrollView,
   Share,
@@ -20,6 +22,7 @@ import {
   ACTIVE_RIDE_STATUSES,
   RATING_TAGS,
   type FareEstimateResponse,
+  type PassengerVerificationView,
   type RideView,
   type SavedCardView,
   type SavedPlace,
@@ -46,6 +49,7 @@ import {
   toPlaceInput,
 } from '@rideswithme/utilities';
 import { useTripDraft } from '@/lib/trip-draft';
+import { WEB_URL } from '@/lib/config';
 
 /** Live updates do the work; this slow poll only covers missed events. */
 const FALLBACK_POLL_MS = 30_000;
@@ -101,6 +105,18 @@ export default function Home() {
   const [error, setError] = useState<unknown>(null);
   // Same key for every retry of one booking attempt, so a retry never books twice.
   const bookingKey = useRef(newIdempotencyKey());
+  // Whether this passenger may book yet (details and identity check, done on the website: D-083).
+  const [kyc, setKyc] = useState<PassengerVerificationView | null>(null);
+  const loadKyc = useCallback(() => {
+    api.me.verification().then(setKyc, () => undefined);
+  }, []);
+  useEffect(() => {
+    // Coming back from the browser after verifying: check again.
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') loadKyc();
+    });
+    return () => sub.remove();
+  }, [loadKyc]);
 
   const collapsed = 200;
   const expandedHeight = Math.round(height * 0.62);
@@ -118,12 +134,13 @@ export default function Home() {
   // Wallet balance, money owed and saved cards, fresh whenever this screen comes back into view.
   useFocusEffect(
     useCallback(() => {
+      loadKyc();
       api.wallet.get().then(setWallet, () => undefined);
       api.payments.cards().then(
         (c) => setCards(c.filter((card) => !card.expired)),
         () => undefined,
       );
-    }, []),
+    }, [loadKyc]),
   );
 
   // Pickup defaults to the phone's location unless the passenger chose one.
@@ -419,6 +436,34 @@ export default function Home() {
     );
   }
 
+  /** Shown instead of the request button until the passenger is verified on the website. */
+  function KycGate() {
+    if (!kyc) return null;
+    const waiting = kyc.status === 'pending' && kyc.missingDetails.length === 0;
+    return (
+      <Card tone="wait">
+        <Title>{t('kyc.bookTitle')}</Title>
+        <Body>
+          {waiting
+            ? t('kyc.bookPending')
+            : kyc.status === 'rejected'
+              ? t('kyc.bookRejected', { reason: kyc.rejectionReason ?? '' })
+              : t('kyc.bookNeeded')}
+        </Body>
+        {!waiting && (
+          <>
+            <Button
+              title={t('kyc.bookAction')}
+              onPress={() => void Linking.openURL(`${WEB_URL}/verify`)}
+            />
+            <Body muted>{t('kyc.bookWebsite')}</Body>
+          </>
+        )}
+        <Button title={t('kyc.checkAgain')} variant="secondary" onPress={loadKyc} />
+      </Card>
+    );
+  }
+
   function ChooseRide() {
     return (
       <>
@@ -542,24 +587,28 @@ export default function Home() {
           </ScrollView>
         )}
         <Body muted>{t('choose.priceNote')}</Body>
-        <Button
-          title={
-            option
-              ? when
-                ? t('choose.schedule', {
-                    category: option.category.name,
-                    time: formatTime(when.toISOString()),
-                  })
-                : t('choose.request', {
-                    category: option.category.name,
-                    price: formatKobo(option.payableKobo),
-                  })
-              : t('common.loading')
-          }
-          onPress={() => void request()}
-          disabled={!option || (wallet?.owedKobo ?? 0) > 0}
-          busy={busy}
-        />
+        {kyc && !kyc.canBook ? (
+          <KycGate />
+        ) : (
+          <Button
+            title={
+              option
+                ? when
+                  ? t('choose.schedule', {
+                      category: option.category.name,
+                      time: formatTime(when.toISOString()),
+                    })
+                  : t('choose.request', {
+                      category: option.category.name,
+                      price: formatKobo(option.payableKobo),
+                    })
+                : t('common.loading')
+            }
+            onPress={() => void request()}
+            disabled={!option || (wallet?.owedKobo ?? 0) > 0}
+            busy={busy}
+          />
+        )}
         <Button
           title={t('common.cancel')}
           variant="secondary"

@@ -2,12 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
+import { BrandMark } from '@rideswithme/web-core/client';
 import { normalizeNigerianPhone } from '@rideswithme/validation';
 import { LanguageSelect } from '@/components/language-select';
 import { auth } from '@/lib/api';
 import { InlineError, useI18n } from '@/lib/i18n';
 
-export function SignInFlow() {
+export function SignInFlow({ next = '/' }: { next?: string }) {
   const { t } = useI18n();
   const router = useRouter();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
@@ -39,7 +40,7 @@ export function SignInFlow() {
     e.preventDefault();
     void run(async () => {
       await auth.verifyOtp(phone, code);
-      router.replace('/');
+      router.replace(next);
     });
   };
 
@@ -50,7 +51,7 @@ export function SignInFlow() {
           <LanguageSelect />
         </div>
         <div className="brand">
-          <span className="brand-mark">R</span>
+          <BrandMark />
           {t('app.name')}
         </div>
         <h1>{t('signIn.title')}</h1>

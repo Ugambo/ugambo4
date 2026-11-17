@@ -1,9 +1,19 @@
 import type {
+  AdminPassengerVerificationDetail,
+  AdminPassengerVerificationItem,
+  KycUploadTicket,
+  PassengerVerificationView,
   AdminVehicleCategoryView,
+  BrandingView,
   SettingView,
   SupportContactView,
 } from '@rideswithme/shared-types';
-import type { UpdateSettingsInput, UpdateVehicleCategoryInput } from '@rideswithme/validation';
+import type {
+  RequestKycUploadInput,
+  SubmitKycInput,
+  UpdateSettingsInput,
+  UpdateVehicleCategoryInput,
+} from '@rideswithme/validation';
 import type {
   AdminDeletionRequestView,
   AdminIncidentView,
@@ -316,12 +326,45 @@ export function createApiClient(options: ApiClientOptions) {
     },
     /** How to reach support (set on the dashboard's Settings page). No sign-in needed. */
     supportContact: () => request<SupportContactView>('/v1/support-contact'),
+    /** Which logo to show (set on the dashboard's Settings page). No sign-in needed. */
+    branding: () => request<BrandingView>('/v1/branding'),
     me: {
       get: () => request<MeResponse>('/v1/me'),
       update: (input: UpdateMeInput) =>
         request<MeResponse>('/v1/me', { method: 'PATCH', body: input }),
+      /** Details still missing and the identity check's state (D-083). */
+      verification: () => request<PassengerVerificationView>('/v1/me/verification'),
+      kycUpload: (input: RequestKycUploadInput) =>
+        request<KycUploadTicket>('/v1/me/verification/uploads', { method: 'POST', body: input }),
+      submitVerification: (input: SubmitKycInput) =>
+        request<PassengerVerificationView>('/v1/me/verification', { method: 'POST', body: input }),
     },
     admin: {
+      passengerVerifications: {
+        list: (status: 'pending' | 'approved' | 'rejected' = 'pending') =>
+          request<AdminPassengerVerificationItem[]>('/v1/admin/passenger-verifications', {
+            query: { status },
+          }),
+        get: (userId: string) =>
+          request<AdminPassengerVerificationDetail>(
+            `/v1/admin/passenger-verifications/${encodeURIComponent(userId)}`,
+          ),
+        viewUrl: (userId: string, which: 'id' | 'selfie') =>
+          request<{ url: string; expiresAt: string }>(
+            `/v1/admin/passenger-verifications/${encodeURIComponent(userId)}/view-url`,
+            { method: 'POST', body: { which } },
+          ),
+        approve: (userId: string) =>
+          request<AdminPassengerVerificationDetail>(
+            `/v1/admin/passenger-verifications/${encodeURIComponent(userId)}/approve`,
+            { method: 'POST' },
+          ),
+        reject: (userId: string, reason: string) =>
+          request<AdminPassengerVerificationDetail>(
+            `/v1/admin/passenger-verifications/${encodeURIComponent(userId)}/reject`,
+            { method: 'POST', body: { reason } },
+          ),
+      },
       listUsers: (query: Partial<ListUsersQuery> = {}) =>
         request<Paginated<AdminUserSummary>>('/v1/admin/users', { query }),
       listRoles: () => request<RoleSummary[]>('/v1/admin/roles'),
@@ -350,6 +393,12 @@ export function createApiClient(options: ApiClientOptions) {
           { method: 'DELETE' },
         ),
       settings: {
+        setLogo: (imageBase64: string) =>
+          request<BrandingView>('/v1/admin/branding/logo', {
+            method: 'PUT',
+            body: { imageBase64 },
+          }),
+        removeLogo: () => request<BrandingView>('/v1/admin/branding/logo', { method: 'DELETE' }),
         list: () => request<SettingView[]>('/v1/admin/settings'),
         update: (input: UpdateSettingsInput) =>
           request<SettingView[]>('/v1/admin/settings', { method: 'PATCH', body: input }),

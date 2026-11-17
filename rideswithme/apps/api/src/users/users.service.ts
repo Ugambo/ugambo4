@@ -33,6 +33,12 @@ export class UsersService {
       emailVerified: user.email_verified_at !== null,
       fullName: user.full_name,
       preferredLanguage: user.preferred_language,
+      gender: user.gender,
+      dateOfBirth: user.date_of_birth,
+      emergencyContact:
+        user.emergency_contact_name && user.emergency_contact_phone
+          ? { name: user.emergency_contact_name, phone: user.emergency_contact_phone }
+          : null,
       status: user.status,
       roles: access.roles,
       permissions: [...access.permissions].sort(),
@@ -48,9 +54,14 @@ export class UsersService {
   async updateMe(userId: string, input: UpdateMeInput, mfaVerified: boolean): Promise<MeResponse> {
     const current = await this.db
       .selectFrom('users')
-      .select('email')
+      .select(['email', 'phone_e164'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
+    if (input.emergencyContact && input.emergencyContact.phone === current.phone_e164) {
+      throw new AppException(ErrorCode.VALIDATION_FAILED, 'Use someone else’s number', {
+        details: [{ path: 'emergencyContact.phone', message: 'Not your own number' }],
+      });
+    }
     const emailChanged = input.email !== undefined && input.email !== current.email;
     try {
       await this.db
@@ -62,6 +73,12 @@ export class UsersService {
           }),
           // A new email address starts unverified (verification arrives with email sending).
           ...(emailChanged && { email: input.email ?? null, email_verified_at: null }),
+          ...(input.gender !== undefined && { gender: input.gender }),
+          ...(input.dateOfBirth !== undefined && { date_of_birth: input.dateOfBirth }),
+          ...(input.emergencyContact !== undefined && {
+            emergency_contact_name: input.emergencyContact.name,
+            emergency_contact_phone: input.emergencyContact.phone,
+          }),
         })
         .where('id', '=', userId)
         .execute();

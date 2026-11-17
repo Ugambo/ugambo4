@@ -49,6 +49,7 @@ export const PERMISSION_KEYS = [
   'privacy.manage',
   'settings.manage',
   'wallets.adjust_unlimited',
+  'passengers.verify',
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 

@@ -50,6 +50,7 @@ import { IdempotencyService } from '../common/idempotency.service';
 import { RateLimiterService } from '../common/rate-limit/rate-limiter.service';
 import { ReqContext, type RequestContext } from '../common/request-context';
 import { zod } from '../common/zod-validation.pipe';
+import { KycService } from '../passengers/kyc.service';
 import { BookingsService } from './bookings.service';
 import { CatalogService } from './catalog.service';
 import { OperatorsService } from './operators.service';
@@ -64,6 +65,7 @@ export class PassengerBusController {
     private readonly bookings: BookingsService,
     private readonly idempotency: IdempotencyService,
     private readonly rateLimiter: RateLimiterService,
+    private readonly kyc: KycService,
   ) {}
 
   @Get('cities')
@@ -94,6 +96,8 @@ export class PassengerBusController {
     @Headers('idempotency-key') key: string | undefined,
   ): Promise<BusBookingView> {
     await this.rateLimiter.consume({ name: 'bus_hold', limit: 30, windowSeconds: 3600 }, p.userId);
+    // Passengers must be verified first while the setting is on (D-083).
+    await this.kyc.assertCanBook(p.userId);
     return this.idempotency.run(p.userId, key, 'POST /v1/bus/bookings', body, () =>
       this.bookings.hold(p.userId, body),
     );

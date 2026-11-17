@@ -23,6 +23,11 @@ export interface UsersTable {
   status: ColumnType<UserStatus, UserStatus | undefined, UserStatus>;
   suspended_reason: string | null;
   deleted_reason: string | null;
+  gender: 'female' | 'male' | null;
+  /** YYYY-MM-DD (selected as text). */
+  date_of_birth: ColumnType<string | null, string | null | undefined, string | null>;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
   totp_secret_encrypted: string | null;
   totp_enabled_at: Timestamp | null;
   totp_last_used_step: ColumnType<string | null, number | null, number | null>;
@@ -186,7 +191,7 @@ export interface VehiclesTable {
 export interface FileUploadsTable {
   id: Generated<string>;
   owner_user_id: string;
-  purpose: 'driver_document';
+  purpose: 'driver_document' | 'passenger_kyc';
   object_key: string;
   content_type: string;
   declared_size: number;
@@ -599,7 +604,38 @@ export interface SystemSettingsTable {
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
+export interface BrandingAssetsTable {
+  key: 'logo';
+  content_type: 'image/png' | 'image/jpeg' | 'image/webp';
+  data: Buffer;
+  version: string;
+  updated_by: string | null;
+  updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
+}
+
+export interface PassengerVerificationsTable {
+  user_id: string;
+  status: ColumnType<
+    'pending' | 'approved' | 'rejected',
+    'pending' | 'approved' | 'rejected' | undefined
+  >;
+  id_type: 'nin_slip' | 'national_id_card' | 'drivers_licence' | 'voters_card' | 'passport';
+  nin_encrypted: string;
+  nin_lookup_hash: Buffer;
+  nin_last4: string;
+  id_object_key: string;
+  id_content_type: string;
+  selfie_object_key: string;
+  selfie_content_type: string;
+  submitted_at: ColumnType<Date, Date | string | undefined, Date | string>;
+  reviewed_at: Timestamp | null;
+  reviewed_by: string | null;
+  rejection_reason: string | null;
+}
+
 export interface Database {
+  passenger_verifications: PassengerVerificationsTable;
+  branding_assets: BrandingAssetsTable;
   system_settings: SystemSettingsTable;
   users: UsersTable;
   roles: RolesTable;

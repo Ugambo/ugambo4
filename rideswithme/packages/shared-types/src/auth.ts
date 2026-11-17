@@ -1,4 +1,5 @@
 import type { Language } from './i18n';
+import type { Gender } from './kyc';
 import type { PermissionKey, RoleKey } from './roles';
 
 export type UserStatus = 'active' | 'suspended' | 'deleted';
@@ -25,6 +26,11 @@ export interface MeResponse {
   emailVerified: boolean;
   fullName: string | null;
   preferredLanguage: Language;
+  gender: Gender | null;
+  /** YYYY-MM-DD. */
+  dateOfBirth: string | null;
+  /** Texted when they press SOS. */
+  emergencyContact: { name: string; phone: string } | null;
   status: UserStatus;
   roles: RoleKey[];
   permissions: PermissionKey[];

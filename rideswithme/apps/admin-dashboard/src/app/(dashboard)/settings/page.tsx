@@ -17,10 +17,12 @@ import { ErrorState, InlineError, Loading } from '@/components/states';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import type { MessageKey } from '@/lib/messages';
+import { LogoSettings } from './logo-settings';
 
 /** What staff type for a value: naira for kobo, percent for bps, a list for phones. */
 function toInput(unit: SettingUnit, v: SettingValue): string {
   if (v === null) return '';
+  if (typeof v === 'boolean') return String(v);
   if (Array.isArray(v)) return v.join(', ');
   if (unit === 'kobo') return String(Number(v) / 100);
   if (unit === 'bps') return String(Number(v) / 100);
@@ -30,6 +32,7 @@ function toInput(unit: SettingUnit, v: SettingValue): string {
 /** Back from what staff typed to the value the API takes; undefined when it is not a number. */
 function fromInput(unit: SettingUnit, text: string): SettingValue | undefined {
   const s = text.trim();
+  if (unit === 'bool') return s === 'true';
   if (unit === 'phones')
     return s
       .split(/[,\n]/)
@@ -41,7 +44,8 @@ function fromInput(unit: SettingUnit, text: string): SettingValue | undefined {
   return unit === 'kobo' || unit === 'bps' ? Math.round(n * 100) : Math.round(n);
 }
 
-function shown(unit: SettingUnit, v: SettingValue, none: string): string {
+function shown(unit: SettingUnit, v: SettingValue, none: string, yesNo: [string, string]): string {
+  if (typeof v === 'boolean') return v ? yesNo[0] : yesNo[1];
   if (v === null || (Array.isArray(v) && v.length === 0)) return none;
   if (Array.isArray(v)) return v.join(', ');
   if (unit === 'kobo') return formatKobo(Number(v));
@@ -126,7 +130,18 @@ export default function SettingsPage() {
           {t(`settings.${s.key}` as MessageKey)}
           {suffix ? ` (${t(suffix)})` : ''}
         </label>
-        {s.unit === 'phones' ? (
+        {s.unit === 'bool' ? (
+          <label className="checkbox">
+            <input
+              id={id}
+              type="checkbox"
+              checked={draft[s.key] === 'true'}
+              disabled={isReset}
+              onChange={(e) => setDraft({ ...draft, [s.key]: String(e.target.checked) })}
+            />{' '}
+            {t('common.yes')}
+          </label>
+        ) : s.unit === 'phones' ? (
           <textarea
             id={id}
             rows={2}
@@ -146,7 +161,12 @@ export default function SettingsPage() {
         )}
         <p className="small muted">
           {t(`settings.${s.key}.help` as MessageKey)}{' '}
-          {t('settings.default', { value: shown(s.unit, s.defaultValue, t('settings.notSet')) })}
+          {t('settings.default', {
+            value: shown(s.unit, s.defaultValue, t('settings.notSet'), [
+              t('common.yes'),
+              t('common.no'),
+            ]),
+          })}
           {s.changed &&
             s.updatedAt &&
             ` · ${t('settings.changedBy', {
@@ -178,6 +198,7 @@ export default function SettingsPage() {
       <div className="page-header">
         <h1>{t('settings.title')}</h1>
       </div>
+      <LogoSettings />
       <p className="small muted">{t('settings.intro')}</p>
       <form onSubmit={(e) => void save(e)}>
         {SETTING_GROUPS.map((g) => (

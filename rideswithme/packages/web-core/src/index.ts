@@ -5,3 +5,4 @@ export {
   errorTrackingOrigins,
   ERROR_TRACKING_META,
 } from './error-tracking-config';
+export * from './branding';

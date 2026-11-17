@@ -312,6 +312,14 @@ export class DeletionService implements OnModuleInit, OnApplicationShutdown {
       .select('object_key')
       .where('driver_user_id', '=', userId)
       .execute();
+    // The passenger identity check's photos go too (D-083).
+    const kyc = await this.db
+      .selectFrom('passenger_verifications')
+      .select(['id_object_key', 'selfie_object_key'])
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+    if (kyc)
+      documents.push({ object_key: kyc.id_object_key }, { object_key: kyc.selfie_object_key });
     await this.db.transaction().execute(async (trx) => {
       if (staff) await staff.guard(trx);
       await trx
@@ -322,6 +330,10 @@ export class DeletionService implements OnModuleInit, OnApplicationShutdown {
           email: null,
           email_verified_at: null,
           full_name: null,
+          gender: null,
+          date_of_birth: null,
+          emergency_contact_name: null,
+          emergency_contact_phone: null,
           status: 'deleted',
           deleted_at: now,
           deleted_reason: staff?.reason ?? null,
@@ -334,6 +346,7 @@ export class DeletionService implements OnModuleInit, OnApplicationShutdown {
       await this.sessions.revokeAllForUser(userId, 'account_deleted', trx);
       await trx.deleteFrom('user_roles').where('user_id', '=', userId).execute();
       await trx.deleteFrom('saved_places').where('user_id', '=', userId).execute();
+      await trx.deleteFrom('passenger_verifications').where('user_id', '=', userId).execute();
       await trx.deleteFrom('push_tokens').where('user_id', '=', userId).execute();
       await trx.deleteFrom('notifications').where('user_id', '=', userId).execute();
       await trx

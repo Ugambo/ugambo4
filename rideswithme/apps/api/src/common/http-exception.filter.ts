@@ -54,6 +54,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       body = { code: ErrorCode.CONFLICT, message: 'Busy, please retry', retryAfterSeconds: 1 };
       res.setHeader('Retry-After', '1');
       this.logger.warn({ err: exception, requestId }, 'Database conflict; client asked to retry');
+    } else if (isBodyParserError(exception)) {
+      // Too large (413) or not valid JSON (400): the client's mistake, not a server fault.
+      status = exception.status;
+      body = {
+        code: STATUS_TO_CODE[status] ?? ErrorCode.VALIDATION_FAILED,
+        message: status === 413 ? 'Request too large' : 'Malformed request',
+      };
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       body = {
@@ -75,6 +82,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (requestId) payload.requestId = requestId;
     res.status(status).json(payload);
   }
+}
+
+/** Errors from Express's body parser (it marks them `expose` with a 4xx status and a type). */
+function isBodyParserError(err: unknown): err is { status: number; type: string } {
+  const e = err as { status?: unknown; type?: unknown; expose?: unknown } | null;
+  return (
+    !!e &&
+    e.expose === true &&
+    typeof e.type === 'string' &&
+    typeof e.status === 'number' &&
+    e.status >= 400 &&
+    e.status < 500
+  );
 }
 
 /** PostgreSQL deadlock_detected (40P01) and serialization_failure (40001). */

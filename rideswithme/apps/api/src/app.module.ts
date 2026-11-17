@@ -3,6 +3,8 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './admin/admin.module';
+import { BrandingModule } from './branding/branding.module';
+import { PassengersModule } from './passengers/passengers.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
@@ -74,6 +76,8 @@ export class AppModule {
         UsersModule,
         AuthModule,
         SettingsModule,
+        BrandingModule,
+        PassengersModule,
         AdminModule,
         DriversModule,
         MapsModule,

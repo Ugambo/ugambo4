@@ -163,6 +163,7 @@ test.describe('safety and support', () => {
       await check(page, url);
     // Pages for people who are not signed in.
     const visitor = await (await browser.newContext()).newPage();
+    await check(visitor, '/welcome');
     await check(visitor, '/sign-in');
     await check(visitor, trackUrl);
     expect(problems).toEqual([]);

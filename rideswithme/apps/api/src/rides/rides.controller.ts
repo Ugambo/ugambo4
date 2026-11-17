@@ -17,6 +17,7 @@ import { CurrentPrincipal, type Principal } from '../auth/principal';
 import { IdempotencyService } from '../common/idempotency.service';
 import { RateLimiterService } from '../common/rate-limit/rate-limiter.service';
 import { zod } from '../common/zod-validation.pipe';
+import { KycService } from '../passengers/kyc.service';
 import { PricingService } from '../pricing/pricing.service';
 import { RideService } from './ride.service';
 
@@ -27,6 +28,7 @@ export class RidesController {
     private readonly rides: RideService,
     private readonly idempotency: IdempotencyService,
     private readonly rateLimiter: RateLimiterService,
+    private readonly kyc: KycService,
   ) {}
 
   /** Prices a trip for every vehicle type. Each option carries a quoteId valid for a few minutes. */
@@ -54,6 +56,8 @@ export class RidesController {
       { name: 'ride_booking', limit: 20, windowSeconds: 3600 },
       p.userId,
     );
+    // Passengers must be verified first while the setting is on (D-083).
+    await this.kyc.assertCanBook(p.userId);
     return this.idempotency.run(p.userId, key, 'POST /v1/rides', body, () =>
       this.rides.book(p.userId, body),
     );
