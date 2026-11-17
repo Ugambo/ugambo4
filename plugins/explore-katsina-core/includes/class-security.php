@@ -348,6 +348,15 @@ final class Security {
 			insert_with_markers( trailingslashit( $up['basedir'] ) . '.htaccess', 'Explore Katsina', self::uploads_rules() );
 			$done[] = 'no PHP in uploads';
 		}
+		// Backups folder (UpdraftPlus): closed to the web even before the first backup is made.
+		if ( class_exists( 'UpdraftPlus_Options' ) ) {
+			$dir = WP_CONTENT_DIR . '/updraft';
+			if ( wp_mkdir_p( $dir ) && ! file_exists( $dir . '/.htaccess' ) && is_writable( $dir ) ) {
+				file_put_contents( $dir . '/.htaccess', "deny from all\n" ); // phpcs:ignore
+				file_put_contents( $dir . '/index.html', '' ); // phpcs:ignore
+				$done[] = 'backups folder closed';
+			}
+		}
 		update_option( 'default_ping_status', 'closed' );
 		update_option( 'default_pingback_flag', 0 );
 		$done[] = 'pingbacks off';

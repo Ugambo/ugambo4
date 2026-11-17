@@ -153,6 +153,61 @@ final class CLI {
 	}
 
 	/**
+	 * Get this site ready to be exported to a real host (Phase 15). Changes THIS copy:
+	 *  - creates an administrator account for the owner (a strong password is printed once) and removes
+	 *    the local "admin" account;
+	 *  - newsletter email goes out the normal WordPress way (not to the local test inbox);
+	 *  - search engines are asked not to index the site until launch (Settings → Reading);
+	 *  - local logs, caches and backups are removed.
+	 *
+	 * ## OPTIONS
+	 * [--user=<login>]
+	 * : The owner's administrator login. Default: explorekatsina_admin
+	 * [--yes]
+	 * : Do not ask for confirmation.
+	 *
+	 * @subcommand prepare-export
+	 */
+	public function prepare_export( $args, $assoc ) {
+		\WP_CLI::confirm( 'This changes this copy of the site for export (new admin account, local admin removed). Continue?', $assoc );
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+		$login = sanitize_user( $assoc['user'] ?? 'explorekatsina_admin', true );
+		$pass  = wp_generate_password( 20, true, false );
+		$uid   = username_exists( $login );
+		if ( $uid ) {
+			wp_set_password( $pass, $uid );
+		} else {
+			$uid = wp_insert_user( array( 'user_login' => $login, 'user_pass' => $pass, 'user_email' => 'info@explorekatsina.com.ng', 'display_name' => 'Explore Katsina', 'role' => 'administrator' ) );
+			if ( is_wp_error( $uid ) ) {
+				\WP_CLI::error( $uid->get_error_message() );
+			}
+		}
+		foreach ( get_users( array( 'role' => 'administrator', 'fields' => 'ID' ) ) as $other ) {
+			if ( (int) $other !== (int) $uid ) {
+				wp_delete_user( (int) $other, (int) $uid ); // Their content is kept and given to the new account.
+			}
+		}
+		update_option( 'admin_email', 'info@explorekatsina.com.ng' );
+		if ( class_exists( '\MailPoet\Settings\SettingsController' ) ) {
+			$s = \MailPoet\Settings\SettingsController::getInstance();
+			$s->set( 'mta_group', 'website' );
+			$s->set( 'mta', array( 'method' => 'PHPMail', 'frequency' => array( 'emails' => 25, 'interval' => 5 ) ) );
+		}
+		update_option( 'blog_public', 0 );
+		delete_transient( 'ek_rules_checked' );
+		Integrations::clear_page_cache();
+		foreach ( array( WP_CONTENT_DIR . '/debug.log' ) as $f ) {
+			if ( file_exists( $f ) ) {
+				wp_delete_file( $f );
+			}
+		}
+		foreach ( (array) glob( WP_CONTENT_DIR . '/updraft/backup_*' ) as $f ) {
+			wp_delete_file( $f );
+		}
+		\WP_CLI::success( "Ready to export. Owner login: {$login}  Password: {$pass}  (shown once: keep it safe, change it after the first login)" );
+	}
+
+	/**
 	 * Write the security and browser-caching rules again (.htaccess, uploads folder). Safe to re-run.
 	 */
 	public function security() {

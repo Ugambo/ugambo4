@@ -1,27 +1,321 @@
 # HANDOVER — Explore Katsina
 
-Updated at the end of every phase so anyone (or a new Claude session) can continue
-from exactly where the last one stopped.
+The owner's guide to the Explore Katsina website: how to put it online, how to run it day to day, and what
+to replace before launch. The technical record of how it was built is at the end (Part 4).
 
 ## Current status
-- **Phase 1 (Architecture plan): done and approved.** See `docs/ARCHITECTURE.md`.
-- **Phase 2 (Business accounts & approval): done and approved.**
-- **Phase 3 (Hotels): done and approved.**
-- **Phase 4 (Restaurants): done and approved.**
-- **Phase 5 (Event centres): done and approved.**
-- **Phase 6 (Customer accounts & reviews): done and approved.**
-- **Phase 7 (Commissions, payouts & invoices): done and approved.**
-- **Phase 8 (Katsina Map & rankings): done and approved.**
-- **Phase 9 (Revenue features): done and approved.**
-- **Phase 10 (Tourism guide): done and approved.**
-- **Phase 11 (Brand & theme): done and approved.**
-- **Phase 12 (Other plugins, free versions): done and approved.**
-- **Phase 13 (Pages & sample data): done and approved.**
-- **Phase 14 (SEO, speed, security): done, waiting for the owner's go-ahead.**
-- Next: **Phase 15 (Test everything & hand over)**.
-- **New owner instruction (9 Nov 2026): use real royalty-free photos, not placeholders.** See "Photos" below.
+- **All 15 phases are done** (Phase 15, test everything and hand over, finished 17 November 2026).
+- **Tested:** about 1,300 automatic checks, including all 14 journeys in the brief, every page and dashboard at
+  phone, tablet and computer sizes, every email, every link and the language switcher (see
+  `docs/phase15-checks.md`), a break-in test showing businesses only reach their own data, and Google
+  Lighthouse 90+ on phones for all 20 main pages (`docs/lighthouse/summary.md`).
+- **The site holds demonstration data** named "SAMPLE": delete it before launch (one button, see 2.14).
+- **Export for your host:** `explore-katsina-site-2026-11-17.wpress` (212 MB, sent to you in the chat; SHA-256
+  `4c93db7c…c7d1389`). It was test-imported into a separate, empty WordPress and worked. The owner login for it
+  was given to you separately, not written here.
 
-## Decisions made (owner approved, 5 Nov 2026)
+---
+
+# Part 1 — Putting the site online (step by step)
+
+You need: a hosting plan, your domain name, and about two hours. Do the steps in order.
+
+### 1.1 Hosting and domain
+- Choose a host with **PHP 8.1 or newer**, **MySQL/MariaDB**, **SSL (https)** and **cron jobs**: for example
+  Truehost or Whogohost (Nigeria, cPanel) or Hostinger (business or LiteSpeed plan). A plan with at least
+  2 GB memory and SSD storage is comfortable for maps and bookings.
+- Point your domain (e.g. explorekatsina.com.ng: still a placeholder, your choice) to the host and switch on
+  the free SSL certificate in the host's control panel. The site must open with **https://**.
+
+### 1.2 Install WordPress on the host
+Use the host's one-click installer (Softaculous in cPanel, or Hostinger's "Website → Add website"). Any admin
+username and password will do: the import replaces them.
+
+### 1.3 Import Explore Katsina
+1. In the new WordPress: **Plugins → Add New**, search **All-in-One WP Migration**, install, activate (free).
+2. **All-in-One WP Migration → Import → Import from File**, choose the `.wpress` export file.
+3. If it says the file is too big: in cPanel open **MultiPHP INI Editor** (or "Select PHP Version → Options")
+   and set `upload_max_filesize` and `post_max_size` to **512M**, then try again. On Hostinger ask support,
+   or use their own migration tool. (The paid "Unlimited" add-on is not needed.)
+4. Confirm the warning, wait for "Your site has been imported", then open **Settings → Permalinks** and click
+   **Save Changes** twice (the import screen asks for this).
+5. Log in with the owner login given to you. **Change the password** and set **your own email**
+   (Users → Profile). Also set **Settings → General → Administration Email**.
+6. Expected yellow boxes after the move (all normal): the encryption key (1.4), "Wordfence installation is
+   incomplete" (click **Resume installation**, see 1.10), "FluentSMTP … no email connection" (1.7), and a
+   Rank Math note about "mailpoet_page" (you can close it).
+
+### 1.4 The encryption key (do this before any business enters bank details)
+wp-admin shows a yellow box with a line starting `define( 'EK_ENCRYPTION_KEY', …`. Copy it into
+`wp-config.php` (host **File Manager** → `public_html/wp-config.php` → Edit) just above the line
+`/* That's all, stop editing! */`, save, reload wp-admin: the box disappears.
+**Keep a copy of that line in a safe place** (password manager). Without it, saved bank details cannot be read,
+and backups cannot bring them back.
+Optional: add `define( 'EK_PRIVATE_DIR', '/home/youruser/ek-private/' );` (a folder outside `public_html`)
+so ID documents are stored outside the website folder.
+
+### 1.5 Speed and the page cache
+- **LiteSpeed host** (Hostinger, many Nigerian hosts): deactivate WP Super Cache, install the free
+  **LiteSpeed Cache** plugin and switch it on (never run two page caches).
+- **Other hosts:** **Settings → WP Super Cache → Caching On → Update Status**.
+- The security and browser-caching rules are written automatically the first time you open wp-admin on the
+  new host. On an Nginx host, ask the host to add the rules listed in `includes/class-security.php`.
+
+### 1.6 The cron job (keeps money, holds and invoices on time)
+cPanel → **Cron Jobs** → every 5 minutes:
+`wget -q -O - https://YOUR-DOMAIN/wp-cron.php?doing_wp_cron >/dev/null 2>&1`
+then add `define( 'DISABLE_WP_CRON', true );` to `wp-config.php` (same place as the key).
+
+### 1.7 Email that arrives (not in spam)
+Create the mailbox `info@` your domain (host control panel). Then **Settings → FluentSMTP**: add a connection
+(your host's SMTP details, or a mail service such as Brevo/Zoho/Amazon SES; check their current prices).
+Send the test email. Newsletter email (MailPoet) uses the same route.
+
+### 1.8 Payments: test first, then live
+1. Create accounts with **Paystack** and/or **Flutterwave** (they verify your business; this takes days).
+2. **WooCommerce → Settings → Payments → Paystack → Manage**: tick Enable and **Test mode**, paste the
+   **test** public and secret keys (Paystack dashboard → Settings → API Keys & Webhooks), copy the webhook
+   address shown on that page into the same Paystack page, save. Flutterwave: same idea.
+3. Make a test booking with a test card from the Paystack/Flutterwave documentation. Check the booking shows
+   as paid in the hotel's dashboard and that the emails arrive.
+4. Untick Test mode, paste the **live** keys, save. (The local "test payment" screen used during building
+   never appears on a live site.)
+The exact field names on those plugins' pages may differ slightly from this description: follow their labels.
+
+### 1.9 Backups
+**UpdraftPlus → Settings**: choose remote storage (Google Drive is free), click Authenticate, save. Schedules are
+already set (database every day, 14 kept; files every week, 4 kept). Click **Backup Now** once to check.
+Keep the encryption key line (1.4) separately: it is not inside the backups.
+
+### 1.10 Security
+- **Wordfence**: open it once and click **Optimize the Wordfence Firewall** if offered.
+- **Two-step login for administrators**: Wordfence → **Login Security** → scan the QR code with an authenticator
+  app on your phone. Free; strongly recommended.
+- Login lockouts (4 tries, 20 minutes), hidden WordPress version, XML-RPC off, password rules and security
+  headers are already on.
+
+### 1.11 Replace the placeholders — see the checklist in Part 3.
+
+### 1.12 Delete the SAMPLE data — see 2.14.
+
+### 1.13 Open to search engines
+**Settings → Reading → untick "Discourage search engines"** (the export arrives with it ticked so nothing is
+indexed before launch). Then add the site to **Google Search Console** and submit `https://YOUR-DOMAIN/sitemap_index.xml`.
+
+---
+
+# Part 2 — Running the site (how to…)
+
+Everything below is in **wp-admin → Explore Katsina** unless said otherwise. Every important action is written
+to **Activity log**.
+
+### 2.1 Approve (or reject) a new business
+1. **Approvals** (the red number shows how many are waiting) → click the business.
+2. Check the details, the **map pin**, the photos, the bank details and the ID document
+   (**View ID (logged)**: every view is recorded).
+3. **Approve and publish**, or **Reject** with a reason (the owner is told what to fix and can resubmit).
+4. Later on the same page: **Pause listing / Resume listing**, **Give Verified badge**, and **Verify
+   self-declared star rating** (only verified stars are shown to search engines).
+
+### 2.2 Commission
+- Default rates: **Settings → Money → Commission rates** (placeholders: hotels 10%, event centres 10%, tour
+  operators 15%, restaurant reservations 0%, food orders 10%).
+- One business's own rate: open it in **Approvals** → **Own commission rate for this business** → **Save rate**
+  (give a reason). Changes apply to **new bookings only**.
+
+### 2.3 Payouts (paying businesses)
+How money moves: a guest pays online → the business's share is **on hold** until 3 days after check-out / the
+event (the complaint window) → it becomes **available** → the business requests a payout (minimum ₦5,000).
+1. **Payouts** → **Show full account details (logged)**.
+2. Send the bank transfer from your bank.
+3. **Approve**, type the **Transfer reference**, **Mark paid**. Or **Reject** with a reason (the money stays in
+   their balance). The business is emailed at each step.
+
+### 2.4 Commission invoices (pay-at-the-venue bookings)
+- On the **1st of each month** an invoice is created for commission on bookings paid at the venue. Businesses
+  pay online or from their earnings balance in their dashboard.
+- Paid by bank transfer? **Invoices → Mark paid** with the reference. **Write off** (with a reason) cancels one.
+- **Unpaid 30 days after the due date → the listing is paused automatically**, and comes back by itself when
+  paid. **Create invoices now for [month]** makes them by hand (safe to repeat).
+- Change the payment time: **Settings → Money → Invoice payment time (days)**.
+
+### 2.5 Guest complaints (disputes)
+A guest can report a problem up to 3 days after check-out/the event; the business's money for that booking is
+frozen. **Complaints** → read both sides → choose **No refund: release the money to the business** or **Refund
+the guest** (any amount up to what they paid) → write a note (sent to both) → **Decide**.
+
+### 2.6 Refunds
+Cancellations follow each business's policy automatically. When the payment company cannot refund by itself,
+the refund appears in **Refunds → Waiting to be paid**: send it by transfer and click **Mark refunded** (with
+the reference), or **Try the gateway again**.
+
+### 2.7 Fake or abusive reviews
+Only guests with a real, completed booking can review. **Reviews** → find it → choose a reason (fake, abusive,
+personal information, not about this business, spam) → **Hide**. **Show again** undoes it. Rankings update
+overnight, or press **Recalculate rankings now**. Owners can reply to reviews from their dashboard.
+
+### 2.8 Ranking weights
+**Settings → Rankings**: reviews needed before a rank number shows (3), how the score is made (rating /
+completed bookings / response, out of 100), "pretend" average reviews (stops one 5★ review beating many 4.6★
+ones), how fast old reviews count less, and the Top Rated / Rising badges. Featured and paid plans are
+**never** part of the score. Press **Recalculate rankings now** after changes.
+
+### 2.9 Plans, Verified and paid services
+- Prices: **Settings → Prices for paid features** (all PLACEHOLDERS). Businesses buy plans (Featured,
+  Premium) in their dashboard → **Plan**; reminders go 7 days and 1 day before the end; when a plan ends the
+  listing simply goes back to Basic.
+- **Sales & services**: approve or reject **Verified badge applications** (with optional refund), move
+  **Listing setup orders** along (In progress → Done), and approve **Event promotions**.
+- **Revenue**: your income per month and per source; record money received outside the site there too.
+
+### 2.10 Banner ads, AdSense and partners
+- **Banner ads → Add an ad**: name, advertiser, zone (Homepage, Search results, Katsina Map list, Sidebar,
+  Inside articles), image, link, start/end dates, payment received. Views and clicks are counted; ads are always
+  labelled "Advertisement".
+- AdSense: **Settings → Advertising & shop** (off until you add your publisher ID and slot numbers).
+- **Partners**: affiliate links (car hire etc.) with click counts. **Enquiries**: messages from the
+  "Advertise with us" page. Add your media kit PDF in Settings.
+
+### 2.11 Your own tours and ticket check-in
+- **Tours → Add New**: description, price per person, maximum group size, pickup point, duration, photos, and
+  the **Dates** table (date, time, seats, optional price, open/closed; dates with bookings cannot be deleted,
+  set them to closed). Free cancellation window:
+  **Settings → Prices** ("Own tours: free cancellation until … hours before departure").
+- Ticketed events: in the event editor (2.12) fill the **ticket types** table (name, price, quantity).
+  Buyers get each ticket's QR code by email and on their order page.
+- **Check-in staff**: **Users → Add New → Role "Ticket check-in staff"**. On the day, staff open
+  `https://YOUR-DOMAIN/check-in/` on a phone, log in, choose the event, press **Start camera** and point it
+  at the QR code (or type the code). Each ticket works once; the counter shows how many are in.
+
+### 2.12 Attractions, festivals and events
+- **Attractions → Add New**: text, category, LGA, map pin, opening hours and entry fee (as text), how to get
+  there, best time to visit, history, **sources**, photos with credits. Keep **"not yet verified"** ticked
+  until you have checked the details on the ground.
+- **Festivals & Events → Add New**: dates (or **date to be confirmed**), venue, LGA, map pin, type, sources and
+  optional ticket types. Organisers can also pay to promote their own events (approve them in Sales & services).
+- **Posts → Add New** for Stories (blog), with the categories already created.
+
+### 2.13 Switch on food ordering (later)
+**Settings → Restaurants → "Switch on online food ordering"**. Each restaurant then gets an **Online orders**
+section in its dashboard (pickup/delivery, fees, minimum order, preparation time) and orders appear there.
+While it is off, no ordering button appears anywhere (tested).
+
+### 2.14 Delete the SAMPLE data (before launch)
+**Explore Katsina → Settings**, bottom of the page: **Delete all SAMPLE data**: type `DELETE` and confirm. It
+removes every SAMPLE business with its owner account, bookings, reviews, invoices and photos, the SAMPLE
+tours, events and stories, the SAMPLE shop products and guide PDF. Your real businesses, the researched guide
+content (attractions, the Sallah Durbar, Plan your trip) and your settings stay.
+(Developers: `wp ek delete-sample --yes` does the same.)
+
+### 2.15 Hausa translations
+- Every main page has a Hausa copy (addresses start with `/ha/`). **Pages**, then use the language menu in the
+  top admin bar to show the Hausa pages, → open a page → replace the English text with Hausa → untick **"Needs Hausa translation"** (box on the
+  right) → Update. Until then visitors see a short note and search engines skip the page.
+- Menus: **Appearance → Menus → the "(Hausa)" menus**.
+- Listings, attractions and events are shown in both languages from one record (owners write their own text).
+- Buttons and labels of the booking screens are English. To translate them, the free **Loco Translate**
+  plugin can be used. Please use a fluent Hausa writer, not machine translation.
+
+### 2.16 Shop and digital guides
+**Products → Add New** (WooCommerce). Guides/maps: tick **Virtual** and **Downloadable** and add the PDF: buyers get
+an instant private download link. Delivery fees by state: **WooCommerce → Settings → Shipping** (PLACEHOLDER
+fees: Katsina ₦1,500, nearby states ₦3,000, rest of Nigeria ₦5,000).
+
+### 2.17 Reports
+**Reports**: commission earned, money owed per business, no-show rates, CSV download of bookings for a period.
+
+---
+
+# Part 3 — Checklist: replace before launch
+
+**Things only you can provide or decide**
+- [ ] Domain name and host (1.1); the site on **https://**
+- [ ] Encryption key in wp-config.php, with a safe copy (1.4); optionally `EK_PRIVATE_DIR`
+- [ ] Your own admin email and password (1.3); two-step login (1.10)
+- [ ] Real mailbox and SMTP service (1.7)
+- [ ] Paystack/Flutterwave: test keys → test booking → live keys (1.8)
+- [ ] Backups connected to remote storage (1.9); cron job (1.6); page cache on (1.5)
+
+**Contact details (PLACEHOLDER everywhere until replaced)**
+- [ ] Email `info@explorekatsina.com.ng` (footer, Contact page, emails, dashboard footer, MailPoet sender)
+- [ ] Phone `+234 800 000 0000` (Contact page, agreement, footer) and the **WhatsApp number** in
+      the **Join.chat** settings (left menu; currently +2348000000000)
+- [ ] Social handles `@explorekatsina`
+- [ ] Admin notification email (**Explore Katsina → Settings → Businesses**)
+- [ ] Bank transfer details for businesses paying invoices by transfer (shown as "contact us" for now)
+
+**Legal (drafts marked "DRAFT – for legal review")**
+- [ ] Listing & Partner Agreement: every `[square bracket]` item + lawyer review (change the agreement version in Settings when you update it)
+- [ ] Booking & Cancellation Policy, Refund Policy, Review Guidelines, Privacy Policy (NDPA 2023), Terms of Use: every `[bracket]`, then lawyer review
+- [ ] About page: company name, RC number, address, a line about the founders
+- [ ] Hotel cancellation policy wording (4 presets) and the refund rules (24 h / 5 days / 7 days; restaurants 24 h), 180-day review window
+
+**Prices and business rules (all placeholders, all changeable in Settings)**
+- [ ] Commission rates (2.2): hotels 10%, event centres 10%, tour operators 15%, restaurant reservations 0%, food orders 10%
+- [ ] Plan prices, Verified fee, listing setup, event promotion packages, banner ad prices ("on request")
+- [ ] Money rules: 3-day hold and complaint window, invoice due after 30 days, minimum payout ₦5,000, no-show flag at 25%
+- [ ] Booking rules: 30% default deposit, 15-minute payment hold; event centres 48-hour reply / 72-hour deposit windows, 7-day maximum online booking; restaurants ₦2,000-per-guest deposit for groups of 8+
+- [ ] Restaurant price bands (₦ under ₦3,000 … ₦₦₦₦ over ₦15,000 per person); map price bands (hotels under ₦15k / ₦35k / ₦70k; event centres under ₦200k / ₦500k / ₦1m)
+- [ ] Ranking settings (2.8)
+- [ ] Shop delivery fees (2.16); tour cancellation window (48 h)
+
+**Content**
+- [ ] **Delete the SAMPLE data** (2.14)
+- [ ] Guide content: check hours, fees, access and the approximate map pins on the ground, then untick "not yet verified" per attraction; review and publish the 3 draft stories
+- [ ] Your own tours (city tour, Durbar package, Daura day trip): descriptions, prices, dates
+- [ ] Hausa translations by a fluent writer (2.15)
+- [ ] Media kit PDF, AdSense code (optional), partner agreements
+- [ ] Logo/brand files if you have final versions; replace the default share picture if you like (Rank Math → Titles & Meta → Global Meta → OpenGraph Thumbnail)
+
+**Optional services (choose later; may cost money)**
+- [ ] WhatsApp/SMS notifications (off until you choose a provider, e.g. Termii or Twilio; costs per message)
+- [ ] Map tiles: OpenStreetMap is free with a fair-use limit; switch provider if the map gets very busy
+- [ ] Polylang for WooCommerce (paid) only if you want the shop in Hausa too (owner decision: English-only for now)
+
+**Launch day**
+- [ ] Settings → Reading: allow search engines (1.13); submit the sitemap in Google Search Console
+- [ ] Make one real small booking end to end and refund it
+
+---
+
+# Part 4 — Technical record
+
+### What Phase 15 did (plain language)
+**Tested everything, the way people will use it**
+- **All 14 journeys in the brief** pass in one automatic browser test (`tests/e2e/phase15-journeys.js`): a
+  hotel signs up on a phone → approved → rooms, prices, calendar → on the map; a guest uses "Near me", pays 2
+  nights, the stay ends, the money is released and paid out; two guests race for the last room (one wins); a
+  pay-at-hotel stay → invoice → unpaid invoice pauses the listing (paying brings it back); restaurant menu →
+  reservation → completed → verified review; event centre hall → request → deposit → event → money released;
+  cancellation with refund; Featured on and off (rank unchanged); a one-review newcomer does not outrank an
+  established hotel; the map with 215 pins shows in 1.9 s on a slowed-down phone; an ad's views and clicks are
+  counted; a ticket's **QR code is emailed and scanned by a phone camera** at check-in; a digital guide
+  downloads instantly; food ordering stays hidden while off.
+- **Every page, dashboard, email, link and the language switcher** (`tests/e2e/phase15-sweep.js`, report in
+  `docs/phase15-checks.md`): 48 English and 28 Hausa pages and all dashboards at 360 / 768 / 1280 px, 67 kinds
+  of email (99 emails) checked for branding, leftover placeholders and working links, 178 addresses crawled
+  with none broken, and English ⇄ Hausa on every page.
+- **A real move to a new host was rehearsed**: a fresh install was built from scratch with `setup.sh`,
+  exported with All-in-One WP Migration (compressed), imported into a separate empty WordPress, and checked.
+
+**Fixed or added because of the testing**
+- Ticket emails now carry each ticket's **QR code** (drawn as a small table, so it shows even when pictures are
+  blocked); a phone camera scanned it successfully.
+- **Delete all SAMPLE data** button (Settings) so no command line is needed before launch.
+- wp-admin shows a ready-to-paste **encryption key** line when none is set; security rules are re-written
+  automatically after moving host; the backups folder is closed before the first backup.
+- Language switcher on the full-screen map; wide admin tables scroll inside their box on phones; the XML
+  sitemap refreshes with the page cache; the setup script now builds menus and the share picture after the guide
+  content (found by testing a brand-new install); "Festivals & Events" label in the menu.
+- Local test sites only: a **test payment** option for the shop (never on a live site), like the one bookings use.
+
+**For developers: making a new export**
+`wp ek prepare-export --yes` (new owner admin, normal email sending, hidden from search engines, local files
+removed; prints the password once), then All-in-One WP Migration → Export → File, with "Exclude must-use
+plugins" ticked. Compression (gzip) was switched on for this export by adding the plugin's own
+`options[compression_type]=gzip` field to its export form; the free importer reads compressed files.
+
+### Decisions made (owner approved, 5 Nov 2026)
 1. All business types live in our own plugin `explore-katsina-core`. No Directorist or GeoDirectory.
 2. Banner ads will be built into the plugin (Advanced Ads charges for view/click tracking).
 3. FluentSMTP (free) will be added in Phase 12 so emails don't go to spam.
@@ -43,10 +337,10 @@ from exactly where the last one stopped.
 10. **Cache: WP Super Cache** until a host is chosen (owner, 11 Nov 2026). If the host runs LiteSpeed, switch to
     LiteSpeed Cache (deactivate WP Super Cache first; never run two page caches).
 
-## Still to decide later
+### Still to decide later
 - Hosting company (decides the cache plugin, real SMTP email and the backup storage).
 
-## What Phase 2 built (plain language)
+### What Phase 2 built (plain language)
 - **"List your business" page** (`/list-your-business/`): a 5-step, phone-friendly form for
   business name, type, LGA, description, address, **draggable map pin** (or "Use my location"),
   phone, WhatsApp, email, website, socials, opening hours, photos, owner's name, CAC number
@@ -72,7 +366,7 @@ from exactly where the last one stopped.
 - **Settings** (wp-admin → Explore Katsina → Settings): admin email for notices, agreement
   version, photo limit and size, minimum payout (₦5,000), reviews needed for a rank.
 
-## What Phase 3 built (plain language)
+### What Phase 3 built (plain language)
 - **Hotel dashboard, new sections:**
   - *Hotel details*: self-declared star rating (you can mark it "verified" in the admin approval
     screen), amenities, check-in/check-out times, house rules, cancellation policy (Flexible,
@@ -112,7 +406,7 @@ from exactly where the last one stopped.
   "SAMPLE", plus their rooms, bookings, calendar, money records, photos and owner accounts (and, since
   Phase 10, attractions and events named "SAMPLE …").
 
-## What Phase 4 built (plain language)
+### What Phase 4 built (plain language)
 - **Restaurant dashboard, new sections:**
   - *Restaurant details*: types of food (Hausa/Northern, Nigerian, continental, fast food,
     grills/suya, café, …), price range (₦ to ₦₦₦₦ per person), halal, dine-in / takeaway / delivers.
@@ -136,7 +430,7 @@ from exactly where the last one stopped.
 - **Deposits** are held like hotel money (commission 0% on table reservations) and start their 3-day release
   clock when the reservation is marked completed.
 
-## What Phase 5 built (plain language)
+### What Phase 5 built (plain language)
 - **Event centre dashboard, new sections:**
   - *Venue details*: amenities (parking, generator/24-hour power, AC, chairs and tables, sound system,
     outside catering/decorators allowed, changing rooms, security, stage, projector, wheelchair access),
@@ -158,7 +452,7 @@ from exactly where the last one stopped.
 - **Venue page:** amenities, every hall with capacity, price for the chosen date, deposit, availability,
   "Request to book" / "Book now", cancellation policy and venue rules.
 
-## What Phase 6 built (plain language)
+### What Phase 6 built (plain language)
 - **My Account** (`/account/`, in the menu): log in or create an account (name, email, optional phone,
   password). Tabs: **My Bookings** (hotels and event centres), **My Reservations** (restaurant tables),
   **My Orders** (shop orders now; tickets, guides and tours plug in later), **Favourites**, **Profile**
@@ -194,7 +488,7 @@ from exactly where the last one stopped.
   "My account", Sample Page, the agreement, Business Dashboard). Business owners reach their dashboard
   through log-in or the button in My Account. A designed menu comes with the design work later.
 
-## What Phase 7 built (plain language)
+### What Phase 7 built (plain language)
 - **Commission rates you control:** wp-admin → Explore Katsina → **Settings** → Money. One rate per type
   (PLACEHOLDERS: hotels 10%, event centre deposits 10%, tour operators 15%, table reservations 0%, food
   orders 10%). On any business's admin page you can give it its own rate ("Commission & money" box);
@@ -227,7 +521,7 @@ from exactly where the last one stopped.
   a high no-show rate on pay-at-hotel bookings can hide commission). Download bookings as CSV.
 - **Command line:** `wp ek money-tick` runs the hourly job now; `wp ek invoices 2026-10` creates a month's invoices.
 
-## What Phase 8 built (plain language)
+### What Phase 8 built (plain language)
 - **Katsina Map** (`/map/`, in the menu): a full-screen map of every approved hotel, restaurant and event
   centre, plus attractions. Leaflet + OpenStreetMap (free); one setting (`EK\Assets::map_config()`) switches
   to Google Maps later.
@@ -266,7 +560,7 @@ from exactly where the last one stopped.
   hidden. "Show again" undoes it.
 - **Command line:** `wp ek rank` (recalculate now), `wp ek map-index` (rebuild every pin).
 
-## What Phase 9 built (plain language)
+### What Phase 9 built (plain language)
 Owner decisions (9 Nov 2026): use **placeholder prices** (all in wp-admin → Settings → "Prices for paid
 features", marked PLACEHOLDER); **only events you add sell tickets** (organisers can pay to promote events).
 
@@ -319,7 +613,7 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 - Free libraries added: qrcode-generator 1.4.4 (MIT) for ticket QR codes, jsQR 1.4.0 (Apache 2.0) for the camera
   scanner (only loaded on /check-in/).
 
-## What Phase 14 built (plain language)
+### What Phase 14 built (plain language)
 **Search engines (SEO)**
 - Every hotel, restaurant, event centre, attraction, festival, tour and shop product now carries
   **structured data** (schema.org): the "hidden labels" Google, Bing and AI assistants read to show stars,
@@ -365,7 +659,7 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
   Also tested: guests see only their own bookings; booking pages need their secret link; ID documents and the
   private folder are closed; owners can't reach wp-admin or the user list.
 
-## What Phase 13 built (plain language)
+### What Phase 13 built (plain language)
 **Every page in the brief now exists**, in English, each with a Hausa version marked "Needs Hausa translation":
 - Home (now the site's front page), Explore, Katsina Map, Hotels, Restaurants, Event Centres, Things to Do and
   Tours.
@@ -417,7 +711,7 @@ code (EKS-XXXXXX), a receipt page, receipt emails to the buyer and a notice to y
 - To log in as a sample owner, reset its password, e.g.
   `wp user update sample_crimson-gate-hotel --user_pass=…`.
 
-## What Phase 12 built (plain language)
+### What Phase 12 built (plain language)
 All free versions, one plugin per job (no duplicates), set up by `wp ek plugins-setup` (run by `setup.sh`;
 each plugin is set up once, and changes you make later in wp-admin are kept). Every phase's tests still pass
 with all of them switched on.
@@ -444,7 +738,7 @@ Fixes found while testing:
 - The "Save" button no longer carries a security code for guests, so attraction pages can be cached.
 - The Top 10 pages per LGA ("Top 10 hotels in Daura") keep their own page title now that Rank Math manages titles.
 
-## What Phase 11 built (plain language)
+### What Phase 11 built (plain language)
 1. **Theme:** Kadence (free) + our child theme **"Explore Katsina"** (`themes/explore-katsina/`).
    - The brand is set as Kadence's *defaults*, so nothing is locked: you can still change colours,
      fonts, header and footer in Appearance → Customize.
@@ -508,7 +802,7 @@ Fixes found while testing:
   that up with Loco Translate (free).
 - Replace the placeholder contact details in Appearance → Widgets (footer) when ready.
 
-## What Phase 10 built (plain language)
+### What Phase 10 built (plain language)
 **Research first.** Every fact on the guide pages comes from a published source, listed under "Sources" on the
 page itself. The full notes, with confidence levels and every place where sources disagree, are in
 `docs/research/phase10-sources.md`. Nothing was invented:
@@ -576,7 +870,7 @@ page itself. The full notes, with confidence levels and every place where source
 - Etiquette page: general advice, worth a read by someone local.
 - Hausa versions of the guide pages: these need a fluent Hausa writer. I did not machine-translate them.
 
-## Photos (royalty-free, with credits)
+### Photos (royalty-free, with credits)
 - Source: **Wikimedia Commons**, only files that are public domain, CC0, CC BY or CC BY-SA. Each photo keeps
   its author, licence, licence link and source page, and business pages show a **"Photo credits"** list.
 - Tools: `scripts/commons_search.py "search words"` lists candidates with licences;
@@ -593,7 +887,7 @@ page itself. The full notes, with confidence levels and every place where source
   The download tool reads licences from each photo's page and only fetches standard 1280px copies,
   one photo about every minute, retrying refused ones later. Expect ~1 photo per minute at best.
 
-## Payments: now installed
+### Payments: now installed
 - The cloud session now runs in a personal environment called **"ugambo4"** that allows wordpress.org, so
   `setup.sh` installs **WooCommerce 11.2.2**, **Paystack WooCommerce Payment Gateway 5.8.6** (by Paystack)
   and **Flutterwave WooCommerce 3.3.2** (by Flutterwave), all set to Naira and Katsina. Plugins are downloaded
@@ -609,7 +903,7 @@ page itself. The full notes, with confidence levels and every place where source
 - "Near a chosen attraction" in hotel search works through `?near=<id>` and appears in the form once
   attractions exist (Phase 10).
 
-## Security in place (tested)
+### Security in place (tested)
 - Business owners have their own role with **no WordPress admin** and no Media Library access.
 - Every dashboard action checks "does this business belong to you?" first. Tests try all six
   dashboard actions against another owner's business and all are refused.
@@ -624,10 +918,10 @@ page itself. The full notes, with confidence levels and every place where source
 - **Owner to switch on:** two-step login for administrators (Wordfence → Login Security → scan the QR code
   with an authenticator app on your phone). Free; it needs your phone, so it is not switched on for you.
 
-## How to run it
+### How to run it
 ```bash
 ./setup.sh          # sets up / updates everything (safe to re-run)
-./tests/run.sh      # about 1,250 automatic checks, server and browser (Phases 2–14)
+./tests/run.sh      # about 1,300 automatic checks, server and browser (Phases 2–15)
 ./tests/run.sh --lighthouse   # the same plus the mobile speed test (about 5 more minutes)
 npm run build       # after editing any CSS/JS file: makes the small .min copies visitors download
 docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample --yes   # tidy up test data
@@ -635,7 +929,7 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 - Site: http://localhost:8888 · Admin: http://localhost:8888/wp-admin (user `admin`, password in `.env`)
 - Test inbox (offline mode): http://localhost:8025, where every email the site sends lands.
 
-## Where things are
+### Where things are
 | Path | What it is |
 |---|---|
 | `docs/ARCHITECTURE.md` | The approved plan |
@@ -646,6 +940,8 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `docs/screenshots/phase5/` | Screenshots of event centre search, venue page, request form, halls, confirmation |
 | `docs/screenshots/phase9/` | Screenshots of the plan page, search with Featured + banner ad, tickets with QR codes, check-in, tour, events, advertise, admin sales and revenue |
 | `docs/screenshots/phase14/` | Screenshots of the login message, the weak-password message, structured data and the speed report |
+| `docs/phase15-checks.md` | Phase 15 sweep report: every page, dashboard, email, link and the language switcher |
+| `docs/screenshots/phase15/` | Screenshots from the 14 journeys (calendar, payout, sold-out, paused listing, review, earnings, refund, Featured, newcomer, 200-pin map, ads, ticket email and camera check-in, guide download) |
 | `docs/lighthouse/summary.md` | Mobile Lighthouse scores for the 20 main pages (`node tests/lighthouse.js`) |
 | `scripts/minify.js`, `scripts/font-subset.py` | Make the .min CSS/JS (`npm run build`) and the tiny ₦/Hausa font files |
 | `docs/screenshots/phase13/` | Screenshots of the homepage with sample data, a sample hotel, Directory, Pricing, Privacy draft, a sample owner's dashboard |
@@ -673,9 +969,9 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
 | `  assets/vendor/qrcode/`, `jsqr/` | QR code drawing (MIT) and camera scanning (Apache 2.0) for tickets |
 | `  assets/vendor/markercluster/` | Leaflet.markercluster 1.5.3 (MIT licence, free) for pin clusters |
 | `mu-plugins/ek-local-mail.php` | Local-only: sends emails to the test inbox. **Never upload to the live site.** |
-| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase12-plugins.php`, `phase13-pages-sample.php`, `phase14-seo-security.php`, `phase4-woo-bridge.php`, `e2e/phase2–14.js`, `e2e/phase14-isolation.js` (business break-in test), `lighthouse.js` |
+| `tests/` | Automated checks: `phase2-security.php`, `phase3-hotels.php`, `phase4-restaurants.php`, `phase5-venues.php`, `phase6-accounts.php`, `phase7-money.php`, `phase8-rank-map.php`, `phase9-revenue.php`, `phase10-guide.php`, `phase11-theme.php`, `phase12-plugins.php`, `phase13-pages-sample.php`, `phase14-seo-security.php`, `phase4-woo-bridge.php`, `e2e/phase2–14.js`, `e2e/phase14-isolation.js` (business break-in test), `e2e/phase15-journeys.js` (the 14 journeys), `e2e/phase15-sweep.js` (pages, dashboards, emails, links, languages), `lighthouse.js` |
 
-## Environment notes (for the next session)
+### Environment notes (for the next session)
 - **Cloud environment:** this session uses the personal environment **"ugambo4"** (wordpress.org allowed).
   Start new cloud sessions for this project in that environment.
 - **Docker containers can't reach the internet directly** in the cloud (only this machine's proxy can), so
@@ -701,45 +997,3 @@ docker compose -f docker-compose.offline.yml run --rm -T cli wp ek delete-sample
   and add `define( 'DISABLE_WP_CRON', true );` to wp-config.php. Phase 15 covers this.
 - WordPress gotcha: never name a form field `name` (it's a reserved WordPress word and turns the page
   into "Page not found"). The business name field is `business_name`.
-
-## Placeholders to replace before launch (running list)
-- **Hosting (Phase 14):** the security and browser-caching rules are written into `.htaccess` (Apache/LiteSpeed
-  hosts, the usual in Nigeria). On an Nginx host, ask the host to add the same rules (listed in
-  `includes/class-security.php`). HTTPS sites also send HSTS for 180 days.
-- **Two-step login for administrators** (Wordfence, free): switch on with your phone.
-- Contact email `info@explorekatsina.com.ng` (PLACEHOLDER), used in the dashboard footer and emails
-- Phone `+234 800 000 0000` (PLACEHOLDER), used in the agreement, the Contact page and the WhatsApp button (Join.chat)
-- Social handles `@explorekatsina` (PLACEHOLDER)
-- Listing & Partner Agreement: every `[square bracket]` item + lawyer review
-- Commission rates (placeholders: hotels 10%, event centres 10%, tour operators 15%, restaurant reservations 0%, food orders 10%)
-- Plan prices (Phase 9)
-- Paystack and Flutterwave live keys (test keys only until launch)
-- Admin notification email (Settings)
-- `EK_ENCRYPTION_KEY` and `EK_PRIVATE_DIR` on the live host's wp-config.php
-- **SAMPLE data** (Phase 13) and test businesses are all named "SAMPLE …": delete everything with
-  `wp ek delete-sample --yes` before launch (businesses, owners, bookings, reviews, tours, events, tickets,
-  shop products and the sample PDF guide)
-- **Legal drafts** (Phase 13): fill in every [square bracket] item and have a lawyer review the Booking &
-  Cancellation Policy, Refund Policy, Review Guidelines, Privacy Policy (NDPA 2023) and Terms of Use
-- About page: company name, RC number, address and a line about the founders
-- Hotel cancellation policy wording (4 presets in `includes/class-hotel.php`): check with your lawyer
-- Deposit default 30% and 15-minute payment hold (business decisions, easy to change)
-- Restaurant price-range bands (₦ under ₦3,000 … ₦₦₦₦ over ₦15,000 per person) in `includes/class-restaurant.php`
-- Default large-group deposit ₦2,000 per guest for groups of 8+ (each restaurant can change it)
-- Paystack / Flutterwave TEST keys, then LIVE keys at launch
-- Event centres: 48-hour reply window, 72-hour deposit window, 30% default deposit, 7-day maximum online booking
-- Sample photos are illustrative (Wikimedia Commons, credited); real businesses upload their own
-- Refund rules above (24h / 5 days / 7 days, restaurant 24h) and the 180-day review window: check with your lawyer
-- WhatsApp/SMS notifications: off until you choose a provider (e.g. Termii, Twilio). Costs per message
-- Phase 7 business rules to confirm: 3-day hold and complaint window, invoice due after 30 days, no-show
-  flag at 25%, minimum payout ₦5,000 (all changeable)
-- Bank transfer details for businesses paying invoices by transfer (shown as "contact us" for now)
-- Map price bands (hotels under ₦15k / ₦35k / ₦70k per night; event centres under ₦200k / ₦500k / ₦1m) in
-  `includes/class-map-index.php`, and the ranking settings (all placeholders, easy to change)
-- Guide content (Phase 10): confirm hours, fees, access and approximate pins locally, then untick "not yet
-  verified" per attraction; review and publish the 3 draft stories; Hausa translations by a fluent writer
-- **All Phase 9 prices** (plans, Verified, setup, promotion), delivery fees, tour cancellation window (48 h),
-  banner ad prices ("on request"), the media kit PDF, AdSense code (off), partner agreements
-- Your own tours (city tour, Durbar package, Daura day trip): you write the descriptions, prices and dates
-- OpenStreetMap tiles: free with a fair-use limit. If the map gets very busy, switch the tile provider
-  (one setting)

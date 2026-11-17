@@ -221,7 +221,7 @@ function ekt_setup_content() {
 			$add( $id, __( 'Restaurants', 'explore-katsina-theme' ), $page( 'restaurants' ) );
 			$add( $id, __( 'Event centres', 'explore-katsina-theme' ), $page( 'event_centres' ) );
 			$add( $id, __( 'Things to do', 'explore-katsina-theme' ), $page( 'things_to_do' ) );
-			$add( $id, __( 'Events', 'explore-katsina-theme' ), $page( 'events' ) );
+			$add( $id, __( 'Festivals & Events', 'explore-katsina-theme' ), $page( 'events' ) );
 			$add( $id, __( 'Map', 'explore-katsina-theme' ), $page( 'map' ) );
 			$trip = $add( $id, __( 'Plan your trip', 'explore-katsina-theme' ), $page( 'plan_trip' ) );
 			foreach ( get_pages( array( 'parent' => $page( 'plan_trip' ), 'sort_column' => 'menu_order,ID' ) ) as $child ) {

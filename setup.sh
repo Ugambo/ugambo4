@@ -172,6 +172,10 @@ else
   warn "Bookings use the local TEST payment screen until WooCommerce is installed."
 fi
 ok "explore-katsina-core active"
+# Researched guide content (attractions, Sallah Durbar, Plan your trip, draft stories). Re-run safe:
+# only adds what is missing and never overwrites edits made in wp-admin. Runs before the menus, the Hausa
+# copies and the share picture, which use these pages and photos.
+wp ek import-guide && ok "Guide content imported"
 if wp theme is-installed kadence 2>/dev/null; then
   wp theme activate explore-katsina --quiet && wp eval 'ekt_setup_content();' && ok "Theme: Explore Katsina (Kadence child)"
   wp ek languages && ok "Languages: English + Hausa (Polylang)" || warn "Polylang not active: English only"
@@ -189,9 +193,6 @@ fi
 # Phase 13: SAMPLE demonstration data (skipped if already there). Remove it all with:
 #   wp ek delete-sample --yes
 wp ek sample-data && ok "SAMPLE data ready (delete with: wp ek delete-sample --yes)"
-# Researched guide content (attractions, Sallah Durbar, Plan your trip, draft stories). Re-run safe:
-# only adds what is missing and never overwrites edits made in wp-admin.
-wp ek import-guide && ok "Guide content imported"
 # WordPress's own demo post and page would otherwise appear among the Stories and in menus.
 for demo in "post:hello-world" "page:sample-page"; do
   id=$(wp post list --post_type="${demo%%:*}" --name="${demo#*:}" --field=ID 2>/dev/null | tail -n1)
