@@ -6,11 +6,17 @@
     "wp-env": "wp-env",
     "start": "wp-env start",
     "stop": "wp-env stop",
-    "build": "node scripts/minify.js"
+    "build": "node scripts/minify.js",
+    "test:install": "playwright install chromium",
+    "test": "bash tests/run.sh",
+    "site:start": "docker compose -f docker-compose.offline.yml up -d",
+    "site:stop": "docker compose -f docker-compose.offline.yml stop",
+    "site:logs": "docker compose -f docker-compose.offline.yml logs -f wordpress"
   },
   "devDependencies": {
     "@wordpress/env": "12.1.0",
     "esbuild": "0.24.2",
-    "lighthouse": "12.2.1"
+    "lighthouse": "12.2.1",
+    "playwright": "1.63.0"
   }
 }

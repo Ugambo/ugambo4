@@ -5,7 +5,8 @@ Built on WordPress with a custom plugin (`explore-katsina-core`) and a Kadence c
 
 - Plan: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Progress & how to continue: [HANDOVER.md](HANDOVER.md)
-- Setup: `./setup.sh` (needs Docker and Node.js)
+- **Run it on your own computer with VS Code: [docs/RUN-LOCALLY.md](docs/RUN-LOCALLY.md)** (step by step)
+- Setup: `./setup.sh --offline` (needs Docker, Node.js and Git; Windows: use Git Bash)
 
 - Tests: `./tests/run.sh`
 - Brand: Durbar Regalia ([options](docs/brand-options.html))

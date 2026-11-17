@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Runs all automated checks against the local site (start it with ./setup.sh first).
 set -uo pipefail
+# Windows (Git Bash): don't rewrite arguments such as '/%postname%/' into Windows paths.
+export MSYS_NO_PATHCONV=1
 cd "$(dirname "$0")/.."
 set -a; . ./.env; set +a
 if docker compose -f docker-compose.offline.yml ps --status running 2>/dev/null | grep -q wordpress; then

@@ -16,6 +16,8 @@
 # Test inbox:  http://localhost:8025        (offline mode: every email lands here)
 # =============================================================================
 set -euo pipefail
+# Windows (Git Bash): don't rewrite arguments such as '/%postname%/' into Windows paths.
+export MSYS_NO_PATHCONV=1
 cd "$(dirname "$0")"
 
 WP_IMAGE="wordpress:php8.2-apache"
