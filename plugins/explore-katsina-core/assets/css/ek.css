@@ -510,7 +510,11 @@ html:has(body.ek-kmap-body) { margin-top: 0 !important; }
 .ek-kmap-bar h1 { margin: 0; font: 600 1rem var(--ek-font-display); color: #fff; }
 .ek-kmap-bar nav { margin-left: auto; display: flex; gap: 14px; }
 .ek-kmap .ek-kmap-bar nav a { color: #E7E9F3; text-decoration: none; font-weight: 600; font-size: .9rem; }
-@media (max-width: 640px) { .ek-kmap-bar nav { display: none; } }
+@media (max-width: 640px) { .ek-kmap-bar nav { display: none; } .ek-kmap-bar .ekt-lang { margin-left: auto; } }
+.ek-kmap-bar .ekt-lang { display: block; }
+.ek-kmap-bar .ekt-lang ul { display: flex; gap: 2px; list-style: none; margin: 0; padding: 2px; border: 1px solid #3A4372; border-radius: 999px; }
+.ek-kmap .ek-kmap-bar .ekt-lang a { display: block; padding: 3px 9px; border-radius: 999px; color: #D5D8E8; font-size: .8rem; font-weight: 700; text-decoration: none; }
+.ek-kmap .ek-kmap-bar .ekt-lang a.is-current { background: var(--ek-brass, #D2A03A); color: var(--ek-night, #141B3A); }
 .ek-kmap-main { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: 380px minmax(0, 1fr); }
 .ek-kmap-map { min-height: 0; height: 100%; background: #e9e4d8; }
 .ek-kmap-panel { background: var(--ek-ivory, #FBF7EF); border-right: 1px solid var(--ek-line); min-height: 0; display: flex; flex-direction: column; z-index: 2; }

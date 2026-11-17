@@ -149,6 +149,64 @@ switch ( $mode ) {
 		$out = array( 'status' => get_post_status( (int) $args[1] ), 'invoice' => $inv->number );
 		break;
 
+	case 'guest':
+		// A SAMPLE guest account (email sample-guest-…, so `wp ek delete-sample` removes it).
+		$u = get_user_by( 'login', 'sample_guest_account' );
+		if ( ! $u ) {
+			$u = get_userdata( wp_insert_user( array( 'user_login' => 'sample_guest_account', 'user_email' => 'sample-guest-account@example.test', 'user_pass' => wp_generate_password( 20 ), 'role' => EK\Account::customer_role(), 'display_name' => 'SAMPLE Guest Account' ) ) );
+		}
+		$pass = 'Guest-' . wp_generate_password( 12, false );
+		wp_set_password( $pass, $u->ID );
+		$out = array( 'user' => $u->user_login, 'pass' => $pass );
+		break;
+
+	case 'sweep-urls':
+		// Every page in the brief (both languages), one of each kind of listing, and the shop pages.
+		$rel  = static fn( $u ) => wp_make_link_relative( $u );
+		$keys = array_unique( array_merge( EK\Languages::PAGES, array( 'book', 'account', 'agreement', 'promote_event', 'checkin', 'dashboard' ) ) );
+		$en   = array();
+		$ha   = array();
+		foreach ( $keys as $k ) {
+			$id = EK\Install::page_id( $k );
+			if ( ! $id ) {
+				continue;
+			}
+			$en[ $k ] = $rel( get_permalink( $id ) );
+			$h        = function_exists( 'pll_get_post' ) ? pll_get_post( $id, 'ha' ) : 0;
+			if ( $h ) {
+				$ha[ $k ] = $rel( get_permalink( $h ) );
+			}
+		}
+		$one = static function ( $args ) use ( $rel ) {
+			$p = get_posts( array_merge( array( 'posts_per_page' => 1, 'post_status' => 'publish', 'lang' => '' ), $args ) );
+			return $p ? $rel( get_permalink( $p[0] ) ) : '';
+		};
+		$items = array();
+		foreach ( array( 'hotel', 'restaurant', 'event-centre', 'tour-operator', 'transport', 'crafts', 'shopping', 'health', 'banks' ) as $t ) {
+			$items[ $t ] = $one( array( 'post_type' => 'ek_business', 'meta_key' => '_ek_sample_set', 'tax_query' => array( array( 'taxonomy' => 'ek_type', 'field' => 'slug', 'terms' => $t ) ) ) ); // phpcs:ignore
+		}
+		$items['attraction'] = $one( array( 'post_type' => EK\Attractions::CPT ) );
+		$items['event']      = $one( array( 'post_type' => EK\Events::CPT, 'meta_key' => '_ek_sample_set' ) ); // phpcs:ignore
+		$items['festival']   = $one( array( 'post_type' => EK\Events::CPT, 's' => 'Durbar' ) );
+		$items['tour']       = $one( array( 'post_type' => EK\Tours::CPT, 'meta_key' => '_ek_sample_set' ) ); // phpcs:ignore
+		$items['story']      = $one( array( 'post_type' => 'post', 'category__not_in' => array( (int) get_option( 'default_category' ) ) ) );
+		$items['product']    = $one( array( 'post_type' => 'product' ) );
+		$items['shop']       = $rel( get_permalink( wc_get_page_id( 'shop' ) ) );
+		$items['cart']       = $rel( get_permalink( wc_get_page_id( 'cart' ) ) );
+		$items['top_lga']    = $rel( EK\Top::url( 'hotel', 'katsina' ) );
+		$biz = array();
+		foreach ( array( 'hotel' => 'SAMPLE Crimson Gate Hotel', 'restaurant' => 'SAMPLE Mama Tuwo Kitchen', 'venue' => 'SAMPLE Grand Durbar Hall', 'directory' => 'SAMPLE Indigo Dye Workshop' ) as $k => $title ) {
+			$id    = (int) ( get_posts( array( 'post_type' => 'ek_business', 'title' => $title, 'posts_per_page' => 1, 'fields' => 'ids', 'lang' => '' ) )[0] ?? 0 );
+			$owner = $id ? get_userdata( (int) get_post_field( 'post_author', $id ) ) : null;
+			if ( $owner ) {
+				$pass        = 'Sweep-' . wp_generate_password( 12, false );
+				wp_set_password( $pass, $owner->ID );
+				$biz[ $k ] = array( 'id' => $id, 'user' => $owner->user_login, 'pass' => $pass, 'sections' => array_keys( EK\Dashboard::sections( EK\Business::type_of( $id ) ) ) );
+			}
+		}
+		$out = array( 'en' => $en, 'ha' => $ha, 'items' => array_filter( $items ), 'biz' => $biz );
+		break;
+
 	case 'status':
 		$b   = Booking::by_code( $args[1] );
 		$out = array( 'status' => $b->status, 'ledger' => $wpdb->get_results( $wpdb->prepare( "SELECT entry_type, amount_kobo, status FROM {$wpdb->prefix}ek_ledger WHERE booking_id = %d", $b->id ), ARRAY_A ) );

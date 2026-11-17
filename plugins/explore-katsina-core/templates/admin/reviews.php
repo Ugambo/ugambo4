@@ -20,7 +20,7 @@ $rows   = Reviews::admin_list( $status, $search );
 	<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search text, name or business', 'explore-katsina' ); ?>">
 	<button class="button"><?php esc_html_e( 'Filter', 'explore-katsina' ); ?></button>
 </form>
-<table class="wp-list-table widefat fixed striped">
+<div class="ek-admin-scroll" style="overflow-x:auto;max-width:100%"><table class="wp-list-table widefat fixed striped">
 	<thead><tr><th style="width:18%"><?php esc_html_e( 'Business', 'explore-katsina' ); ?></th><th><?php esc_html_e( 'Review', 'explore-katsina' ); ?></th><th style="width:12%"><?php esc_html_e( 'Status', 'explore-katsina' ); ?></th><th style="width:28%"><?php esc_html_e( 'Action', 'explore-katsina' ); ?></th></tr></thead>
 	<tbody>
 	<?php if ( ! $rows ) : ?><tr><td colspan="4"><?php esc_html_e( 'No reviews found.', 'explore-katsina' ); ?></td></tr><?php endif; ?>
@@ -44,10 +44,10 @@ $rows   = Reviews::admin_list( $status, $search );
 		</tr>
 	<?php endforeach; ?>
 	</tbody>
-</table>
+</table></div>
 <form method="post" style="margin-top:12px"><?php wp_nonce_field( 'ek_admin_rankings_run' ); ?><input type="hidden" name="ek_admin_action" value="rankings_run"><input type="hidden" name="back" value="ek-reviews"><button class="button"><?php esc_html_e( 'Recalculate rankings now', 'explore-katsina' ); ?></button></form>
 <h2><?php esc_html_e( 'Moderation log', 'explore-katsina' ); ?></h2>
-<table class="wp-list-table widefat fixed striped">
+<div class="ek-admin-scroll" style="overflow-x:auto;max-width:100%"><table class="wp-list-table widefat fixed striped">
 	<thead><tr><th><?php esc_html_e( 'When', 'explore-katsina' ); ?></th><th><?php esc_html_e( 'What', 'explore-katsina' ); ?></th><th><?php esc_html_e( 'Business', 'explore-katsina' ); ?></th><th><?php esc_html_e( 'By', 'explore-katsina' ); ?></th></tr></thead>
 	<tbody>
 	<?php
@@ -61,4 +61,4 @@ $rows   = Reviews::admin_list( $status, $search );
 		<tr><td><?php echo esc_html( View::date( $l->created_at, true ) ); ?></td><td><?php echo esc_html( $l->reason ); ?><?php echo ! empty( $m['excerpt'] ) ? '<br><span class="description">“' . esc_html( $m['excerpt'] ) . '” (' . esc_html( $m['author'] ?? '' ) . ', ' . (int) ( $m['rating'] ?? 0 ) . '★)</span>' : ''; ?></td><td><?php echo esc_html( get_the_title( (int) $l->object_id ) ); ?></td><td><?php echo esc_html( $who ? $who->display_name : '' ); ?></td></tr>
 	<?php endforeach; ?>
 	</tbody>
-</table>
+</table></div>

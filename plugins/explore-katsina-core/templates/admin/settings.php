@@ -94,3 +94,21 @@ defined( 'ABSPATH' ) || exit;
 	<?php wp_nonce_field( 'ek_admin_rankings_run' ); ?><input type="hidden" name="ek_admin_action" value="rankings_run"><input type="hidden" name="back" value="ek-settings">
 	<p><button class="button"><?php esc_html_e( 'Recalculate rankings now', 'explore-katsina' ); ?></button> <span class="description"><?php /* translators: %s: date */ printf( esc_html__( 'Rankings update automatically every night. Last calculated: %s', 'explore-katsina' ), esc_html( get_option( 'ek_rank_last' ) ? \EK\View::date( get_option( 'ek_rank_last' ), true ) : __( 'never', 'explore-katsina' ) ) ); ?></span></p>
 </form>
+<?php
+global $wpdb;
+$ek_sample_n = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type IN ('ek_business','ek_attraction','ek_event','ek_tour','product','post') AND post_title LIKE %s", 'SAMPLE%' ) );
+if ( $ek_sample_n && current_user_can( 'manage_options' ) ) :
+	?>
+<h2 style="margin-top:32px"><?php esc_html_e( 'SAMPLE data (delete before launch)', 'explore-katsina' ); ?></h2>
+<form method="post" class="card" style="max-width:640px" onsubmit="return confirm( this.dataset.ask );" data-ask="<?php esc_attr_e( 'Delete all SAMPLE data now? This cannot be undone.', 'explore-katsina' ); ?>">
+	<?php wp_nonce_field( 'ek_admin_delete_sample' ); ?><input type="hidden" name="ek_admin_action" value="delete_sample">
+	<p>
+		<?php
+		/* translators: %d: number of items */
+		printf( esc_html__( 'This site still has %d demonstration items named "SAMPLE" (businesses with their owners, bookings, reviews and invoices; stories, tours, events, shop products and the sample guide). Delete them all before launch. Real businesses, your guide content and your settings are not touched.', 'explore-katsina' ), (int) $ek_sample_n );
+		?>
+	</p>
+	<p><label for="ek-del-confirm"><?php esc_html_e( 'Type DELETE to confirm:', 'explore-katsina' ); ?></label> <input type="text" id="ek-del-confirm" name="confirm_text" autocomplete="off" style="width:110px"> <button class="button button-link-delete"><?php esc_html_e( 'Delete all SAMPLE data', 'explore-katsina' ); ?></button></p>
+</form>
+<?php endif; ?>
+

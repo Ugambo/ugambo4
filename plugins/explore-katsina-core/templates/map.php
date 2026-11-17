@@ -18,6 +18,7 @@ $lga    = absint( $_GET['lga'] ?? 0 ); // phpcs:ignore
 		<a class="ek-kmap-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>">EXPLORE KATSINA</a>
 		<h1><?php esc_html_e( 'Katsina Map', 'explore-katsina' ); ?></h1>
 		<nav aria-label="<?php esc_attr_e( 'Site', 'explore-katsina' ); ?>"><a href="<?php echo esc_url( Install::page_url( 'hotels' ) ); ?>"><?php esc_html_e( 'Hotels', 'explore-katsina' ); ?></a><a href="<?php echo esc_url( Install::page_url( 'restaurants' ) ); ?>"><?php esc_html_e( 'Restaurants', 'explore-katsina' ); ?></a><a href="<?php echo esc_url( Install::page_url( 'event_centres' ) ); ?>"><?php esc_html_e( 'Event centres', 'explore-katsina' ); ?></a></nav>
+		<?php echo do_shortcode( '[ek_lang_switch]' ); // English ⇄ Hausa (theme shortcode; nothing without Polylang). phpcs:ignore ?>
 	</header>
 	<div class="ek-kmap-main">
 		<aside class="ek-kmap-panel" data-panel aria-label="<?php esc_attr_e( 'Places and filters', 'explore-katsina' ); ?>">

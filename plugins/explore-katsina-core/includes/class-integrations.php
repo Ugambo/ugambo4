@@ -84,6 +84,9 @@ final class Integrations {
 
 	/** A listing, price, review or ranking changed: empty the page cache so lists are never out of date. */
 	public static function clear_page_cache() {
+		if ( class_exists( '\RankMath\Sitemap\Cache' ) ) {
+			\RankMath\Sitemap\Cache::invalidate_storage(); // The XML sitemap is rebuilt too.
+		}
 		if ( function_exists( 'wp_cache_clear_cache' ) ) {
 			wp_cache_clear_cache();
 			return;

@@ -35,7 +35,11 @@ final class Emails {
 	 */
 	public static function send( $to, $subject, $heading, array $lines, array $cta = array(), array $context = array() ) {
 		$html = self::render( $heading, $lines, $cta, (string) ( $context['html'] ?? '' ) );
-		$sent = wp_mail( $to, $subject, $html, array( 'Content-Type: text/html; charset=UTF-8' ) );
+		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+		if ( ! empty( $context['event'] ) ) {
+			$headers[] = 'X-EK-Email: ' . sanitize_key( (string) $context['event'] ); // Which email this is (for support and the tests).
+		}
+		$sent = wp_mail( $to, $subject, $html, $headers );
 
 		/**
 		 * WhatsApp/SMS hook. Nothing is sent unless a provider is plugged in AND the

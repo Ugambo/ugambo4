@@ -78,7 +78,12 @@ final class Admin {
 			return;
 		}
 		if ( ! Crypto::has_dedicated_key() ) {
-			echo '<div class="notice notice-warning"><p><strong>Explore Katsina:</strong> ' . esc_html__( 'EK_ENCRYPTION_KEY is not set in wp-config.php, so bank details are encrypted with a fallback key. Run setup.sh or add the key before launch, and keep a safe copy of it.', 'explore-katsina' ) . '</p></div>';
+			// A fresh random key for the owner to paste (shown only here, never stored by the site).
+			$line = "define( 'EK_ENCRYPTION_KEY', '" . base64_encode( random_bytes( 32 ) ) . "' );"; // phpcs:ignore
+			echo '<div class="notice notice-warning"><p><strong>Explore Katsina:</strong> ' . esc_html__( 'Bank details need their own encryption key. Copy the line below into wp-config.php (in your host\'s File Manager), just above the line "That\'s all, stop editing!", then save. Keep a copy of the line somewhere safe (for example in your password manager): without it, saved bank details cannot be read. Do this before any business enters bank details.', 'explore-katsina' ) . '</p><p><code style="user-select:all">' . esc_html( $line ) . '</code></p></div>';
+		}
+		if ( current_user_can( 'manage_options' ) ) {
+			Security::maybe_write_rules(); // After moving to a new host, the server rules are written again.
 		}
 	}
 
@@ -246,6 +251,16 @@ final class Admin {
 				check_admin_referer( 'ek_admin_' . $action . '_' . $id );
 				$r = 'review_hide' === $action ? Reviews::hide( $id, wp_unslash( $_POST['reason'] ?? '' ), $uid ) : Reviews::restore( $id, $uid );
 				$go( 'ek-reviews', is_wp_error( $r ) ? $r->get_error_message() : __( 'Done. Rankings update tonight, or press "Recalculate rankings now".', 'explore-katsina' ), array( 'ek_ok' => is_wp_error( $r ) ? 0 : 1 ) );
+				break;
+			case 'delete_sample':
+				check_admin_referer( 'ek_admin_delete_sample' );
+				if ( ! current_user_can( 'manage_options' ) || 'DELETE' !== trim( (string) wp_unslash( $_POST['confirm_text'] ?? '' ) ) ) {
+					$go( 'ek-settings', __( 'Nothing deleted: type DELETE in the box to confirm.', 'explore-katsina' ), array( 'ek_ok' => 0 ) );
+					break;
+				}
+				$n = Sample_Data::delete_all();
+				/* translators: 1: businesses, 2: other items, 3: products */
+				$go( 'ek-settings', sprintf( __( 'SAMPLE data deleted: %1$d businesses, %2$d attractions/events/tours/stories, %3$d shop products.', 'explore-katsina' ), $n['businesses'], $n['content'], $n['products'] ), array( 'ek_ok' => 1 ) );
 				break;
 			case 'rankings_run':
 				check_admin_referer( 'ek_admin_rankings_run' );

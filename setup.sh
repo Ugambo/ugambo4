@@ -197,6 +197,7 @@ for demo in "post:hello-world" "page:sample-page"; do
   id=$(wp post list --post_type="${demo%%:*}" --name="${demo#*:}" --field=ID 2>/dev/null | tail -n1)
   [ -n "$id" ] && wp post delete "$id" --force --quiet 2>/dev/null || true
 done
+wp eval 'EK\Integrations::clear_page_cache();' >/dev/null 2>&1 || true   # Fresh page cache and sitemap.
 
 # -----------------------------------------------------------------------------
 say "7/7 Done"

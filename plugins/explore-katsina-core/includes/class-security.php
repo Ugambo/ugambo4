@@ -311,6 +311,25 @@ final class Security {
 		);
 	}
 
+	/**
+	 * After a move to a new host the .htaccess files are new: write our rules again (checked at most once
+	 * a day, only when an administrator opens wp-admin, and only where the file can be written).
+	 */
+	public static function maybe_write_rules() {
+		if ( get_transient( 'ek_rules_checked' ) ) {
+			return;
+		}
+		set_transient( 'ek_rules_checked', 1, DAY_IN_SECONDS );
+		$root = ABSPATH . '.htaccess';
+		$have = file_exists( $root ) ? (string) file_get_contents( $root ) : ''; // phpcs:ignore
+		$up   = wp_upload_dir( null, false );
+		$upf  = trailingslashit( $up['basedir'] ) . '.htaccess';
+		$uph  = file_exists( $upf ) ? (string) file_get_contents( $upf ) : ''; // phpcs:ignore
+		if ( false === strpos( $have, '# BEGIN Explore Katsina' ) || false === strpos( $uph, '# BEGIN Explore Katsina' ) ) {
+			self::setup();
+		}
+	}
+
 	/** Run once by `wp ek plugins-setup` (and re-runnable with `wp ek security`). */
 	public static function setup() {
 		require_once ABSPATH . 'wp-admin/includes/misc.php';
